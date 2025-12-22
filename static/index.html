@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="US">
+<head>
+    <title>Modbus Register Editor</title>
+    <script src="/htmx.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: white; border-radius: 4px; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Modbus Register Editor</h1>
+
+    <div class="container">
+        <h2>Read Registers</h2>
+        <form hx-post="/read" hx-target="#read-result">
+            <input type="number" name="address" placeholder="Start Address" value="0" required>
+            <input type="number" name="count" placeholder="Count" value="10" min="1" max="125" required>
+            <button type="submit">Read</button>
+        </form>
+        <div id="read-result" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h2>Write Register</h2>
+        <form hx-post="/write" hx-target="#write-result">
+            <input type="number" name="address" placeholder="Register Address" value="0" required>
+            <input type="number" name="value" placeholder="Value (0-65535)" min="0" max="65535" required>
+            <button type="submit">Write</button>
+        </form>
+        <div id="write-result" class="result"></div>
+    </div>
+</body>
+</html>

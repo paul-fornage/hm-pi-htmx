@@ -1,0 +1,11 @@
+[package]
+name = "hm-pi-htmx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-modbus = "0.17.0"
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+tower-http = { version = "0.6", features = ["fs"] }
