@@ -1,0 +1,11 @@
+{% if connected %}
+<span class="flex items-center gap-1 text-green-600 font-bold">
+  <span class="w-3 h-3 rounded-full bg-green-500"></span>
+  Online
+</span>
+{% else %}
+<span class="flex items-center gap-1 text-gray-500">
+  <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+  Offline
+</span>
+{% endif %}

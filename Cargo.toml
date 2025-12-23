@@ -10,3 +10,6 @@ axum = "0.8"
 serde = { version = "1", features = ["derive"] }
 tower-http = { version = "0.6", features = ["fs"] }
 askama = { version = "0.15.0"}
+log = "0.4.29"
+env_logger = "0.11.8"
+thiserror = "2.0.17"

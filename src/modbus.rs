@@ -1,241 +1,155 @@
-use axum::{
-    extract::{State, Form},
-    response::{Html, IntoResponse},
-    http::StatusCode,
-};
-use serde::Deserialize;
+use tokio_modbus::client::tcp;
 use std::net::SocketAddr;
-use std::sync::{Arc, RwLock};
-use tokio_modbus::prelude::*;
-use askama::Template;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{Mutex, MutexGuard, RwLock, RwLockWriteGuard};
+use tokio::time::timeout;
+use tokio_modbus::client::{Client, Context, Reader, Writer};
+use tokio_modbus::{ExceptionCode, Slave};
+use log::{error, info, warn};
+use crate::error::{Error, Result};
+use crate::modbus_http::ModbusConfig;
+use crate::{info_targeted, warn_targeted};
 
-// --- State Management ---
 
-#[derive(Clone, Default)]
-pub struct AppState {
-    // We use RwLock so we can change the address at runtime
-    pub config: Arc<RwLock<ModbusConfig>>,
+const LOCK_TIMEOUT: Duration = Duration::from_secs(1);
+
+#[derive(Clone, Debug)]
+pub struct ConnectionConfig {
+    pub state: ModbusState,
+    pub socket_addr: SocketAddr,
+    pub unit_id: u8,
+    pub timeout_duration: Duration,
 }
-
-#[derive(Clone, Default)]
-pub struct ModbusConfig {
-    pub address: Option<SocketAddr>,
-}
-
-// --- Templates ---
-
-#[derive(Template)]
-#[template(path = "hreg.html")]
-pub struct RegistersTemplate {
-    pub start_address: u16,
-    pub registers: Vec<(u16, u16)>,
-}
-
-#[derive(Template)]
-#[template(path = "connection.html")]
-pub struct ConnectionTemplate {
-    pub connected: bool,
-    pub current_host: String,
-    pub error: Option<String>,
-}
-
-#[derive(Template)]
-#[template(path = "connection-status.html")]
-pub struct StatusTemplate {
-    pub connected: bool,
-}
-
-// --- Forms ---
-
-#[derive(Deserialize)]
-pub struct ConnectForm {
-    host: String,
-    port: u16,
-}
-
-#[derive(Deserialize)]
-pub struct ReadForm {
-    address: u16,
-    count: u16,
-}
-
-#[derive(Deserialize)]
-pub struct WriteForm {
-    address: u16,
-    value: u16,
-}
-
-// --- Handlers ---
-
-// GET /modbus/manager - Renders the initial connection box
-pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoResponse {
-    let config = state.config.read().unwrap();
-
-    let (connected, host) = match config.address {
-        Some(addr) => (true, addr.to_string()),
-        None => (false, String::new()),
-    };
-
-    let template = ConnectionTemplate {
-        connected,
-        current_host: host,
-        error: None,
-    };
-    Html(template.render().unwrap())
-}
-
-// GET /modbus/status - Returns the icon, checks actual connectivity
-pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
-    let addr = {
-        let config = state.config.read().unwrap();
-        config.address
-    };
-
-    let mut is_online = false;
-
-    // Attempt a quick connection to verify status
-    if let Some(socket_addr) = addr {
-        // Create a context just to check connection
-        if let Ok(mut ctx) = tcp::connect(socket_addr).await {
-            // Try a dummy read of 1 register to ensure device is responsive
-            if ctx.read_holding_registers(0, 1).await.is_ok() {
-                is_online = true;
-            }
-            let _ = ctx.disconnect().await;
+impl ConnectionConfig {
+    pub async fn new_with_timeout(socket_addr: SocketAddr, unit_id: u8, timeout_duration: Duration) -> Self {
+        ConnectionConfig{
+            state: ModbusState::Disconnected,
+            socket_addr,
+            unit_id,
+            timeout_duration,
         }
     }
-
-    let template = StatusTemplate { connected: is_online };
-    Html(template.render().unwrap())
-}
-
-// POST /modbus/connect
-pub async fn connect_modbus(
-    State(state): State<AppState>,
-    Form(form): Form<ConnectForm>,
-) -> impl IntoResponse {
-    let addr_str = format!("{}:{}", form.host, form.port);
-
-    let new_addr: Result<SocketAddr, _> = addr_str.parse();
-
-    match new_addr {
-        Ok(addr) => {
-            // Update state
-            let mut config = state.config.write().unwrap();
-            config.address = Some(addr);
-
-            let template = ConnectionTemplate {
-                connected: true,
-                current_host: addr.to_string(),
-                error: None,
-            };
-            Html(template.render().unwrap())
-        }
-        Err(_) => {
-            let template = ConnectionTemplate {
-                connected: false,
-                current_host: String::new(),
-                error: Some("Invalid IP address or Port".to_string()),
-            };
-            Html(template.render().unwrap())
+    pub async fn new(socket_addr: SocketAddr, unit_id: u8) -> Self {
+        ConnectionConfig{
+            state: ModbusState::Disconnected,
+            socket_addr,
+            unit_id,
+            timeout_duration: Duration::from_millis(300),
         }
     }
 }
 
-// POST /modbus/disconnect
-pub async fn disconnect_modbus(State(state): State<AppState>) -> impl IntoResponse {
-    let mut config = state.config.write().unwrap();
-    config.address = None;
-
-    let template = ConnectionTemplate {
-        connected: false,
-        current_host: String::new(),
-        error: None,
-    };
-    Html(template.render().unwrap())
+struct ModbusManager {
+    shared_ctx: Option<Arc<Mutex<Context>>>,
+    info: Arc<RwLock<ConnectionConfig>>,
 }
 
-// POST /read
-pub async fn read_registers(
-    State(state): State<AppState>,
-    Form(form): Form<ReadForm>,
-) -> impl IntoResponse {
-    let addr = {
-        let config = state.config.read().unwrap();
-        config.address
-    };
+#[derive(Clone, Debug)]
+enum ModbusState {
+    Connected,
+    Connecting,
+    Disconnected,
+}
 
-    match addr {
-        Some(socket_addr) => {
-            match read_holding_registers_helper(socket_addr, form.address, form.count).await {
-                Ok(values) => {
-                    let registers = values
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, val)| (form.address + i as u16, val))
-                        .collect();
+fn squash_error<T>(mb_err: std::result::Result<std::result::Result<T, ExceptionCode>, Error>) -> Result<T> {
+    match mb_err {
+        Ok(Ok(res)) => Ok(res),
+        Ok(Err(e)) => Err(Error::ModbusException(e.to_string())),
+        Err(e) => Err(e),
+    }
+}
 
-                    let template = RegistersTemplate {
-                        start_address: form.address,
-                        registers,
-                    };
 
-                    match template.render() {
-                        Ok(html) => Html(html).into_response(),
-                        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Template Error").into_response(),
+impl ModbusManager{
+    pub fn new(config: ConnectionConfig) -> Self {
+        Self {
+            shared_ctx: None,
+            info: Arc::new(RwLock::new(config)),
+        }
+    }
+
+    pub async fn cloned_config(&self) -> Result<ConnectionConfig> {
+        Ok(timeout(LOCK_TIMEOUT, self.info.read())
+            .await.map_err(|e| Error::LockTimedOut(e.to_string()))?.clone())
+    }
+
+    pub async fn write_config(&mut self) -> Result<RwLockWriteGuard<'_, ConnectionConfig>> {
+        Ok(timeout(LOCK_TIMEOUT, self.info.write())
+            .await.map_err(|e| Error::LockTimedOut(e.to_string()))?)
+    }
+
+    pub async fn connect_new(mut connection_config: ConnectionConfig) -> Result<Self> {
+        let timeout_duration = connection_config.timeout_duration;
+        let ctx_res = tcp::connect(connection_config.socket_addr);
+        connection_config.state = ModbusState::Disconnected; // doesn't matter, no one else has this
+        let ctx = timeout(timeout_duration, ctx_res).await.map_err(|e| {
+            Error::ModbusTimedOut(e.to_string())
+        })??;
+        connection_config.state = ModbusState::Connected;
+        let shared_ctx = Some(Arc::new(Mutex::new(ctx)));
+        let info = Arc::new(RwLock::new(connection_config));
+
+        Ok(Self { shared_ctx, info })
+    }
+
+    pub async fn connect(&mut self) -> Result<Self> {
+        let config = self.write_config().await?;
+        
+        config.state = ModbusState::Connecting;
+        let sock_addr = config.socket_addr.clone();
+        let timeout_duration = config.timeout_duration.clone();
+        std::mem::drop(config);
+
+        match self.shared_ctx.clone() {
+            Some(ctx_mutex) => {
+                let mut ctx = timeout(timeout_duration, ctx_mutex.lock())
+                    .await.map_err(|e| { Error::ModbusTimedOut(e.to_string()) })?;
+                match(ctx.disconnect().await){
+                    Ok(()) => {}
+                    Err(e) => {
+                        warn_targeted!(MODBUS, "Error disconnecting during connect: {:?}", e);
                     }
-                }
-                Err(e) => Html(format!("<p style='color: red;'>Modbus Error: {}</p>", e)).into_response(),
+                };
+            }
+            None => {
+
             }
         }
-        None => Html("<p style='color: red;'>Not Connected. Please set host/port.</p>".to_string()).into_response(),
+
+
+        maybe_ctx.
+
+        let shared_ctx = Arc::new(Mutex::new(Some(ctx)));
+        let info = Arc::new(RwLock::new(connection_config));
+
+        Ok(Self { shared_ctx, info })
     }
-}
 
-// POST /write
-pub async fn write_register(
-    State(state): State<AppState>,
-    Form(form): Form<WriteForm>,
-) -> impl IntoResponse {
-    let addr = {
-        let config = state.config.read().unwrap();
-        config.address
-    };
-
-    match addr {
-        Some(socket_addr) => {
-            match write_single_register_helper(socket_addr, form.address, form.value).await {
-                Ok(_) => Html(format!(
-                    "<p class='write-response green'>✓ Successfully wrote {} to register {}</p>",
-                    form.value, form.address
-                )).into_response(),
-                Err(e) => Html(format!("<p class='write-response red'>Error: {}</p>", e)).into_response(),
+    /// returns true if was connected before
+    pub async fn disconnect(&mut self) -> Result<bool> {
+        let config_handle = self.cloned_config().await?;
+        let timeout_duration = config_handle.timeout_duration;
+        let sock_addr = config_handle.socket_addr;
+        drop(config_handle);
+        let was_connected = match self.shared_ctx.clone() {
+            Some(ctx_mutex) => {
+                let mut ctx = timeout(timeout_duration, ctx_mutex.lock())
+                    .await.map_err(|e| { Error::ModbusTimedOut(e.to_string()) })?;
+                match ctx.disconnect().await {
+                    Ok(()) => {
+                        info_targeted!(MODBUS, "Disconnected from {}", sock_addr);
+                    }
+                    Err(e) => {
+                        warn_targeted!(MODBUS, "Error disconnecting during connect: {:?}", e);
+                    }
+                };
+                true
             }
-        }
-        None => Html("<p style='color: red;'>Not Connected</p>".to_string()).into_response()
+            None => { false }
+        };
+        self.write_config().await?.state = ModbusState::Disconnected;
+        self.shared_ctx = None;
+        Ok(was_connected)
     }
-}
-
-// --- Helpers ---
-
-async fn read_holding_registers_helper(
-    addr: SocketAddr,
-    address: u16,
-    count: u16,
-) -> Result<Vec<u16>, Box<dyn std::error::Error>> {
-    let mut ctx = tcp::connect(addr).await?;
-    let data = ctx.read_holding_registers(address, count).await??;
-    ctx.disconnect().await?;
-    Ok(data)
-}
-
-async fn write_single_register_helper(
-    addr: SocketAddr,
-    address: u16,
-    value: u16,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut ctx = tcp::connect(addr).await?;
-    ctx.write_single_register(address, value).await??;
-    ctx.disconnect().await?;
-    Ok(())
 }

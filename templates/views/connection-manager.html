@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/header.html" %}
+
+<div id="view-connections" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <h2 class="text-xl font-bold mb-3">Connection Manager</h2>
+    <p class="mb-4">Manage your Modbus TCP connections here.</p>
+
+    <!-- This loads the manager HTML from your existing backend logic -->
+    <div hx-get="/modbus/manager" hx-trigger="load" hx-swap="innerHTML">
+        Loading manager...
+    </div>
+</div>
+{% endblock %}

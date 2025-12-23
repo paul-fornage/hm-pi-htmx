@@ -1,0 +1,36 @@
+<h3 class="text-lg font-bold mb-3">Register Values:</h3>
+<table class="w-full border-collapse">
+    <thead>
+    <tr class="text-left border-b-2 border-gray-300">
+        <th class="pb-2">Address</th>
+        <th class="pb-2">Value (Dec)</th>
+        <th class="pb-2">Hex</th>
+        <th class="pb-2">Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for (addr, val) in registers %}
+    <tr class="border-b border-gray-200">
+        <td class="py-2">{{ addr }}</td>
+        <td class="py-2">
+            <input type="number"
+                   name="value"
+                   value="{{ val }}"
+                   form="form-{{ addr }}"
+                   class="w-20 border border-gray-300 rounded px-2 py-1">
+        </td>
+        <td class="py-2">0x{{ "{:04X}"|format(val) }}</td>
+        <td class="py-2">
+            <form id="form-{{ addr }}"
+                  hx-post="/write"
+                  hx-target="#status-{{ addr }}"
+                  class="m-0">
+                <input type="hidden" name="address" value="{{ addr }}">
+                <button type="submit" class="px-2.5 py-1 text-sm bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">Update</button>
+                <span id="status-{{ addr }}"></span>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>

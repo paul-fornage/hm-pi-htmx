@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/header.html" %}
+
+<div id="view-operations">
+    <div class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+        <h2 class="text-xl font-bold mb-3">Read Registers</h2>
+        <form hx-post="/read" hx-target="#read-result" class="flex gap-2 flex-wrap">
+            <input type="number" name="address" placeholder="Start Address" value="0" required class="px-2.5 py-2 border border-gray-300 rounded">
+            <input type="number" name="count" placeholder="Count" value="10" min="1" max="125" required class="px-2.5 py-2 border border-gray-300 rounded">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">Read</button>
+        </form>
+        <div id="read-result" class="mt-2.5 p-2.5 bg-white rounded border border-gray-200"></div>
+    </div>
+
+    <div class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+        <h2 class="text-xl font-bold mb-3">Write Register</h2>
+        <form hx-post="/write" hx-target="#write-result" class="flex gap-2 flex-wrap">
+            <input type="number" name="address" placeholder="Register Address" value="0" required class="px-2.5 py-2 border border-gray-300 rounded">
+            <input type="number" name="value" placeholder="Value (0-65535)" min="0" max="65535" required class="px-2.5 py-2 border border-gray-300 rounded">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">Write</button>
+        </form>
+        <div id="write-result" class="mt-2.5 p-2.5 bg-white rounded border border-gray-200"></div>
+    </div>
+</div>
+{% endblock %}

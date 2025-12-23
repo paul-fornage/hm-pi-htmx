@@ -1,0 +1,15 @@
+<header class="flex justify-between items-center mb-5">
+    <div>
+        <h1 class="text-2xl font-bold">My Modbus App</h1>
+        <!-- Reusing your existing endpoint for status -->
+        <span id="modbus-status" hx-get="/modbus/status" hx-trigger="load, every 5s" hx-swap="innerHTML">
+            Loading status...
+        </span>
+    </div>
+</header>
+
+<nav class="flex border-b-2 border-gray-300 mb-5 gap-1">
+    <!-- Using the helper methods defined on the Rust Enum -->
+    <a href="/" class="px-5 py-2.5 no-underline text-gray-600 border border-transparent border-b-0 rounded-t bg-gray-200 hover:bg-gray-300 {% if tab_name_as_str()=="operations" %}!bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">Operations</a>
+    <a href="/connections" class="px-5 py-2.5 no-underline text-gray-600 border border-transparent border-b-0 rounded-t bg-gray-200 hover:bg-gray-300 {% if tab_name_as_str()=="connections" %}!bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">Connections</a>
+</nav>
