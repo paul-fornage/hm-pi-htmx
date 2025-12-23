@@ -1,0 +1,38 @@
+<!-- If we are connected, show Disconnect button -->
+{% if connected %}
+<div id="connection-manager" class="p-4 border rounded bg-green-50">
+    <h3 class="font-bold mb-2">Modbus Connection</h3>
+    <p>Target: <strong>{{ current_host }}</strong></p>
+    <button hx-post="/modbus/disconnect"
+            hx-target="#connection-manager"
+            hx-swap="outerHTML"
+            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        Disconnect
+    </button>
+</div>
+
+<!-- If we are disconnected, show Connect form -->
+{% else %}
+<!--suppress XmlDuplicatedId -->
+<div id="connection-manager" class="p-4 border rounded bg-gray-50">
+    <h3 class="font-bold mb-2">Modbus Connection</h3>
+    <form hx-post="/modbus/connect" hx-target="#connection-manager" hx-swap="outerHTML">
+        <div class="flex gap-2 items-end">
+            <div>
+                <label class="block text-sm">Host IP</label>
+                <input type="text" name="host" value="192.168.1.68" class="border p-1 rounded" required>
+            </div>
+            <div>
+                <label class="block text-sm">Port</label>
+                <input type="number" name="port" value="502" class="border p-1 rounded" required>
+            </div>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 h-9">
+                Connect
+            </button>
+        </div>
+        {% if let Some(err) = error %}
+        <p class="text-red-500 mt-2 text-sm">{{ err }}</p>
+        {% endif %}
+    </form>
+</div>
+{% endif %}

@@ -1,21 +1,33 @@
 <!DOCTYPE html>
-<html lang="US">
+<html lang="en">
 <head>
     <title>Modbus Register Editor</title>
     <script src="/htmx.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body { font-family: 'JetBrains Mono', monospace; max-width: 800px; margin: 50px auto; padding: 20px; }
         .container { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         input, button { padding: 10px; margin: 5px; }
         button { background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
         button:hover { background: #0056b3; }
         .result { margin-top: 10px; padding: 10px; background: white; border-radius: 4px; }
+        .write-response { font-size: 0.8em; }
+        .green { color: green; }
+        .red { color: red; }
         h2 { color: #333; }
     </style>
 </head>
 <body>
-    <h1>Modbus Register Editor</h1>
-
+    <header class="flex justify-between items-center p-4 border-b">
+        <h1>My Modbus App</h1>
+        <div hx-get="/modbus/status" hx-trigger="load" hx-swap="outerHTML"></div>
+    </header>
+    <div hx-get="/modbus/manager" hx-trigger="load" hx-swap="outerHTML"></div>
     <div class="container">
         <h2>Read Registers</h2>
         <form hx-post="/read" hx-target="#read-result">
