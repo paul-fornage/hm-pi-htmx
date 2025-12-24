@@ -7,9 +7,14 @@
     <h2 class="text-xl font-bold mb-3">Connection Manager</h2>
     <p class="mb-4">Manage your Modbus TCP connections here.</p>
 
-    <!-- This loads the manager HTML from your existing backend logic -->
-    <div hx-get="/modbus/manager" hx-trigger="load" hx-swap="innerHTML">
-        Loading manager...
+    <!-- ClearCore Connection -->
+    <div hx-get="/modbus/clearcore/manager" hx-trigger="load" hx-swap="innerHTML" class="mb-4">
+        Loading ClearCore connection...
+    </div>
+
+    <!-- Welder Connection -->
+    <div hx-get="/modbus/welder/manager" hx-trigger="load" hx-swap="innerHTML">
+        Loading Welder connection...
     </div>
 </div>
 {% endblock %}

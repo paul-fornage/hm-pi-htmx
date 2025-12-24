@@ -6,11 +6,13 @@ use std::time::Duration;
 use tokio::sync::{Mutex, MutexGuard, RwLock, RwLockWriteGuard};
 use tokio::time::timeout;
 use tokio_modbus::client::{Client, Context, Reader, Writer};
+use serde::{Deserialize, Serialize};
 use crate::error::{Error, Result};
 use crate::{error_targeted, info_targeted, warn_targeted};
 use crate::modbus::modbus_transaction_types::*;
 
-const LOCK_TIMEOUT: Duration = Duration::from_secs(1);
+const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 
 // macro for all modbus operations (function codes)
 macro_rules! execute_modbus {
@@ -39,13 +41,39 @@ macro_rules! execute_modbus {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConnectionConfig {
+    #[serde(skip, default)]
     pub state: ModbusState,
     pub socket_addr: SocketAddr,
     pub unit_id: u8,
+    #[serde(with = "duration_as_millis")]
     pub timeout_duration: Duration,
 }
+
+mod duration_as_millis {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::time::Duration;
+
+    pub fn serialize<S>(duration: &Duration, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u64(duration.as_millis() as u64)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> std::result::Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let millis = u64::deserialize(deserializer)?;
+        Ok(Duration::from_millis(millis))
+    }
+}
+
+pub const CLEARCORE_CONFIG_PATH: &str = "clearcore_modbus_config.json";
+pub const WELDER_CONFIG_PATH: &str = "welder_modbus_config.json";
+
 impl ConnectionConfig {
     pub fn new_with_timeout(socket_addr: SocketAddr, unit_id: u8, timeout_duration: Duration) -> Self {
         ConnectionConfig{
@@ -60,7 +88,39 @@ impl ConnectionConfig {
             state: ModbusState::Disconnected,
             socket_addr,
             unit_id,
-            timeout_duration: Duration::from_millis(300),
+            timeout_duration: DEFAULT_TIMEOUT,
+        }
+    }
+
+    pub fn save_to_path(&self, path: &str) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let json = serde_json::to_string_pretty(self)?;
+        std::fs::write(path, json)?;
+        info_targeted!(MODBUS, "Saved config to {}", path);
+        Ok(())
+    }
+
+    pub fn load_from_path(path: &str) -> Option<Self> {
+        let path_obj = std::path::Path::new(path);
+        if !path_obj.exists() {
+            info_targeted!(MODBUS, "Config file {} does not exist", path);
+            return None;
+        }
+
+        match std::fs::read_to_string(path_obj) {
+            Ok(contents) => match serde_json::from_str(&contents) {
+                Ok(config) => {
+                    info_targeted!(MODBUS, "Loaded config from {}", path);
+                    Some(config)
+                }
+                Err(e) => {
+                    warn_targeted!(MODBUS, "Failed to parse config from {}: {}", path, e);
+                    None
+                }
+            },
+            Err(e) => {
+                warn_targeted!(MODBUS, "Failed to read config from {}: {}", path, e);
+                None
+            }
         }
     }
 }
@@ -73,11 +133,21 @@ pub struct ModbusManager {
     info: Arc<RwLock<ConnectionConfig>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum ModbusState {
     Connected,
     Connecting,
+    #[default]
     Disconnected,
+}
+impl ModbusState {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            ModbusState::Connected => "Connected",
+            ModbusState::Connecting => "Connecting",
+            ModbusState::Disconnected => "Disconnected",
+        }
+    }
 }
 
 fn squash_error<T>(mb_err: std::result::Result<std::result::Result<T, tokio_modbus::ExceptionCode>, tokio_modbus::Error>) -> Result<T> {

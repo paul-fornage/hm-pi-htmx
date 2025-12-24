@@ -1,12 +1,12 @@
 <!-- If we are connected, show Disconnect button -->
 {% if connected %}
 <!--suppress XmlDuplicatedId -->
-<div id="connection-manager" class="p-4 border rounded bg-green-50">
-    <h3 class="font-bold mb-2">Modbus Connection</h3>
+<div id="connection-manager-{{ name }}" class="p-4 border rounded bg-green-50">
+    <h3 class="font-bold mb-2">{{ name }} Connection</h3>
     <p>Target: <strong>{{ host }}</strong></p>
     <p class="text-sm text-gray-600 mb-2">Port: {{ port }} | Unit: {{ unit_id }}</p>
-    <button hx-post="/modbus/disconnect"
-            hx-target="#connection-manager"
+    <button hx-post="/modbus/{{ name }}/disconnect"
+            hx-target="#connection-manager-{{ name }}"
             hx-swap="outerHTML"
             class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
         Disconnect
@@ -16,9 +16,9 @@
 <!-- If we are disconnected, show Connect form -->
 {% else %}
 <!--suppress XmlDuplicatedId -->
-<div id="connection-manager" class="p-4 border rounded bg-gray-50">
-    <h3 class="font-bold mb-2">Modbus Connection</h3>
-    <form hx-post="/modbus/connect" hx-target="#connection-manager" hx-swap="outerHTML">
+<div id="connection-manager-{{ name }}" class="p-4 border rounded bg-gray-50">
+    <h3 class="font-bold mb-2">{{ name }} Connection</h3>
+    <form hx-post="/modbus/{{ name }}/connect" hx-target="#connection-manager-{{ name }}" hx-swap="outerHTML">
         <div class="flex gap-2 items-end">
             <div class="flex-1">
                 <label for="host" class="block text-sm">Host IP</label>

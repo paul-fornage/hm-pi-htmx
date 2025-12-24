@@ -83,16 +83,44 @@ async fn main() {
 
     info_targeted!(HTTP, "Starting Modbus HTMX application");
 
-    // Initialize Modbus Manager
-    // We create a dummy config first. ConnectionConfig::new starts in Disconnected state,
-    // so the IP doesn't matter yet, but we need a valid SocketAddr.
-    let dummy_clearcore_addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
-    let initial_clearcore_config = modbus::ConnectionConfig::new(dummy_clearcore_addr, 1);
-    let clearcore_modbus = modbus::ModbusManager::new(initial_clearcore_config);
+    // Initialize Modbus Managers - load from saved config or use defaults
+    let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
+        .unwrap_or_else(|| {
+            let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+            modbus::ConnectionConfig::new(addr, 1)
+        });
+    let clearcore_modbus = modbus::ModbusManager::new(clearcore_config.clone());
 
-    // Initialize state with the manager
+    let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
+        .unwrap_or_else(|| {
+            let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
+            modbus::ConnectionConfig::new(addr, 1)
+        });
+    let welder_modbus = modbus::ModbusManager::new(welder_config.clone());
+
+    // Attempt to connect on startup
+    tokio::spawn({
+        let clearcore = clearcore_modbus.clone();
+        async move {
+            if let Err(e) = clearcore.connect(clearcore_config).await {
+                info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
+            }
+        }
+    });
+
+    tokio::spawn({
+        let welder = welder_modbus.clone();
+        async move {
+            if let Err(e) = welder.connect(welder_config).await {
+                info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e);
+            }
+        }
+    });
+
+    // Initialize state with the managers
     let state = AppState {
-        clearcore_modbus
+        clearcore_modbus,
+        welder_modbus,
     };
 
     debug_targeted!(HTTP, "Initialized application state");
@@ -102,11 +130,19 @@ async fn main() {
         .route("/", get(show_operations))
         .route("/connections", get(show_connections))
 
-        // --- Modbus Management Routes ---
+        // --- Modbus Management Routes - ClearCore ---
+        .route("/modbus/clearcore/manager", get(modbus_http::get_clearcore_manager))
+        .route("/modbus/clearcore/connect", post(modbus_http::connect_clearcore))
+        .route("/modbus/clearcore/disconnect", post(modbus_http::disconnect_clearcore))
+
+        // --- Modbus Management Routes - Welder ---
+        .route("/modbus/welder/manager", get(modbus_http::get_welder_manager))
+        .route("/modbus/welder/connect", post(modbus_http::connect_welder))
+        .route("/modbus/welder/disconnect", post(modbus_http::disconnect_welder))
+
+        // --- Legacy Routes (kept for compatibility) ---
         .route("/modbus/manager", get(modbus_http::get_connection_manager))
         .route("/modbus/status", get(modbus_http::get_status))
-        .route("/modbus/connect", post(modbus_http::connect_modbus))
-        .route("/modbus/disconnect", post(modbus_http::disconnect_modbus))
 
         // --- Operation Routes ---
         .route("/read", post(modbus_http::read_registers))

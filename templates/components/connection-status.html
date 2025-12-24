@@ -1,11 +1,41 @@
-{% if connected %}
-<span class="flex items-center gap-1 text-green-600 font-bold">
-  <span class="w-3 h-3 rounded-full bg-green-500"></span>
-  Online
-</span>
-{% else %}
-<span class="flex items-center gap-1 text-gray-500">
-  <span class="w-3 h-3 rounded-full bg-gray-400"></span>
-  Offline
-</span>
-{% endif %}
+<div class="flex flex-row gap-6">
+  <div class="flex items-center gap-2">
+    <span class="font-semibold">ClearCore:</span>
+    {% if clearcore_state == "Connected" %}
+    <span class="flex items-center gap-1 text-green-600">
+      <span class="w-3 h-3 rounded-full bg-green-500"></span>
+      Connected
+    </span>
+    {% elif clearcore_state == "Connecting" %}
+    <span class="flex items-center gap-1 text-yellow-600">
+      <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+      Connecting
+    </span>
+    {% else %}
+    <span class="flex items-center gap-1 text-gray-500">
+      <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+      Disconnected
+    </span>
+    {% endif %}
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="font-semibold">Welder:</span>
+    {% if welder_state == "Connected" %}
+    <span class="flex items-center gap-1 text-green-600">
+      <span class="w-3 h-3 rounded-full bg-green-500"></span>
+      Connected
+    </span>
+    {% elif welder_state == "Connecting" %}
+    <span class="flex items-center gap-1 text-yellow-600">
+      <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+      Connecting
+    </span>
+    {% else %}
+    <span class="flex items-center gap-1 text-gray-500">
+      <span class="w-3 h-3 rounded-full bg-gray-400"></span>
+      Disconnected
+    </span>
+    {% endif %}
+  </div>
+</div>
