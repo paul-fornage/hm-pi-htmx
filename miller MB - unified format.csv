@@ -1,0 +1,423 @@
+reg_type,address,name,description,write_permission
+c,0,PS_UI_DISABLE,True disable the UI on the power supply. This is necessary to modify some regs with '*',TRUE
+c,1,RMT_TRIGGER_DISABLE,True disables the remote trigger on the 14 pin connector,TRUE
+c,2,CONTACTOR_TRIGGER,"Trigger (Contactor) Request: 1 True(1 Second Time Out Return To False) / 0 False. To continue a weld sequence through Final Slope and or Final Time, Coil must be refreshed with False throughout these sequences.",TRUE
+c,3,GAS_REQUEST,Gas Request: 1 TRUE(1 Second Time Out Return To False) / 0 False.,TRUE
+c,4,USE_DC_OUTPUT,"*,**AC Power Source’s Output DC: 1 True (DC) / 0 False (AC).",TRUE
+c,5,USE_EP_POLARITY,"*,**AC Power Source’s DC Polarity EP: 1 True (EP) / 0 False (EN).",TRUE
+c,6,STUCK_CHECK_EN,"*Stuck Check Enable: 1 True / 0 False. When Stick Stuck Check is on and the welding electrode (rod) is stuck, output is turned off.",TRUE
+c,7,HOT_START_EN,*Hot Start Enable: 1 True / 0 False.Note: Hot Start can also be Disabled with 0 time set in Holding Register 6214 Hot Start Time. Stick only,TRUE
+c,8,BOOST_EN,*Boost Enable: 1 True / 0 False.,TRUE
+c,9,DROOP_EN,*Droop Enable: 1 True / 0 False.,TRUE
+c,10,USE_LOW_OCV,*Open Circuit Voltage (OCV) Low Enable: 1 True (Low) / 0 False (Normal). OCV selection applies to both Stick and MIG processes.,TRUE
+c,11,GAS_EN,"*Weld Gas Enable: 1 True / 0 False Enables Gas With Contactor. Set true for automatic gas, false if using our own gas solenoid",TRUE
+c,12,COOLER_EN,"Non CE Models Only Cooler Power Supply (CPS) Enable: 1 True (Parallel With Coil 0013) / 0 False. Note: Dynasty/Maxstar 210/280 CE Models Have No Control, Read Returns False. Cooler power supply is switched 120v for the cooler in the back.",TRUE
+c,13,COOLER_TIG_EN,*Cooler Power Supply (CPS) TIG Enable: 1 True (Parallel With Coil 0012) / 0 False TIG Process Control Of Cooler Power Supply.,TRUE
+c,14,COOLER_ERROR_EN,Dynasty/Maxstar 210/280 Models Only *Cooler Error Enable: 1 True / 0 False Enables Error “1.3.6 No Cooler Detected With Output Current”. Error Is Generated When No Load Detected On Cooler Power Supply’s Output With Load Detected On The Power Source’s Output.,TRUE
+c,15,TOUCH_SENSE_EN,Touch Sense Enable: 1 True / 0 False. Touch Sense Detection found at Modbus Discrete Input 2008 Or Remote 14 Receptacle Socket J.,TRUE
+c,16,RMS_EN,"RMS Enable: AC Amperage Preset And Meter And/Or DC Pulse Amperage Meter:1 True (RMS) / 0 False (Average) Note: To Enable, Must Have Discrete Input 2012 RMS Hardware Detect = True.",TRUE
+c,17,PULSER_EN,"*Pulser Enable: 1 True / 0 False. Note: Can also be set TRUE / FALSE when writing values to Holding Register 6305 Pulser Pulses Per Second (PPS). When enabled and Holding Register 6304 PPS is found at “0”, PPS will be set to a default value.",TRUE
+c,18,USE_LOW_AC_COMMUTATION_AMP,"Dynasty/Maxstar 400/800 Models Only *AC Commutation Amperage LOW ENABLE: 1 TRUE (LOW) / 0 FALSE (High) Application: Use High commutation amperage when a more aggressive arc is preferred. Use Low commutation amperage when a less aggressive and quieter arc is preferred.
+",TRUE
+c,19,AC_INDEPENDANT_EN,*AC Independent Enable: 1 True / 0 False. Enables/Disables Both Independent Amperage and Independent AC Wave Shapes.,TRUE
+c,20,WLED_TIMERS_EN,"*Weld Timers Enable: 1 True / 0 False. Weld Timers Include Weld (Spot), Intial Amperage and Final Amperage Timers.",TRUE
+d,2000,COOLER_DETECTED,Dynasty/Maxstar 210/280 Models OnlyCooler Power Supply (CPS) Detect: 1 True / 0 False.,FALSE
+d,2001,COOLER_LOAD_DETECTED,Dynasty/Maxstar 210/280 Models OnlyCooler Load Detect: 1 True / 0 False.,FALSE
+d,2002,FOOT_CONTROL_DETECTED,Foot/Finger Tip Control Detect: 1 True / 0 False Note: Holding Register 6204 (Remote 14-Skt E) Must Be Con-figured To 0 (Amperage Control) To Detect Foot/Finger Tip Control.,FALSE
+d,2003,RMT_TRIGGER_ENABLED,Remote Trigger (Contactor 14-Skt A-B) Enable: 1 True / 0 False. Not clear if this shows when it is enabled (like coil 1) Or if it shows when the trigger contactor is actually engaged. ,FALSE
+d,2004,CONTACTOR_OUTPUT_ENABLED,Contactor Output Enabled: 1 True / 0 False (Contactor Output Or Sense Voltage Pre Contactor Output).,FALSE
+d,2005,GAS_OUTPUT_ENABLED,Gas Output Enabled: 1 True / 0 False.,FALSE
+d,2006,IS_VALID_ARC,Valid Arc: 1 True / 0 False.,FALSE
+d,2007,ARC_LENGTH_CTL_LOCKOUT,Arc Length Control Lock Out: 1 True / 0 False.,FALSE
+d,2008,TOUCH_SENSE_DETECT,"Touch Sense Detect: 1 True / 0 False. Touch Sense Enable (Coil 16) Must Be Set True With Machine’s State(Input Register 4101) In Standby, And Weld Output Shorted For Touch Sense Detect To Register As True.",FALSE
+d,2009,IS_CE_MODEL,CE Model Detect: 1 True / 0 False,FALSE
+d,2010,IS_STR_MODEL,STR Model Detect: 1 True / 0 False,FALSE
+d,2011,IS_DX_MODEL,DX Model Detect: 1 True / 0 False,FALSE
+d,2012,RMS_HW_PRESENT,RMS Hardware Detect: 1 True / 0 False,FALSE
+d,2013,LOW_LIVE_INPUT,Low Line Detect: 1 True / 0 False (Dynasty/Maxstar 210 Only)Note: Set True When Powered Up On 120 V Input.,FALSE
+d,2014,HOT_START_SUPPORTED,Feature Enable for Hot Start Adjust: 1 True / 0 False.,FALSE
+d,2015,AC_INDEPENDANT_SUPPORTED,Feature Enable for AC Independent: 1 True / 0 False.,FALSE
+d,2016,IS_MIG_VOLT_SENSE_MODEL,Dynasty/Maxstar 210/280 Models OnlyVolt Sensing (MIG) Model Detect: 1 True / 0 False,FALSE
+d,2017,IS_SYNCROWAVE_MODEL,Syncrowave Model Detect: 1 True / 0 False,FALSE
+d,2018,NON_COOLER_SUPPLY_DETECT,Syncrowave 300/400 Models Only. Non Cooler Supply Detect: 1 True / 0 False,FALSE
+i,4016,APP_SOFTWARE_VERSION_PCB_7,"32 bit
+
+Dynasty/Maxstar 800 Models Only
+Application Software Number And Revision,4 Bytes Bit Mapped:
+NNNN,NNNN NNNN,NNNN NNNN,NNRR RRRE,EEEE
+NNNN,NNNN NNNN,NNNN NNNN,NN == Miller Part Number,22 Bits 31 - 10, Bit Range 0 - 4,194,303, Actual 0-999999
+RR RRR == Revision Level, 5 Bits 9 - 5, Bit Range 0 - 31,Actual 0 - 26where: 0 == “@” Preproduction Or Field Test Software1,2,3... == Revision A,B,C…E,
+EEEE == Evaluation / Test, 5 Bits 9 - 5, Bit Range 0 - 31,Actual 0 - 26Where: 0 == ”@” Released Software,1,2,3... == Evaluation / Test Revision A,B,C…PCB 7 Primary",FALSE
+i,4017,,,FALSE
+i,4018,APP_SOFTWARE_VERSION_PCB_6,"32 bit
+
+Application Software Number And Revision,PCB 6 Gateway Interface
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4019,,,FALSE
+i,4020,APP_SOFTWARE_VERSION_PCB_5,"32 bit
+
+Dynasty/Maxstar 210/280 Models OnlyApplication Software Number And Revision,PCB 5 Cooler Power Supply (CPS)
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4021,,,FALSE
+i,4022,APP_SOFTWARE_VERSION_PCB_4,"32 bit
+
+Application Software Number And Revision,PCB 4 Primary
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4023,,,FALSE
+i,4024,APP_SOFTWARE_VERSION_PCB_3,"32 bit
+
+Application Software Number And Revision,PCB 3 Process
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4025,,,FALSE
+i,4026,APP_SOFTWARE_VERSION_PCB_2,"32 bit
+
+Application Software Number And Revision,PCB 2 User Interface
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4027,,,FALSE
+i,4028,APP_SOFTWARE_VERSION_PCB_1,"32 bit
+
+Application Software Number And Revision,PCB 1 SD Card
+
+See APP_SOFTWARE_VERSION_PCB_7",FALSE
+i,4029,,,FALSE
+i,4030,SERIAL_NUMBER,"32 bit
+
+Serial Number: 4 Bytes Bit Mapped: 
+DDDY,YYYW WWWW,WSSS,SSSS,SSSS,SSSB,BBBB
+
+DDD = Decade Code, 3 Bits 31 - 29, Bit Range 0 - 7, actual “M” - “U” (For Decades 201*-208*), Skip “O”, See Note 
+Y,YYY = Year Code, 4 Bits 28 - 25, Bit Range 0 - 15, Actual 0 - 9 “A” - “K”, Skip “I”, See Note
+W WWWW,W = Week Number, 6 Bits 24-19, Bit Range 0 - 63, Actual 01 - 52 
+SSS,SSSS,SSSS SSS = Serialized Number, 14 Bits 18 - 5, Bit Range 0 - 16383, Actual 0001-9999 
+B,BBBB = Business Unit Code, 5 Bits 4 - 0, Bit Range 0 - 31, Actual 0 - 25 “A”-”Z”, “I” And “O”, Not Used See Note Note: Letters “I” And “O”, Similar To Numbers “1” And “0” Skipped In Decade And Year. Not used In Business Unit Code.",FALSE
+i,4031,,,FALSE
+i,4032,MAX_AMPS,"Power Source Configuration, Amperage Maximum: 0-1023, Res: 1A. Unclear if this is for the machine or for the current configuration.",FALSE
+i,4033,MIN_DC_AMPS,"Power Source Configuration, Amperage DC Minimum: 0-31, Res: 1A, 0 = DC Not Available. Unclear if this is for the machine or for the current configuration.",FALSE
+i,4034,MIN_AC_AMPS,"Power Source Configuration, Amperage AC Minimum: 0-31, Res: 1A, 0 = AC Not Available. Unclear if this is for the machine or for the current configuration.",FALSE
+i,4036,,"32 bit
+
+Machine’s Software Update Number, Revision. 4 Bytes Bit Mapped: 
+NNNN,NNNN,NNNN,NNNN,NNNN,NNMM,MMML,LLLL
+NNNN,NNNN,NNNN,NNNN,NNNN,NN = Miller Part Number, 22 Bits 31−10, Bit Range 0−4,194,303, Actual 0−999999 
+MM MMM = Revision Level’s Most Significant Designator, 5 Bits 9−5, Bit Range 0−31, Actual 0,1−26 (ASCII “@,A−Z”), 9 “I” & 15 “O” Similar To “1” & “0” Not Used. Typically Starts At 0 (“@”, Omitted When Displayed), Increases By One With Each Wrap “Z” To “A” Of The Least Significant Designator 
+L, LLLL = Revision Level’s Least Significant Designator, 5 Bits 4−0, Bit Range 0−31, Actual 0,1−26 (ASCII “@,A−Z”), 9 “I” & 15 “O” Similar To “1” & “0” Not Used. 0 “@” 
+
+Used For Preproduction Only.",FALSE
+i,4037,,,FALSE
+i,4099,SEQUENCE_TIMER,Sequence Timer: Remaining / Elapsed Time of States: Initial Amperage Initial Slope Time Main Amperage Final Slope Time Final Amperage Preflow Postflow (typically timed while in Standby State) Resolution: 0.1 Second,FALSE
+i,4100,WELD_STATE,"State: 
+0 Initial Amperage
+1 Initial Slope Time
+2 Main Amperage
+3 Final Slope Time
+4 Final Amperage
+5 Preflow
+6 Standby
+7 Output Shorted
+8 Release Trigger
+9 Output Disabled
+13 Error
+14 Power Down
+15 Power Up",FALSE
+i,4101,ERROR_REG_1,"Errors1, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)
+Dynasty/Maxstar 210/280, Syncrowave 300 Process And User Interface:
+Bit / Error# / Description
+0 / 0.3.1 / Secondary Over Temp
+1 / 0.3.2 / Ambient Over Temp
+2 / 7.3.6 / Process Serial Communication With Gateway
+3 / 3.3.1 / Secondary Thermistor Failure
+4 / 3.3.2 / Ambient Thermistor Failure
+5 / 1.3.1 / Fan Failure
+6 / 1.3.2 / Clamp/Output Over Voltage
+7 / 1.3.3 / AC Commutation Time Out
+8 / 1.3.4 / Output Over Voltage
+9 / 1.3.5 / Output Current Or Voltage Feedback With Output Off
+10 / 1.3.6 / No Cooler Detected With Output Current
+11 / 7.3.4 / Process Serial Communication With Primary
+12 / 7.3.2 / Process Serial Communication With User Interface
+13 / 7.3.1 / Process Serial Communication With Memory Card
+14 / 7.3.5 / Process Serial Communication With CPS
+15 / 7.2.3 / User Interface Serial Communication With Process
+Dynasty/Maxstar 400/800:
+Bit / Error# / Description
+0 / 0.3.2 / Ambient Over Temp
+1 / 0.3.1 / Secondary Over Temp RC20
+2 / 0.3.1 / Secondary Over Temp RC30
+3 / 0.4.1 / Primary Power Over Temp 400/800 Top
+4 / 0.4.2 or 0.7.1 / Primary Power Over Temp 800 Bottom
+5
+6
+7
+8
+9
+10
+11 / 7.3.7 / Process serial communication with Primary 800 Bottom.
+12 / 7.3.4 / Process serial communication with Primary 400/800 Top.
+13 / 3.3.2 / Ambient thermistor failure
+14 / 3.3.1 / Secondary thermistor failure RC20
+15 / 3.3.1 / Secondary thermistor failure RC30",FALSE
+i,4102,ERROR_REG_2,"Errors2, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)
+Dynasty/Maxstar 210/280, Syncrowave 300 Primary
+Bit / Error# / Description
+0 / 0.4.1 / Primary Power 1 Over Temp
+1 / 0.4.2 / Primary Power 2 Over Temp
+2 / 1.4.8 / Ground Current
+3 / 1.4.0 / Primary Not Ready
+4 / 1.4.1 / Primary Capacitor Imbalance
+5 / 1.4.2 / Input Over Voltage
+6 / 1.4.3 / Input Over Current
+7 / 1.4.4 / Primary Bus Under Voltage
+8 / 1.4.5 / Input Under Voltage
+9 / 3.4.1 / Primary Power 1 Thermistor Failure
+10 / 3.4.2 / Primary Power 2 Thermistor Failure
+11 / 7.4.3 / Primary Serial Communication With Process
+12 / 1.4.6 / Primary Capacitor Failure
+13 / 1.4.7 / Primary Control Power
+14 / 0.4.1L / Primary Power 1 Latched Over Temp
+15 / 0.4.2L / Primary Power 2 Latched Over Temp
+Dynasty/Maxstar 400/800, Syncrowave 400:
+Bit / Error# / Description
+0 / 3.4.1 / Primary Power Thermistor Failure 400/800 Top
+1 / 3.4.2 or 3.7.1 / Primary Power Thermistor Failure 800 Bottom
+2 / 1.3.2 / Clamp/Output over voltage
+3 / 1.3.3 / AC Communication time out
+4 / 1.3.4 / Output over voltage
+5 / 1.3.5 / Output current or voltage feedback with output off
+6 / 1.4.8 / Ground current
+7 / 1.4.3 / Input over current 400/800 Top
+8 / 1.4.3 or 1.7.3 / Input over current 800 Bottom
+9 / 1.4.7 / Primary control power
+10 / 1.4.5 / Input under voltage
+11 / 1.4.4 / Primary bus under voltage
+12 / 7.3.6 / Process serial communication with Gateway
+13 / 7.3.2 / Process serial communication with User Interface
+14 / 7.3.1 / Process serial communication with Memory Card
+15 / 7.2.3 / User interface serial communication with Process",FALSE
+i,4103,ERROR_REG_3,"Errors3, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)
+Dynasty Maxstar 210 And 280 CPS
+Bit / Error# / Description
+0 / 0.5.1 / CPS Power Module 1 Over Temp
+1 / 0.5.2 / CPS Power Module 2 Over Temp
+2 / 0.5.3 / CPS Power Module 3 Over Temp
+3 / 1.5.9 / CPS Primary Bus Under Voltage
+4 / 7.5.3 / CPS Serial Communication With Process
+5 / 3.5.1 / CPS Power Module 1 Thermistor Failure
+6 / 3.5.2 / CPS Power Module 2 Thermistor Failure
+7 / 3.5.3 / CPS Power Module 3 Thermistor Failure
+8 / 1.5.1 / CPS Secondary Bus Under Voltage
+9 / 1.5.2 / CPS Output Over Current
+10 / 1.5.3 / CPS Secondary Bus Over Voltage
+11 / 1.5.4 / CPS Current Or Voltage feedback With CPS off
+12 / 1.5.5 / CPS Secondary Control Power
+13 / 1.5.6 / CPS Capacitor Imbalance
+14 / 1.5.7 / CPS Primary Control Power
+15 / 1.5.8 / CPS Secondary Communication With CPS Primary
+Syncrowave 300:
+Bit/Error#/Description
+3/1.5.9/CPS Primary Bus Under Voltage
+Dynasty/Maxstar 400/800, Syncrowave 400:
+Bit/Error#/Description
+0 / 1.5.9 / CPS Primary Bus Under Voltage
+1 / 1.4.4 / Primary Bus Under Voltage 400/800 Top
+2 / 1.4.5 / Input Under Voltage 400/800 Top
+3 / 1.4.2 / Input Over Voltage 400/800 Top
+4 / 1.4.7 / Primary Control Power 400/800 Top
+5 / 7.4.3 / Primary Serial Communication With Process 400/800 Top
+6 / 1.4.0 / Primary Not Ready 400/800 Top
+7 /
+8 /
+9 / 1.7.4 / Primary Bus Under Voltage 800 Bottom
+10 / 1.7.5 / Input Under Voltage 800 Bottom
+11 / 1.7.2 / Input Over Voltage 800 Bottom
+12 / 1.7.7 / Primary Control Power 800 Bottom
+13 / 7.7.3 / Primary Serial Communication With Process 800 Bottom
+14 / 1.7.0 / Primary Not Ready 800 Bottom
+15 /",FALSE
+i,4200,COMMANDED_OUTPUT_AMPERAGE,"Power Source Command Out Amperage, Res: 1A",FALSE
+i,4201,OUTPUT_AMPERAGE,"Power Source Output Current, Res: 1A",FALSE
+i,4202,OUTPUT_VOLTAGE,"Power Source Output Voltage, Res: 0.1V",FALSE
+i,4203,OUTPUT_CURRENT_DC_PULSE_PEAK,"Power Source Output Current DC Pulse Peak, Res: 1A",FALSE
+i,4204,output_voltage_dc_pulse_peak,"Power Source Output Voltage DC Pulse Peak, Res 0.1V",FALSE
+i,4205,OUTPUT_CURRENT_DC_PULSE_BACK,"Power Source Output Current DC Pulse Back, Res: 1A",FALSE
+i,4206,OUTPUT_VOLTAGE_DC_PULSE_BACK,"Power Source Output Voltage DC Pulse Back, Res 0.1V",FALSE
+i,4300,FAN_OUTPUT,"Fan Out, 0(Off) - 100%",FALSE
+i,4301,TEMPERATURE_1,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 1 (Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Power 1)
+(Dynasty/Maxstar 400/800, Syncrowave 400 - Ambient)",FALSE
+i,4302,TEMPERATURE_2,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 2 (Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Power 2) (Dynasty/Maxstar 400/800 Top, Syncrowave 400 - Primary Power)",FALSE
+i,4303,TEMPERATURE_3,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 3 (Dynasty/Maxstar 210/280, Syncrowave 300 - Secondary) (Dynasty/Maxstar 800 Bottom - Primary Power)
+",FALSE
+i,4304,TEMPERATURE_4,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 4 (Dynasty/Maxstar 210/280, Syncrowave 300 - Ambient) (Dynasty/Maxstar 400/800, Syncrowave 400 - Secondary RC20)",FALSE
+i,4305,TEMPERATURE_5,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 5 (Dynasty/Maxstar 210/280 - CPS Module 1) (Dynasty/Maxstar 400/800, Syncrowave 400 - Secondary RC30)",FALSE
+i,4306,TEMPERATURE_6,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 6 (Dynasty/Maxstar 210/280 - CPS Module 2)",FALSE
+i,4307,TEMPERATURE_7,"Temperature registers (Power Source Dependent):
+Range: 0 - 254,
+Resolution: 1 Celsius
+Offset: -50 (i.e. 50 == 0 Deg. Celsius)
+Possible Range: -50 - +204 C
+Actual Range: Limited By Thermistor’s Hardware And Software
+
+Temperature 7 (Dynasty/Maxstar 210/280 - CPS Module 3)",FALSE
+i,4400,PRIMARY_LINE_CURRENT,"Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Current, Res: 1A",FALSE
+i,4401,PRIMARY_LINE_VOLTAGE,"Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Voltage, Res: 1V",FALSE
+i,4402,PRIMARY_LINE_VOLTAGE_PEAK,"Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Line Voltage Peak, Res: 1V",FALSE
+i,4403,PRIMARY_BUS_VOLTAGE,"Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Bus Voltage, Res: 1V",FALSE
+i,4404,COOLER_OUTPUT_VOLTAGE,"Dynasty/Maxstar 210/280 - Cooler Power Output Voltage, Res: 1V",FALSE
+i,4405,COOLER_OUTPUT_CURRENT,"Dynasty/Maxstar 210/280 - Cooler Power Output Current, Res: 0.1A",FALSE
+i,4406,COOLER_BUS_VOLTAGE,"Dynasty/Maxstar 210/280 - Cooler Power Bus Voltage, Res: 1V",FALSE
+i,4407,PRIMARY_2_LINE_VOLTAGE_PEAK,"Dynasty/Maxstar 800 - Primary 2(bottom) Line Voltage Peak, Res: 1V",FALSE
+i,4408,PRIMARY_2_BUS_VOLTAGE_PEAK,"Dynasty/Maxstar 800 - Primary 2(bottom) Bus Voltage Peak, Res: 1V",FALSE
+h,6000,MB_SLAVE_ADDR,Power Source’s Modbus Slave Address: 1 - 247.,TRUE
+h,6001,FAN_REQUEST,"Fan Request:
+Dynasty/Maxstar 210/280 0(Off), 1(Min 27%) - 30(Max 100%)
+Requires Request Of 3 Minimum To Start Fan
+Dynasty/Maxstar 400/800 0(Off), 1 - 30(Max 100%)
+Notes: 1 second time out return to 0(Off).
+Parallel Request With All Machine Thermistors, Where Highest Fan Request Is Used.
+0(Off) In This Register Will Not Turn Fan Off With A Fan Request Other Than Off.
+From Any Machine’s Thermistors.",TRUE
+h,6002,CURRENT_METER_CALIBRATION,"Meter Calibration, Amperage: +-50, Res: 0.1%, (+-50 == +-5.0%)Note: With Discrete Input 2011 RMS Hardware Detect = True, Coil 16 RMS Enable Selects RMS (True)Or Average (False) Amperage Calibration.",TRUE
+h,6003,VOLTAGE_METER_CALIBRATION,"Meter Calibration, Voltage Average: +-50, Res: 0.1%, (+-50 == +-5.0%)",TRUE
+h,6100,ARC_TIME,"32 bit 
+
+Arc Time, Res: 0.01 Minute, Maximum: 59999999 == 9999 Hours And 59.99 Minutes.",FALSE
+h,6101,,,FALSE
+h,6102,ARC_CYCLES,"32 bit
+
+L Arc Cycles, Res: 1 Cycle, Maximum: 999999 Cycles.",FALSE
+h,6103,,,FALSE
+h,6200,MEMORY_CONTROL,"Dynasty/Maxstar 400/800 Models Only
+Memory: 0 Memory control off typically defaults to memory 1 with no memory number displayed.
+1 - Power Sources memory maximum",TRUE
+h,6201,WELD_PROCESS,*Process: 0 Stick1 TIG2 MIG (Selectable only with Dynasty/Maxstar 210/280 Models and Dynasty’s Polarity DC)3 Test4 Hot Wire,TRUE
+h,6202,WELD_START_PROCESS,"*Process Start: 0 Scratch, 1 Lift, 2 HF.",TRUE
+h,6203,TRIGGER,"*Trigger: 
+0 None-Output Off,
+1 Panel-Output ON
+2 Standard
+3 2T Hold
+4 3T Hold
+5 4T Hold
+6 4TL Mini Logic Hold
+7 4TE Momentary Hold
+8 4Tm Modified Hold",TRUE
+h,6204,RMT_PIN_E_CONFIG,"*Remote 14-skt E Configuration:
+0 Amperage Control ( Slow Response, Finger Tip/Foot controls)
+1 External Pulse Control ( Amperage, Fast Response)
+2 Output Enable ( 14-Skt E-D Shorted Enables Power Source Output)
+3 Disable ( 14-Skt E Has No Function)",TRUE
+h,6205,TUNGSTEN_PRESET,"*Tungsten (Canned Arc Start Parameters):
+0 0.020 in. (0.5mm)
+1 0.040 in. (1.0mm)
+2 1/16 in. (1.6mm)
+3 3/32 in. (2.4mm)
+4 1/8 in. (3.2mm)
+5 5/32 in. (4.0mm)
+6 3/16 in. (4.8mm)
+7 1/4 in. (6.4mm)
+8 General (User Defined With Holding Registers 6207 Through 6212)
+<9 Power Source Dependent, Typically Used With Process TIG
+9 Disabled (Typically Used With Non TIG Processes)",TRUE
+h,6206,PRESET_MIN_AMPERAGE,"Preset Amperage Minimum: Power Source AC / DC Amperage Minimum -25A(Tungsten General) Or 63A(Tungsten Disabled), Res 1A
+Write Only With Tungsten General Or Disabled",TRUE
+h,6207,ARC_START_AMPERAGE,"Arc Start Amperage: 5A - 200A, Res: 1AWrite Only With Tungsten General Or Disabled",TRUE
+h,6208,ARC_START_TIME,"Arc Start Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With Tungsten General",TRUE
+h,6209,ARC_START_SLOPE_TIME,"Arc Start Slope Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With Tungsten General",TRUE
+h,6210,ARC_START_AC_TIME,"**Arc Start AC Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With AC Power Source’s AC Output And Tungsten General",TRUE
+h,6211,ARC_START_POLARITY_PHASE,"**Arc Start Polarity Phase: 1 EP, 0 ENWrite Only With AC Power Source And Tungsten General or Disabled",TRUE
+h,6212,AC_EN_WAVE_SHAPE,"*,**AC EN Wave Shape, 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle",TRUE
+h,6213,AC_EP_WAVE_SHAPE,"*,**AC EP Wave Shape, 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle",TRUE
+h,6214,HOT_START_TIME,"Hot Start Time:
+Range: 0(Off) -20
+Resolution: 0.1 Second
+Hot Start Enable / Disabled with Coil 8 Hot Start Enable.
+Stick only",TRUE
+h,6215,REMOTE_HOLD,"Remote Hold:
+0 / 2T
+1 / 3T
+2 / 4T
+3 / 4TL Mini Logic
+4 / 4TE Momentary
+5 / 4Tm Modified
+Resolution: 0.1 Second
+Remote Hold can also be changed with Holding Register 6204 Trigger.",TRUE
+h,6217,DIG_PERCENT,"*Dig, 0(Off) - 100%, Res: 1%
+101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling
+Boost (Coil 0009).
+With Processes (Holding Register 6201) MIG selection:
+*Inductance 0 - 99% Res: 1%
+100% will set Inductance and optimize Digital Voltage Control for Flux Core Wire.",TRUE
+h,6300,AC_EN_AMPERAGE,"*,**,***AC EN Amperage, Preset Amps Min - PS Amps Max, Res: 1A",TRUE
+h,6301,AC_EP_AMPERAGE,"*,**,***AC EP Amperage, Preset Amps Min - PS Amps Max, Res: 1A",TRUE
+h,6302,AC_BALANCE,"*,**,***AC Balance, 30-99%, Res: 1%",TRUE
+h,6303,AC_FREQUENCY,"*,**AC Frequency, 20-400Hz, Res: 1Hz",TRUE
+h,6304,WELD_AMPERAGE,"*,***Weld Amperage(DC or AC), Preset Amps Min - PS Amps Max, Res: 1A",TRUE
+h,6305,PULSER_PPS,"*Pulser - Pulses Per Second (PPS)
+Range: 0(Off) – 50000 / 5000 Power Source Dependent,
+Resolution: 0.1 Hertz
+Can be set to a default value when writing a TRUE to coil 18 Pulser Enable and PPS is found at 0(Off).
+Writing a non “0” value will set coil 18 Pulser Enable to TRUE.
+Writing a “0” value will set coil 18 Pulser Enable to FALSE.
+Dependent on configuration of the slave, the slave may or may not retain the PPS non “0” value.",TRUE
+h,6306,PULSER_PEAK_TIME,"*Pulser - Peak Time, 5-95%, Res: 1%",TRUE
+h,6307,PULSER_BACKGROUND_AMPS,"*Pulser - Background Amperage, 5-95%, Res: 1%",TRUE
+h,6308,PRELOW_TIME,"*Prelow Time, 0(Off) - 250, Res: 1(x0.1Sec)",TRUE
+h,6309,INITIAL_AMPERAGE,"*Initial Amperage, Preset Amps Min - PS Amps Max, Res: 1A",TRUE
+h,6310,INITIAL_TIME,"*Initial Time, 0(Off) - 250, Res: 1(x0.1Sec)",TRUE
+h,6311,INITIAL_SLOPE_TIME,"*Initial Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)",TRUE
+h,6312,MAIN_TIME,"*Main Time, 0(Off) - 9990, Res: 1(x0.1Sec)",TRUE
+h,6313,FINAL_SLOPE_TIME,"*Final Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)",TRUE
+h,6314,FINAL_AMPERAGE,"*Final Amperage, Preset Amps Min - PS Amps Max, Res: 1A",TRUE
+h,6315,FINAL_TIME,"*Final Time, 0(Off) - 250, Res: 1(x0.1Sec)",TRUE
+h,6316,POSTFLOW_TIME,"*Postflow Time, 0(Off) - 50S & Auto(51), Res: 1Sec",TRUE
+h,6317,DIG_PERCENT_AGAIN,"*Dig, 0(Off) - 100%, Res: 1%101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling Boost (Coil 0009).
+
+Same as 6217??
+",TRUE
+h,6318,HOT_WIRE_VOLTAGE,"*Hot Wire Voltage, 5-20, Res: 1V",TRUE

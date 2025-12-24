@@ -47,7 +47,7 @@ pub struct ConnectionConfig {
     pub timeout_duration: Duration,
 }
 impl ConnectionConfig {
-    pub async fn new_with_timeout(socket_addr: SocketAddr, unit_id: u8, timeout_duration: Duration) -> Self {
+    pub fn new_with_timeout(socket_addr: SocketAddr, unit_id: u8, timeout_duration: Duration) -> Self {
         ConnectionConfig{
             state: ModbusState::Disconnected,
             socket_addr,

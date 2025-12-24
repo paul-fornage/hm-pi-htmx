@@ -3,13 +3,14 @@ mod logging;
 
 mod modbus_http;
 pub mod error;
-
+mod clearcore_registers;
+mod miller;
 
 use askama::Template;
 use axum::{
-    routing::{get, post},
-    response::{IntoResponse, Html, Response},
     http::StatusCode,
+    response::{Html, IntoResponse, Response},
+    routing::{get, post},
     Router,
 };
 use tower_http::services::ServeDir;
@@ -85,13 +86,13 @@ async fn main() {
     // Initialize Modbus Manager
     // We create a dummy config first. ConnectionConfig::new starts in Disconnected state,
     // so the IP doesn't matter yet, but we need a valid SocketAddr.
-    let dummy_addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
-    let initial_config = modbus::ConnectionConfig::new(dummy_addr, 1);
-    let modbus_manager = modbus::ModbusManager::new(initial_config);
+    let dummy_clearcore_addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+    let initial_clearcore_config = modbus::ConnectionConfig::new(dummy_clearcore_addr, 1);
+    let clearcore_modbus = modbus::ModbusManager::new(initial_clearcore_config);
 
     // Initialize state with the manager
     let state = AppState {
-        modbus_manager
+        clearcore_modbus
     };
 
     debug_targeted!(HTTP, "Initialized application state");

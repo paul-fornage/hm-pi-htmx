@@ -10,11 +10,13 @@ use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted};
 
 use crate::modbus::modbus_transaction_types::*;
 use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
+
 // --- State Management ---
 
 #[derive(Clone)]
 pub struct AppState {
-    pub modbus_manager: ModbusManager,
+    pub clearcore_modbus: ModbusManager,
+    pub welder_modbus: ModbusManager,
 }
 
 // --- Templates ---
@@ -30,7 +32,10 @@ pub struct RegistersTemplate {
 #[template(path = "components/connection.html")]
 pub struct ConnectionTemplate {
     pub connected: bool,
-    pub current_host: String,
+    pub host: String,
+    pub port: u16,
+    pub unit_id: u8,
+    pub timeout_ms: u64,
     pub error: Option<String>,
 }
 
@@ -46,6 +51,8 @@ pub struct StatusTemplate {
 pub struct ConnectForm {
     host: String,
     port: u16,
+    unit_id: u8,
+    timeout_ms: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -66,14 +73,17 @@ pub struct WriteForm {
 pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/manager - rendering connection manager");
 
-    let (connected, host) = match state.modbus_manager.cloned_config().await {
-        Ok(config) => {
-            let connected = matches!(config.state, ModbusState::Connected);
-            (connected, config.socket_addr.to_string())
-        }
+    let (connected, host, port, unit_id, timeout_ms) = match state.modbus_manager.cloned_config().await {
+        Ok(config) => (
+            matches!(config.state, ModbusState::Connected),
+            config.socket_addr.ip().to_string(),
+            config.socket_addr.port(),
+            config.unit_id,
+            config.timeout_duration.as_millis() as u64
+        ),
         Err(e) => {
             error_targeted!(MODBUS, "Failed to retrieve modbus config: {:?}", e);
-            (false, String::new())
+            (false, "127.0.0.1".to_string(), 502, 1, 1000)
         }
     };
 
@@ -81,7 +91,10 @@ pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoR
 
     let template = ConnectionTemplate {
         connected,
-        current_host: host,
+        host,
+        port,
+        unit_id,
+        timeout_ms,
         error: None,
     };
     Html(template.render().unwrap())
@@ -110,18 +123,27 @@ pub async fn connect_modbus(
     let addr_str = format!("{}:{}", form.host, form.port);
 
     let new_addr: Result<SocketAddr, _> = addr_str.parse();
+    let timeout_val = form.timeout_ms.unwrap_or(1000) as u64;
 
     match new_addr {
         Ok(addr) => {
             info_targeted!(MODBUS, "Successfully parsed address: {}", addr);
 
-            let config = ConnectionConfig::new(addr, 1);
+            let config = match form.timeout_ms {
+                Some(ms) => {
+                    let timeout_duration =  std::time::Duration::from_millis(ms as u64);
+                    ConnectionConfig::new_with_timeout(addr, form.unit_id, timeout_duration) }
+                None => ConnectionConfig::new(addr, form.unit_id)
+            };
 
             match state.modbus_manager.connect(config).await {
                 Ok(_) => {
                     let template = ConnectionTemplate {
                         connected: true,
-                        current_host: addr.to_string(),
+                        host: form.host,
+                        port: form.port,
+                        unit_id: form.unit_id,
+                        timeout_ms: timeout_val,
                         error: None,
                     };
                     Html(template.render().unwrap())
@@ -130,7 +152,10 @@ pub async fn connect_modbus(
                     error_targeted!(MODBUS, "Connection failed: {:?}", e);
                     let template = ConnectionTemplate {
                         connected: false,
-                        current_host: String::new(),
+                        host: form.host,
+                        port: form.port,
+                        unit_id: form.unit_id,
+                        timeout_ms: timeout_val,
                         error: Some(format!("Connection Failed: {:?}", e)),
                     };
                     Html(template.render().unwrap())
@@ -141,7 +166,10 @@ pub async fn connect_modbus(
             error_targeted!(MODBUS, "Failed to parse address '{}': {:?}", addr_str, e);
             let template = ConnectionTemplate {
                 connected: false,
-                current_host: String::new(),
+                host: form.host,
+                port: form.port,
+                unit_id: form.unit_id,
+                timeout_ms: timeout_val,
                 error: Some("Invalid IP address or Port".to_string()),
             };
             Html(template.render().unwrap())
@@ -153,13 +181,27 @@ pub async fn connect_modbus(
 pub async fn disconnect_modbus(State(state): State<AppState>) -> impl IntoResponse {
     info_targeted!(HTTP, "POST /modbus/disconnect - disconnecting from Modbus");
 
+    // Capture current config before disconnect to repopulate form
+    let (host, port, unit_id, timeout_ms) = match state.modbus_manager.cloned_config().await {
+        Ok(config) => (
+            config.socket_addr.ip().to_string(),
+            config.socket_addr.port(),
+            config.unit_id,
+            config.timeout_duration.as_millis() as u64
+        ),
+        Err(_) => ("127.0.0.1".to_string(), 502, 1, 1000),
+    };
+
     if let Err(e) = state.modbus_manager.disconnect().await {
         warn_targeted!(MODBUS, "Error during disconnect: {:?}", e);
     }
 
     let template = ConnectionTemplate {
         connected: false,
-        current_host: String::new(),
+        host,
+        port,
+        unit_id,
+        timeout_ms,
         error: None,
     };
     Html(template.render().unwrap())
