@@ -7,6 +7,7 @@ pub mod modbus_transaction_types;
 
 
 
+#[derive(Debug, Clone)]
 pub enum ModbusAddressType{
     Coil,
     DiscreteInput,
@@ -24,6 +25,29 @@ impl Into<u8> for ModbusAddressType{
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ModbusValue {
+    Bool(bool),
+    U16(u16),
+}
+
+impl ModbusValue {
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            ModbusValue::Bool(b) => Some(*b),
+            _ => None,
+        }
+    }
+
+    pub fn as_u16(&self) -> Option<u16> {
+        match self {
+            ModbusValue::U16(u) => Some(*u),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct RegisterAddress{
     pub register_type: ModbusAddressType,
     pub address: u16,

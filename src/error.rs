@@ -1,4 +1,4 @@
-
+use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -29,6 +29,12 @@ pub enum Error {
     #[error("Failed to unwind connect attempt. State was set to connecting, connection failed, \
         and then failed to set state to disconnected. Can only arise from lock acquisition timeout")]
     FailedToUnwindConnectAttempt(),
+    #[error("Tried to write a bool to a register that expects a u16 or vice versa. \
+        value: {0:?}, address: {1:?})")]
+    LocalRegisterTypeMismatch(ModbusValue, RegisterAddress),
+    #[error("Tried to write to a read-only register. \
+        value: {0:?}, address: {1:?})")]
+    LocalRegisterTriedWriteReadOnly(ModbusValue, RegisterAddress),
 }
 
 

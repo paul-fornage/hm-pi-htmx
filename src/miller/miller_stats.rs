@@ -2,6 +2,26 @@
 
 
 
+// State:
+//  0 Initial Amperage
+//  1 Initial Slope Time
+//  2 Main Amperage
+//  3 Final Slope Time
+//  4 Final Amperage
+//  5 Preflow
+//  6 Standby
+//  7 Output Shorted
+//  8 Release Trigger
+//  9 Output Disabled
+//  13 Error
+//  14 Power Down
+//  15 Power Up
+struct WeldState{
+
+}
+
+
+
 pub struct MillerStats {
     pub ps_ui_disable: bool,
     pub rmt_trigger_disable: bool,
