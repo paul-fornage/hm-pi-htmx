@@ -1,19 +1,20 @@
-
 mod modbus;
 mod logging;
 
 mod modbus_http;
 pub mod error;
 
+
 use askama::Template;
 use axum::{
     routing::{get, post},
-    response::{IntoResponse, Html, Response}, // Added Html and Response
-    http::StatusCode, // Added StatusCode
+    response::{IntoResponse, Html, Response},
+    http::StatusCode,
     Router,
 };
 use tower_http::services::ServeDir;
 use crate::logging::LogTarget;
+use crate::modbus_http::AppState;
 
 struct HtmlTemplate<T>(T);
 
@@ -81,8 +82,18 @@ async fn main() {
 
     info_targeted!(HTTP, "Starting Modbus HTMX application");
 
-    // Initialize state (defaults to None/Disconnected)
-    let state = AppState::default();
+    // Initialize Modbus Manager
+    // We create a dummy config first. ConnectionConfig::new starts in Disconnected state,
+    // so the IP doesn't matter yet, but we need a valid SocketAddr.
+    let dummy_addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+    let initial_config = modbus::ConnectionConfig::new(dummy_addr, 1);
+    let modbus_manager = modbus::ModbusManager::new(initial_config);
+
+    // Initialize state with the manager
+    let state = AppState {
+        modbus_manager
+    };
+
     debug_targeted!(HTTP, "Initialized application state");
 
     let app = Router::new()
@@ -91,14 +102,14 @@ async fn main() {
         .route("/connections", get(show_connections))
 
         // --- Modbus Management Routes ---
-        .route("/modbus/manager", get(modbus::get_connection_manager))
-        .route("/modbus/status", get(modbus::get_status))
-        .route("/modbus/connect", post(modbus::connect_modbus))
-        .route("/modbus/disconnect", post(modbus::disconnect_modbus))
+        .route("/modbus/manager", get(modbus_http::get_connection_manager))
+        .route("/modbus/status", get(modbus_http::get_status))
+        .route("/modbus/connect", post(modbus_http::connect_modbus))
+        .route("/modbus/disconnect", post(modbus_http::disconnect_modbus))
 
         // --- Operation Routes ---
-        .route("/read", post(modbus::read_registers))
-        .route("/write", post(modbus::write_register))
+        .route("/read", post(modbus_http::read_registers))
+        .route("/write", post(modbus_http::write_register))
 
         // --- Static files ---
         .fallback_service(ServeDir::new("static"))
