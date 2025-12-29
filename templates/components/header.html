@@ -9,7 +9,15 @@
 </header>
 
 <nav class="flex border-b-2 border-gray-300 mb-5 gap-1">
-    <!-- Using the helper methods defined on the Rust Enum -->
-    <a href="/" class="px-5 py-2.5 no-underline text-gray-600 border border-transparent border-b-0 rounded-t bg-gray-200 hover:bg-gray-300 {% if tab_name_as_str()=="operations" %}!bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">Operations</a>
-    <a href="/connections" class="px-5 py-2.5 no-underline text-gray-600 border border-transparent border-b-0 rounded-t bg-gray-200 hover:bg-gray-300 {% if tab_name_as_str()=="connections" %}!bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">Connections</a>
+    <!-- call self.all_views() to get the list -->
+    {% for tab in Self::all_views() %}
+    <a href="{{ tab.url() }}"
+       class="px-5 py-2.5 ... 
+           {# call self.current_view() to check equality #}
+           {% if tab == Self::get_view() %}
+             !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5
+           {% endif %}">
+        {{ tab.label() }}
+    </a>
+    {% endfor %}
 </nav>

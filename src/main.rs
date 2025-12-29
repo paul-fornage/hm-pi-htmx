@@ -5,67 +5,44 @@ mod modbus_http;
 pub mod error;
 mod clearcore_registers;
 mod miller;
+mod connection_management;
+mod views;
 
-use askama::Template;
 use axum::{
-    http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
 use tower_http::services::ServeDir;
 use crate::logging::LogTarget;
-use crate::modbus_http::AppState;
+use crate::modbus::ModbusManager;
+use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate};
 
-struct HtmlTemplate<T>(T);
-
-impl<T> IntoResponse for HtmlTemplate<T>
-where
-    T: Template,
-{
-    fn into_response(self) -> Response {
-        match self.0.render() {
-            Ok(html) => Html(html).into_response(),
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to render template. Error: {}", err),
-            ).into_response(),
-        }
-    }
+#[derive(Clone)]
+pub struct AppState {
+    pub clearcore_modbus: ModbusManager,
+    pub welder_modbus: ModbusManager,
 }
 
-// Template for the Operations (Home) View
-#[derive(Template)]
-#[template(path = "views/raw-reg-viewer.html")]
-struct OperationsTemplate {}
+pub const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate{};
+pub const CONNECTIONS_TEMPLATE: ConnectionsTemplate = ConnectionsTemplate{};
+pub const MILLER_INFO_TEMPLATE: MillerInfoTemplate = MillerInfoTemplate{};
 
-impl OperationsTemplate {
-    fn tab_name_as_str(&self) -> &'static str {
-        "operations"
-    }
-}
-
-// Template for the Connections View
-#[derive(Template)]
-#[template(path = "views/connection-manager.html")]
-struct ConnectionsTemplate {}
-
-impl ConnectionsTemplate {
-    fn tab_name_as_str(&self) -> &'static str {
-        "connections"
-    }
-}
 
 async fn show_operations() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering operations view");
-    HtmlTemplate(OperationsTemplate {})
+    OPERATIONS_TEMPLATE
 }
 
 async fn show_connections() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering connections view");
-    HtmlTemplate(ConnectionsTemplate {})
+    CONNECTIONS_TEMPLATE
 }
 
+async fn show_miller_info() -> impl IntoResponse {
+    debug_targeted!(HTTP, "Rendering miller info view");
+    MILLER_INFO_TEMPLATE
+}
 
 
 #[tokio::main]
@@ -127,22 +104,22 @@ async fn main() {
 
     let app = Router::new()
         // --- View Routes ---
-        .route("/", get(show_operations))
-        .route("/connections", get(show_connections))
+        .route(AppView::Operations.url(), get(show_operations))
+        .route(AppView::Connections.url(), get(show_connections))
+        .route(AppView::MillerInfo.url(), get(show_miller_info))
 
         // --- Modbus Management Routes - ClearCore ---
-        .route("/modbus/clearcore/manager", get(modbus_http::get_clearcore_manager))
-        .route("/modbus/clearcore/connect", post(modbus_http::connect_clearcore))
-        .route("/modbus/clearcore/disconnect", post(modbus_http::disconnect_clearcore))
+        .route("/modbus/clearcore/manager", get(connection_management::get_clearcore_manager))
+        .route("/modbus/clearcore/connect", post(connection_management::connect_clearcore))
+        .route("/modbus/clearcore/disconnect", post(connection_management::disconnect_clearcore))
 
         // --- Modbus Management Routes - Welder ---
-        .route("/modbus/welder/manager", get(modbus_http::get_welder_manager))
-        .route("/modbus/welder/connect", post(modbus_http::connect_welder))
-        .route("/modbus/welder/disconnect", post(modbus_http::disconnect_welder))
+        .route("/modbus/welder/manager", get(connection_management::get_welder_manager))
+        .route("/modbus/welder/connect", post(connection_management::connect_welder))
+        .route("/modbus/welder/disconnect", post(connection_management::disconnect_welder))
 
-        // --- Legacy Routes (kept for compatibility) ---
-        .route("/modbus/manager", get(modbus_http::get_connection_manager))
-        .route("/modbus/status", get(modbus_http::get_status))
+        .route("/modbus/manager", get(connection_management::get_connection_manager))
+        .route("/modbus/status", get(connection_management::get_status))
 
         // --- Operation Routes ---
         .route("/read", post(modbus_http::read_registers))
