@@ -15,18 +15,23 @@ use axum::{
 };
 use tower_http::services::ServeDir;
 use crate::logging::LogTarget;
+use crate::miller::miller_memory::MillerMemory;
+use crate::miller::miller_register_definitions::MILLER_REGISTERS;
 use crate::modbus::ModbusManager;
 use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate};
+use crate::views::miller_info::boolean_register_view::BooleanRegisterTemplate;
+
+pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
 #[derive(Clone)]
 pub struct AppState {
     pub clearcore_modbus: ModbusManager,
-    pub welder_modbus: ModbusManager,
+    pub miller_registers: MillerMemory,
 }
 
 pub const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate{};
 pub const CONNECTIONS_TEMPLATE: ConnectionsTemplate = ConnectionsTemplate{};
-pub const MILLER_INFO_TEMPLATE: MillerInfoTemplate = MillerInfoTemplate{};
+
 
 
 async fn show_operations() -> impl IntoResponse {
@@ -41,7 +46,14 @@ async fn show_connections() -> impl IntoResponse {
 
 async fn show_miller_info() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering miller info view");
-    MILLER_INFO_TEMPLATE
+    MillerInfoTemplate{
+        boolean_registers: vec!(
+            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[0], value: false },
+            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[1], value: false },
+            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[2], value: false },
+            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[3], value: false },
+        )
+    }
 }
 
 
@@ -53,6 +65,7 @@ async fn main() {
         builder.filter_level(log::LevelFilter::Debug);
         builder.filter(Some(LogTarget::MODBUS.into()), log::LevelFilter::Debug);
         builder.filter(Some(LogTarget::HTTP.into()), log::LevelFilter::Debug);
+        builder.filter(Some("tokio_modbus::service::tcp"), log::LevelFilter::Info);
     } else {
         builder.filter_level(log::LevelFilter::Info);
     }
@@ -94,10 +107,41 @@ async fn main() {
         }
     });
 
+    let miller_registers = MillerMemory::new(welder_modbus, MILLER_REGISTERS);
+
+    let miller_registers_update_thread_copy = miller_registers.clone();
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
+        loop {
+            interval.tick().await;
+            match miller_registers_update_thread_copy.get_connection_state().await {
+                Ok(connection_state) => {
+                    if connection_state == modbus::ModbusState::Connected {
+                        match miller_registers_update_thread_copy.update().await{
+                            Ok(_) => {
+                                trace_targeted!(MODBUS, "Updated Miller registers");
+                            },
+                            Err(e) => {
+                                warn_targeted!(MODBUS, "Error updating Miller registers: {:?}", e);
+                            },
+                        }
+                    } else {
+                        trace_targeted!(MODBUS, "Miller registers not connected. \
+                        connection state: {connection_state:?}");
+                    }
+                }
+                Err(e) => {
+                    warn_targeted!(MODBUS, "Error checking Miller register connection status: {:?}", e);
+                }
+            }
+        }
+    });
+
     // Initialize state with the managers
     let state = AppState {
         clearcore_modbus,
-        welder_modbus,
+        miller_registers,
     };
 
     debug_targeted!(HTTP, "Initialized application state");

@@ -1,14 +1,15 @@
-use std::collections::{HashMap, HashSet};
+use std::cmp::PartialEq;
+use std::collections::{HashMap};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use crate::modbus::modbus_transaction_types::*;
 // Adjust import path for ModbusManager as needed
-use crate::modbus::{ModbusAddressType, ModbusManager, ModbusValue, RegisterMetadata};
+use crate::modbus::{ModbusAddressType, ModbusManager, ModbusState, ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::error::{Error, Result};
 
 #[derive(Clone)]
-pub struct DeviceCache {
-    manager: ModbusManager,
+pub struct MillerMemory {
+    pub manager: ModbusManager,
 
     // Thread-safe caches
     coils: Arc<RwLock<HashMap<u16, bool>>>,
@@ -17,7 +18,7 @@ pub struct DeviceCache {
     input_registers: Arc<RwLock<HashMap<u16, u16>>>,
 }
 
-impl DeviceCache {
+impl MillerMemory {
     /// Create a new cache manager.
     /// This will sort and batch the provided registers into chunks of 100.
     pub fn new(manager: ModbusManager, registers: &[RegisterMetadata]) -> Self {
@@ -44,10 +45,14 @@ impl DeviceCache {
         }
     }
 
+    pub async fn get_connection_state(&self) -> Result<ModbusState> {
+        self.manager.get_connection_state().await
+    }
+
     pub async fn update(&self) -> Result<()> {
         // TODO round robin chunk this up
-        self.update_coils().await?;
-        self.update_discs().await?;
+        self.update_coils(0, 21).await?;
+        self.update_discs(2000, 19).await?;
         self.update_ireg_chunk(4016, 22).await?;
         self.update_ireg_chunk(4099, 5).await?;
         self.update_ireg_chunk(4200, 7).await?;
@@ -60,16 +65,16 @@ impl DeviceCache {
         Ok(())
     }
 
-    pub async fn update_coils(&self) -> Result<()> {
-        let coils = self.manager.read_coils(ReadCoilsRequest { address: 0, count: 21 }).await?.values;
+    pub async fn update_coils(&self, start: u16, count: u16) -> Result<()> {
+        let coils = self.manager.read_coils(ReadCoilsRequest { address: start, count }).await?.values;
         for (i, v) in coils.iter().enumerate() {
             self.coils.write().await.insert(i as u16, *v);
         }
         Ok(())
     }
 
-    pub async fn update_discs(&self) -> Result<()> {
-        let discs = self.manager.read_discrete_inputs(ReadDiscreteInputsRequest { address: 2000, count: 2019 }).await?.values;
+    pub async fn update_discs(&self, start: u16, count: u16) -> Result<()> {
+        let discs = self.manager.read_discrete_inputs(ReadDiscreteInputsRequest { address: start, count }).await?.values;
         for (i, v) in discs.iter().enumerate() {
             self.discrete_inputs.write().await.insert(i as u16, *v);
         }
@@ -93,9 +98,9 @@ impl DeviceCache {
     }
 
     /// Reads a value directly from the local cache. Returns None if value hasn't been cached yet.
-    pub async fn read(&self, metadata: &RegisterMetadata) -> Option<ModbusValue> {
-        let addr = metadata.address.address;
-        match metadata.address.register_type {
+    pub async fn read(&self, address: &RegisterAddress) -> Option<ModbusValue> {
+        let addr = address.address;
+        match address.register_type {
             ModbusAddressType::Coil => {
                 self.coils.read().await.get(&addr).map(|&v| ModbusValue::Bool(v))
             }
@@ -125,9 +130,9 @@ impl DeviceCache {
 
     /// Writes a value to the device.
     /// DOES NOT update the cache speculatively.
-    pub async fn write(&self, metadata: &RegisterMetadata, value: ModbusValue) -> Result<()> {
-        let addr = metadata.address.address;
-        match (metadata.address.register_type.clone(), value) {
+    pub async fn write(&self, address: &RegisterAddress, value: ModbusValue) -> Result<()> {
+        let addr = address.address;
+        match (address.register_type.clone(), value) {
             (ModbusAddressType::Coil, ModbusValue::Bool(v)) => {
                 self.manager.write_single_coil(WriteSingleCoilRequest { address: addr, value: v }).await
             }
@@ -136,11 +141,11 @@ impl DeviceCache {
             }
             // Error on type mismatch or read-only types
             (ModbusAddressType::DiscreteInput, value) | (ModbusAddressType::InputRegister, value) => {
-                Err(Error::LocalRegisterTriedWriteReadOnly(value, metadata.address.clone()))
+                Err(Error::LocalRegisterTriedWriteReadOnly(value, address.clone()))
             }
             (_, value) => {
                 // Mismatch between metadata type and provided value type
-                Err(Error::LocalRegisterTypeMismatch(value, metadata.address.clone()))
+                Err(Error::LocalRegisterTypeMismatch(value, address.clone()))
             }
         }
     }

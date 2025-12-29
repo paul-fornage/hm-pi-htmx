@@ -192,7 +192,7 @@ pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
         Err(_) => "Error",
     };
 
-    let welder_state: &'static str = match state.welder_modbus.get_connection_state().await {
+    let welder_state: &'static str = match state.miller_registers.get_connection_state().await {
         Ok(state) => state.to_str(),
         Err(_) => "Error",
     };
@@ -238,7 +238,7 @@ pub async fn connect_welder(
     Form(form): Form<ConnectForm>,
 ) -> impl IntoResponse {
     let template = handle_connect(
-        &state.welder_modbus,
+        &state.miller_registers.manager,
         "welder",
         crate::modbus::WELDER_CONFIG_PATH,
         form
@@ -248,13 +248,13 @@ pub async fn connect_welder(
 
 // POST /modbus/welder/disconnect
 pub async fn disconnect_welder(State(state): State<AppState>) -> impl IntoResponse {
-    let template = handle_disconnect(&state.welder_modbus, "welder").await;
+    let template = handle_disconnect(&state.miller_registers.manager, "welder").await;
     Html(template.render().unwrap())
 }
 
 // GET /modbus/welder/manager
 pub async fn get_welder_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/welder/manager - rendering welder connection manager");
-    let template = get_connection_template(&state.welder_modbus, "welder").await;
+    let template = get_connection_template(&state.miller_registers.manager, "welder").await;
     Html(template.render().unwrap())
 }

@@ -7,8 +7,9 @@ use tokio::sync::{Mutex, MutexGuard, RwLock, RwLockWriteGuard};
 use tokio::time::timeout;
 use tokio_modbus::client::{Client, Context, Reader, Writer};
 use serde::{Deserialize, Serialize};
+use tokio_modbus::prelude::SlaveContext;
 use crate::error::{Error, Result};
-use crate::{error_targeted, info_targeted, warn_targeted};
+use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted};
 use crate::modbus::modbus_transaction_types::*;
 
 const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
@@ -17,25 +18,57 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
 // macro for all modbus operations (function codes)
 macro_rules! execute_modbus {
     ($manager:expr, |$ctx:ident| $op:expr) => {{
+        let op_name = stringify!($op);
+
         // 1. Get config (cloned)
-        let config = $manager.cloned_config().await?;
+        let config = match $manager.cloned_config().await {
+            Ok(c) => c,
+            Err(e) => {
+                warn_targeted!(MODBUS, "Modbus Op '{}' failed (Config Lock): {:?}", op_name, e);
+                return Err(e);
+            }
+        };
 
         // 2. Acquire lock (mutex)
-        let mut ctx_guard = $manager.ctx_acquisition().await?;
+        let mut ctx_guard = match $manager.ctx_acquisition().await {
+            Ok(g) => g,
+            Err(e) => {
+                warn_targeted!(MODBUS, "Modbus Op '{}' failed (Ctx Lock): {:?}", op_name, e);
+                return Err(e);
+            }
+        };
 
         // 3. Check connection
         if !matches!(config.state, ModbusState::Connected) {
+             warn_targeted!(MODBUS, "Modbus Op '{}' failed: Not Connected", op_name);
              Err(Error::NotConnected)
         } else {
              // 4. Unwrap context
              match ctx_guard.as_mut() {
                 Some($ctx) => {
+                    trace_targeted!(MODBUS, "Modbus Op '{}' started", op_name);
                     // 5. Run the specific future with timeout
                     let fut = timeout(config.timeout_duration, $op);
-                    let resolved = fut.await.map_err(|e| Error::ModbusTimedOut(e.to_string()))?;
-                    squash_error(resolved)
+                    match fut.await {
+                        Ok(res) => {
+                            let squashed = squash_error(res);
+                            match &squashed {
+                                Ok(val) => trace_targeted!(MODBUS, "Modbus Op '{}' succeeded: {:?}", op_name, val),
+                                Err(e) => warn_targeted!(MODBUS, "Modbus Op '{}' failed: {:?}", op_name, e),
+                            }
+                            squashed
+                        }
+                        Err(e) => {
+                            let msg = e.to_string();
+                            warn_targeted!(MODBUS, "Modbus Op '{}' timed out: {}", op_name, msg);
+                            Err(Error::ModbusTimedOut(msg))
+                        }
+                    }
                 }
-                None => Err(Error::ModbusInvariantBroken),
+                None => {
+                    error_targeted!(MODBUS, "Modbus Op '{}' failed: Invariant Broken (Context is None)", op_name);
+                    Err(Error::ModbusInvariantBroken)
+                },
             }
         }
     }};
@@ -133,7 +166,7 @@ pub struct ModbusManager {
     info: Arc<RwLock<ConnectionConfig>>,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ModbusState {
     Connected,
     Connecting,
@@ -195,9 +228,11 @@ impl ModbusManager{
 
     pub async fn connect_ctx(connection_config: &ConnectionConfig) -> Result<Context> {
         let ctx_res = tcp::connect(connection_config.socket_addr);
-        Ok(timeout(connection_config.timeout_duration, ctx_res).await.map_err(|e| {
+        let mut ctx = timeout(connection_config.timeout_duration, ctx_res).await.map_err(|e| {
             Error::ModbusTimedOut(e.to_string())
-        })??)
+        })??;
+        ctx.set_slave(connection_config.unit_id.into());
+        Ok(ctx)
     }
 
 
@@ -288,10 +323,11 @@ impl ModbusManager{
     /// returns true if was connected before
     pub async fn disconnect(&self) -> Result<bool> {
         let config_handle = self.cloned_config().await?;
-        let timeout_duration = config_handle.timeout_duration;
         let sock_addr = config_handle.socket_addr;
-        drop(config_handle);
+
         let mut ctx_guard = self.ctx_acquisition().await?;
+        // TODO: If this lock acquisition fails, the UI will get stuck until reload not giving
+        //  an option to disconnect.
 
         let ctx_option = ctx_guard.take();
 

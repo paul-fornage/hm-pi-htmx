@@ -740,7 +740,7 @@ pub const HOT_WIRE_VOLTAGE: RegisterMetadata = RegisterMetadata {
     description: "*Hot Wire Voltage, 5-20, Res: 1V",
 };
 
-pub const MILLER_REGISTERS_: &[RegisterMetadata] = &[
+pub const MILLER_REGISTERS: &[RegisterMetadata] = &[
     PS_UI_DISABLE,
     RMT_TRIGGER_DISABLE,
     CONTACTOR_TRIGGER,
@@ -865,3 +865,5 @@ pub const MILLER_REGISTERS_: &[RegisterMetadata] = &[
     DIG_PERCENT_AGAIN,
     HOT_WIRE_VOLTAGE,
 ];
+
+

@@ -1,5 +1,5 @@
-use crate::miller::miller_register_types;
-use crate::miller::miller_register_types::SoftwareUpdateRevision;
+
+use crate::miller::miller_register_types::*;
 
 pub struct MillerStats {
     pub ps_ui_disable: bool,
@@ -41,13 +41,13 @@ pub struct MillerStats {
     pub output_current_dc_pulse_back: u16, // 4205
     pub output_voltage_dc_pulse_back: u16, // 4206
     pub fan_output: u16, // 4300
-    pub temperature_1: miller_register_types::TemperatureRegister, // 4301
-    pub temperature_2: miller_register_types::TemperatureRegister, // 4302
-    pub temperature_3: miller_register_types::TemperatureRegister, // 4303
-    pub temperature_4: miller_register_types::TemperatureRegister, // 4304
-    pub temperature_5: miller_register_types::TemperatureRegister, // 4305
-    pub temperature_6: miller_register_types::TemperatureRegister, // 4306
-    pub temperature_7: miller_register_types::TemperatureRegister, // 4307
+    pub temperature_1: TemperatureRegister, // 4301
+    pub temperature_2: TemperatureRegister, // 4302
+    pub temperature_3: TemperatureRegister, // 4303
+    pub temperature_4: TemperatureRegister, // 4304
+    pub temperature_5: TemperatureRegister, // 4305
+    pub temperature_6: TemperatureRegister, // 4306
+    pub temperature_7: TemperatureRegister, // 4307
     pub primary_line_current: u16, // 4400
     pub primary_line_voltage: u16, // 4401
     pub primary_line_voltage_peak: u16, // 4402
@@ -58,20 +58,20 @@ pub struct MillerStats {
     pub primary_2_line_voltage_peak: u16, // 4407
     pub primary_2_bus_voltage_peak: u16, // 4408
 
-    pub weld_state: miller_register_types::WeldState, // 4100
-    pub weld_process: miller_register_types::WeldProcess, // 6201
+    pub weld_state: WeldState, // 4100
+    pub weld_process: WeldProcess, // 6201
 
-    pub error_reg_1: miller_register_types::MillerErrorReg,
-    pub error_reg_2: miller_register_types::MillerErrorReg,
-    pub error_reg_3: miller_register_types::MillerErrorReg,
+    pub error_reg_1: MillerErrorReg,
+    pub error_reg_2: MillerErrorReg,
+    pub error_reg_3: MillerErrorReg,
 
     pub software_version: SoftwareUpdateRevision,
-    pub serial_number: miller_register_types::SerialNumber,
-    pub app_software_version_pcb_1: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_2: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_3: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_4: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_5: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_6: miller_register_types::SubModuleSoftwareVersion,
-    pub app_software_version_pcb_7: miller_register_types::SubModuleSoftwareVersion,
+    pub serial_number: SerialNumber,
+    pub app_software_version_pcb_1: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_2: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_3: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_4: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_5: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_6: SubModuleSoftwareVersion,
+    pub app_software_version_pcb_7: SubModuleSoftwareVersion,
 }

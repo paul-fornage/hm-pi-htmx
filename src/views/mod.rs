@@ -1,6 +1,6 @@
 mod connections;
 mod operations;
-mod miller_info;
+pub mod miller_info;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
