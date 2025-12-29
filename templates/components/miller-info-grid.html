@@ -1,0 +1,11 @@
+<div class="flex flex-wrap gap-4 justify-center"
+     hx-get="/miller-info/grid"
+     hx-trigger="every 1s"
+     hx-swap="outerHTML"
+     id="register-grid">
+    {% for reg in boolean_registers %}
+    {% let meta = reg.meta %}
+    {% let value = reg.value %}
+    {% include "components/boolean-read-only-register.html" %}
+    {% endfor %}
+</div>

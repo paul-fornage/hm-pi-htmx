@@ -1,6 +1,7 @@
 <!-- Backdrop with blur -->
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-     id="modal-backdrop">
+     id="modal-backdrop"
+     hx-preserve="true">
 
     <!-- Close when clicking outside -->
     <div class="absolute inset-0" onclick="document.getElementById('global-modal-layer').innerHTML = ''"></div>

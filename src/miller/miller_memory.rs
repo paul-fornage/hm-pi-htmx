@@ -68,7 +68,7 @@ impl MillerMemory {
     pub async fn update_coils(&self, start: u16, count: u16) -> Result<()> {
         let coils = self.manager.read_coils(ReadCoilsRequest { address: start, count }).await?.values;
         for (i, v) in coils.iter().enumerate() {
-            self.coils.write().await.insert(i as u16, *v);
+            self.coils.write().await.insert(i as u16 + start, *v);
         }
         Ok(())
     }
@@ -76,7 +76,7 @@ impl MillerMemory {
     pub async fn update_discs(&self, start: u16, count: u16) -> Result<()> {
         let discs = self.manager.read_discrete_inputs(ReadDiscreteInputsRequest { address: start, count }).await?.values;
         for (i, v) in discs.iter().enumerate() {
-            self.discrete_inputs.write().await.insert(i as u16, *v);
+            self.discrete_inputs.write().await.insert(i as u16 + start, *v);
         }
         Ok(())
     }

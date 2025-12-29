@@ -20,6 +20,8 @@ use crate::miller::miller_register_definitions::MILLER_REGISTERS;
 use crate::modbus::ModbusManager;
 use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate};
 use crate::views::miller_info::boolean_register_view::BooleanRegisterTemplate;
+use crate::views::miller_info::{register_details_modal, show_miller_info};
+use crate::views::miller_info::MillerInfoGridTemplate;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -44,17 +46,7 @@ async fn show_connections() -> impl IntoResponse {
     CONNECTIONS_TEMPLATE
 }
 
-async fn show_miller_info() -> impl IntoResponse {
-    debug_targeted!(HTTP, "Rendering miller info view");
-    MillerInfoTemplate{
-        boolean_registers: vec!(
-            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[0], value: false },
-            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[1], value: false },
-            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[2], value: false },
-            BooleanRegisterTemplate{ meta: &MILLER_REGISTERS[3], value: false },
-        )
-    }
-}
+
 
 
 #[tokio::main]
@@ -151,6 +143,9 @@ async fn main() {
         .route(AppView::Operations.url(), get(show_operations))
         .route(AppView::Connections.url(), get(show_connections))
         .route(AppView::MillerInfo.url(), get(show_miller_info))
+
+        // --- UI Component Routes ---
+        .route("/ui/modal/{register_name}", get(register_details_modal::modal_handler))
 
         // --- Modbus Management Routes - ClearCore ---
         .route("/modbus/clearcore/manager", get(connection_management::get_clearcore_manager))

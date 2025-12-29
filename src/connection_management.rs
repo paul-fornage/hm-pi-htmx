@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use std::net::SocketAddr;
 use askama::Template;
-use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState};
+use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState, trace_targeted};
 use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
 
 #[derive(Template)]
@@ -185,7 +185,7 @@ pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoR
 
 // GET /modbus/status - Returns the icon, checks actual connectivity
 pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
-    debug_targeted!(HTTP, "GET /modbus/status - checking connection status");
+    trace_targeted!(HTTP, "GET /modbus/status - checking connection status");
 
     let clearcore_state = match state.clearcore_modbus.get_connection_state().await {
         Ok(state) => state.to_str(),
@@ -197,7 +197,7 @@ pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
         Err(_) => "Error",
     };
 
-    debug_targeted!(HTTP, "Status result: clearcore={}, welder={}", clearcore_state, welder_state);
+    trace_targeted!(HTTP, "Status result: clearcore={}, welder={}", clearcore_state, welder_state);
     let template = StatusTemplate {
         clearcore_state: clearcore_state.to_string(),
         welder_state: welder_state.to_string(),

@@ -7,10 +7,46 @@ pub mod register_details_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
+use axum::response::IntoResponse;
+use log::error;
 use crate::views::{AppView, ViewTemplate};
 use boolean_register_view::BooleanRegisterTemplate;
 use crate::modbus::RegisterMetadata;
 use crate::miller::miller_register_definitions;
+use crate::{debug_targeted, error_targeted, trace_targeted, AppState};
+
+pub async fn show_miller_info(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Rendering miller info view");
+
+    use crate::modbus::ModbusValue;
+
+    // Read all boolean register values from the cache
+    let mut boolean_registers = Vec::with_capacity(MILLER_BOOLEAN_INFO_VIEW.len());
+
+    for register_meta in MILLER_BOOLEAN_INFO_VIEW.iter() {
+        // Read the value from the cache, defaulting to false if not yet cached
+        let value = match state.miller_registers.read(&register_meta.address).await {
+            Some(ModbusValue::Bool(val)) => Some(val),
+            Some(ModbusValue::U16(val)) => {
+                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", register_meta.name, ModbusValue::U16(val));
+                None
+            }
+            _ => {
+                debug_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", register_meta.address);
+                None
+            }
+        };
+
+        boolean_registers.push(BooleanRegisterTemplate {
+            meta: register_meta,
+            value,
+        });
+    }
+
+    MillerInfoTemplate { boolean_registers }
+}
 
 pub const MILLER_BOOLEAN_INFO_VIEW: [RegisterMetadata; 27] = [
     miller_register_definitions::PS_UI_DISABLE,
@@ -46,6 +82,13 @@ pub const MILLER_BOOLEAN_INFO_VIEW: [RegisterMetadata; 27] = [
 #[template(path = "views/miller-info.html")]
 pub struct MillerInfoTemplate {
     pub boolean_registers: Vec<BooleanRegisterTemplate>,
+
 }
 
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/miller-info-grid.html")]
+pub struct MillerInfoGridTemplate {
+    pub boolean_registers: Vec<BooleanRegisterTemplate>,
+}

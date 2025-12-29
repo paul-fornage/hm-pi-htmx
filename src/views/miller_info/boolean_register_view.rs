@@ -6,7 +6,7 @@ use crate::modbus::RegisterMetadata;
 #[template(path = "components/boolean-read-only-register.html")]
 pub struct BooleanRegisterTemplate {
     pub meta: &'static RegisterMetadata,
-    pub value: bool,
+    pub value: Option<bool>,
 }
 
 impl BooleanRegisterTemplate {}
