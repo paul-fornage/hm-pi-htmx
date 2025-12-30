@@ -19,9 +19,8 @@ use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions::MILLER_REGISTERS;
 use crate::modbus::ModbusManager;
 use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate};
-use crate::views::miller_info::boolean_register_view::BooleanRegisterTemplate;
+use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info};
-use crate::views::miller_info::MillerInfoGridTemplate;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -171,10 +170,10 @@ async fn main() {
         // Apply state
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .unwrap();
 
-    info_targeted!(HTTP, "Server running on http://127.0.0.1:3000");
+    info_targeted!(HTTP, "Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
 }

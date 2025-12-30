@@ -42,6 +42,7 @@ pub enum ModbusValue {
     U16(u16),
 }
 
+
 impl ModbusValue {
     pub fn as_bool(&self) -> Option<bool> {
         match self {

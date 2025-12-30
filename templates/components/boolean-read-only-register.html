@@ -1,19 +1,16 @@
-<div class="flex flex-col border border-slate-300 rounded shadow-sm bg-white overflow-hidden w-40">
-    <!-- The Value: Big and Visual -->
-    <div class="h-12 flex items-center justify-center font-bold text-xl
-                {% if let Some(true) = value %} bg-green-100 text-green-700
-                {% else if let Some(false) = value %} bg-slate-100 text-slate-400
-                {% else %} bg-gray-100 text-gray-400 {% endif %}">
-        {% if let Some(true) = value %} ON
-        {% else if let Some(false) = value %} OFF
-        {% else %} --- {% endif %}
-    </div>
+{% extends "components/base-register-card.html" %}
 
-    <button
-            class="text-xs font-mono py-1 px-2 text-center hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border-t border-slate-200 truncate"
-            hx-get="/ui/modal/{{ meta.name }}"
-            hx-target="#global-modal-layer"
-            hx-swap="innerHTML">
-        {{ meta.name }}
-    </button>
-</div>
+{% block value_classes %}
+{% if let Some(true) = value %} bg-green-100 text-green-700
+{% else if let Some(false) = value %} bg-slate-100 text-slate-400
+{% else %} bg-gray-100 text-gray-400 {% endif %}
+{% endblock %}
+
+{% block display_value %}
+{% if let Some(true) = value %} ON
+{% else if let Some(false) = value %} OFF
+{% else %} --- {% endif %}
+{% endblock %}
+
+{% block register_name_url %}{{ meta.name }}{% endblock %}
+{% block register_name_text %}{{ meta.name }}{% endblock %}

@@ -1,45 +1,26 @@
-use std::fmt::{Debug, Display, Formatter};
+
+use std::fmt::{Debug, Display};
 use num_enum::{FromPrimitive, IntoPrimitive};
+use std::marker::PhantomData;
 
 
 
 
-/*
-Temperature registers (Power Source Dependent):
-Range: 0 - 254,
-Resolution: 1 Celsius
-Offset: -50 (i.e. 50 == 0 Deg. Celsius)
-Possible Range: -50 - +204 C
-Actual Range: Limited By Thermistor’s Hardware And Software
-*/
-
-pub struct TemperatureRegister(u16);
-impl TemperatureRegister {
-    pub fn as_celsius(&self) -> i16 {
-        if self.0 > i16::MAX as u16 {
-            return i16::MAX;
-        }
-        self.0 as i16 - 50
-    }
-    pub fn as_fahrenheit(&self) -> i16 {
-        const MAX_SAFE_C: i16 = 3640;
-        // Clamp the input values to the safe range immediately
-        let safe_input = self.as_celsius().clamp(-MAX_SAFE_C, MAX_SAFE_C);
-
-        (safe_input * 9 + 2) / 5 + 32
-    }
+#[derive(Debug)]
+pub enum WelderModel{
+    Dynasty210 = 0,
+    Dynasty280 = 1,
+    Dynasty400 = 2,
+    Dynasty800 = 3,
+    Maxstar210 = 4,
+    Maxstar280 = 5,
+    Maxstar400 = 6,
+    Maxstar800 = 7,
+    Syncrowave300 = 8,
+    Syncrowave400 = 9,
 }
 
-impl Debug for TemperatureRegister {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "TemperatureRegister({}°C)", self.as_celsius())
-    }
-}
-impl Display for TemperatureRegister {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}°C (≅{}°F)", self.as_celsius(), self.as_fahrenheit())
-    }
-}
+
 
 
 
@@ -111,24 +92,11 @@ impl Display for WeldState {
     }
 }
 
-pub struct MillerErrorReg(u16);
-impl Debug for MillerErrorReg {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error Register: {:#04x}", self.0)
-    }
-}
 
-impl MillerErrorReg {
-    pub fn get_errors(&self) -> Vec<u8> {
-        let mut errors = Vec::new();
-        for i in 0..16 {
-            if self.0 & (1 << i) != 0 {
-                errors.push(i as u8);
-            }
-        }
-        errors
-    }
-}
+
+
+
+
 
 
 /// Maps raw 5-bit value to character.

@@ -4,8 +4,9 @@
      hx-swap="outerHTML"
      id="register-grid">
     {% for reg in boolean_registers %}
-    {% let meta = reg.meta %}
-    {% let value = reg.value %}
-    {% include "components/boolean-read-only-register.html" %}
+    {{ reg|safe }}
+    {% endfor %}
+    {% for reg in analog_registers %}
+    {{ reg|safe }}
     {% endfor %}
 </div>

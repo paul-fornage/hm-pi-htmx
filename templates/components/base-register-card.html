@@ -1,10 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<div class="flex flex-col border border-slate-300 rounded shadow-sm bg-white overflow-hidden w-40">
+    <!-- The Value: Logic is injected into the class string via blocks -->
+    <div class="h-8 flex items-center justify-center font-bold text-xl {% block value_classes %}{% endblock %}">
+        {% block display_value %}{% endblock %}
+    </div>
+
+    <!-- The Footer Name/Button -->
+    <button
+            class="text-sm h-12 font-mono py-1 px-2 text-center hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border-t border-slate-200 text-wrap"
+            hx-get="/ui/modal/{% block register_name_url %}{% endblock %}"
+            hx-target="#global-modal-layer"
+            hx-swap="innerHTML">
+        {% block register_name_text %}{% endblock %}
+    </button>
+</div>

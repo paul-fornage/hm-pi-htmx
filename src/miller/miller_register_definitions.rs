@@ -370,7 +370,7 @@ pub const OUTPUT_CURRENT_DC_PULSE_PEAK: RegisterMetadata = RegisterMetadata {
 
 pub const OUTPUT_VOLTAGE_DC_PULSE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4204 },
-    name: "output_voltage_dc_pulse_peak",
+    name: "OUTPUT_VOLTAGE_DC_PULSE_PEAK",
     description: "Power Source Output Voltage DC Pulse Peak, Res 0.1V",
 };
 

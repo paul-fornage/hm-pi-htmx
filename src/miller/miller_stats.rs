@@ -1,4 +1,4 @@
-
+use crate::miller::miller_error_registers::{ErrorReg1, ErrorReg2, ErrorReg3};
 use crate::miller::miller_register_types::*;
 
 pub struct MillerStats {
@@ -41,13 +41,13 @@ pub struct MillerStats {
     pub output_current_dc_pulse_back: u16, // 4205
     pub output_voltage_dc_pulse_back: u16, // 4206
     pub fan_output: u16, // 4300
-    pub temperature_1: TemperatureRegister, // 4301
-    pub temperature_2: TemperatureRegister, // 4302
-    pub temperature_3: TemperatureRegister, // 4303
-    pub temperature_4: TemperatureRegister, // 4304
-    pub temperature_5: TemperatureRegister, // 4305
-    pub temperature_6: TemperatureRegister, // 4306
-    pub temperature_7: TemperatureRegister, // 4307
+    pub temperature_1: u16, // 4301
+    pub temperature_2: u16, // 4302
+    pub temperature_3: u16, // 4303
+    pub temperature_4: u16, // 4304
+    pub temperature_5: u16, // 4305
+    pub temperature_6: u16, // 4306
+    pub temperature_7: u16, // 4307
     pub primary_line_current: u16, // 4400
     pub primary_line_voltage: u16, // 4401
     pub primary_line_voltage_peak: u16, // 4402
@@ -61,9 +61,9 @@ pub struct MillerStats {
     pub weld_state: WeldState, // 4100
     pub weld_process: WeldProcess, // 6201
 
-    pub error_reg_1: MillerErrorReg,
-    pub error_reg_2: MillerErrorReg,
-    pub error_reg_3: MillerErrorReg,
+    pub error_reg_1: ErrorReg1,
+    pub error_reg_2: ErrorReg2,
+    pub error_reg_3: ErrorReg3,
 
     pub software_version: SoftwareUpdateRevision,
     pub serial_number: SerialNumber,

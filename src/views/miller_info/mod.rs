@@ -2,18 +2,22 @@
 
 
 
-pub mod boolean_register_view;
+pub mod register_view;
 pub mod register_details_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::response::IntoResponse;
-use log::error;
+use log::{error, warn};
 use crate::views::{AppView, ViewTemplate};
-use boolean_register_view::BooleanRegisterTemplate;
 use crate::modbus::RegisterMetadata;
 use crate::miller::miller_register_definitions;
-use crate::{debug_targeted, error_targeted, trace_targeted, AppState};
+use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted, AppState};
+use crate::miller::miller_register_types::{SerialNumber, SoftwareUpdateRevision, SubModuleSoftwareVersion, WeldProcess, WeldState};
+use register_view::{BooleanRegisterTemplate, AnalogRegisterTemplate};
+use futures::future::join_all;
+
+const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
 pub async fn show_miller_info(
     axum::extract::State(state): axum::extract::State<AppState>,
@@ -23,30 +27,64 @@ pub async fn show_miller_info(
     use crate::modbus::ModbusValue;
 
     // Read all boolean register values from the cache
-    let mut boolean_registers = Vec::with_capacity(MILLER_BOOLEAN_INFO_VIEW.len());
-
-    for register_meta in MILLER_BOOLEAN_INFO_VIEW.iter() {
-        // Read the value from the cache, defaulting to false if not yet cached
-        let value = match state.miller_registers.read(&register_meta.address).await {
-            Some(ModbusValue::Bool(val)) => Some(val),
-            Some(ModbusValue::U16(val)) => {
-                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", register_meta.name, ModbusValue::U16(val));
+    let boolean_registers = join_all(MILLER_BOOLEAN_INFO_VIEW.iter().map(|register_meta| async {
+        let value = match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                                               state.miller_registers.read(&register_meta.address)).await {
+            Ok(Some(ModbusValue::Bool(val))) => Some(val),
+            Ok(Some(val)) => {
+                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", register_meta.name, val);
                 None
             }
-            _ => {
+            Ok(_) => {
                 debug_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", register_meta.address);
+                None
+            }
+            Err(_) => {
+                warn_targeted!(MODBUS, "Timeout while reading register {}", register_meta.name);
+                None
+            },
+        };
+
+        BooleanRegisterTemplate {
+            meta: register_meta,
+            value,
+        }
+    }))
+        .await;
+
+    // Read all analog register values from the cache
+    let analog_registers = join_all(MILLER_ANALOG_INFO_VIEW.iter().map(|info| async {
+        let raw_value = match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                                                   state.miller_registers.read(&info.meta.address)).await {
+            Ok(Some(ModbusValue::U16(val))) => Some(val),
+            Ok(Some(val)) => {
+                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", info.meta.name, val);
+                None
+            }
+            Ok(_) => {
+                debug_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", info.meta.address);
+                None
+            }
+            Err(_) => {
+                warn_targeted!(MODBUS, "Timeout while reading register {}", info.meta.name);
                 None
             }
         };
 
-        boolean_registers.push(BooleanRegisterTemplate {
-            meta: register_meta,
-            value,
-        });
-    }
+        AnalogRegisterTemplate {
+            raw_value,
+            register_info: info,
+        }
+    }))
+        .await;
 
-    MillerInfoTemplate { boolean_registers }
+    MillerInfoTemplate {
+        boolean_registers,
+        analog_registers,
+    }
 }
+
+
 
 pub const MILLER_BOOLEAN_INFO_VIEW: [RegisterMetadata; 27] = [
     miller_register_definitions::PS_UI_DISABLE,
@@ -78,17 +116,66 @@ pub const MILLER_BOOLEAN_INFO_VIEW: [RegisterMetadata; 27] = [
     miller_register_definitions::NON_COOLER_SUPPLY_DETECT,
 ];
 
+use register_view::AnalogRegisterInfo;
+
+pub const MILLER_ANALOG_INFO_VIEW: [AnalogRegisterInfo; 27] = [
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::MAX_AMPS, "A", 0, 0, 1023, 0),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::MIN_DC_AMPS, "A", 0, 0, 31, 0),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::MIN_AC_AMPS, "A", 0, 0, 31, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::COMMANDED_OUTPUT_AMPERAGE, "A", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_AMPERAGE, "A", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_VOLTAGE, "V", 1, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_CURRENT_DC_PULSE_PEAK, "A", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_VOLTAGE_DC_PULSE_PEAK, "V", 1, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_CURRENT_DC_PULSE_BACK, "A", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::OUTPUT_VOLTAGE_DC_PULSE_BACK, "V", 1, 0),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::FAN_OUTPUT, "%", 0, 0, 100, 0),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_1, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_2, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_3, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_4, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_5, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_6, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::TEMPERATURE_7, "°C", 0, -50, 204, -50),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_LINE_CURRENT, "A", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_LINE_VOLTAGE, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_LINE_VOLTAGE_PEAK, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_BUS_VOLTAGE, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::COOLER_OUTPUT_VOLTAGE, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::COOLER_OUTPUT_CURRENT, "A", 1, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::COOLER_BUS_VOLTAGE, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_2_LINE_VOLTAGE_PEAK, "V", 0, 0),
+    AnalogRegisterInfo::new(&miller_register_definitions::PRIMARY_2_BUS_VOLTAGE_PEAK, "V", 0, 0),
+];
+
+
+
+
+
 #[derive(Template, WebTemplate)]
 #[template(path = "views/miller-info.html")]
 pub struct MillerInfoTemplate {
     pub boolean_registers: Vec<BooleanRegisterTemplate>,
+    pub analog_registers: Vec<AnalogRegisterTemplate>,
 
+    // pub weld_state: WeldState,
+    // pub weld_process: WeldProcess,
+    //
+    // pub error_reg_1: MillerErrorReg,
+    // pub error_reg_2: MillerErrorReg,
+    // pub error_reg_3: MillerErrorReg,
+    //
+    // pub software_version: SoftwareUpdateRevision,
+    // pub serial_number: SerialNumber,
+    // pub app_software_version_pcb_1: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_2: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_3: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_4: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_5: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_6: SubModuleSoftwareVersion,
+    // pub app_software_version_pcb_7: SubModuleSoftwareVersion,
 }
 
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
 
-#[derive(Template, WebTemplate)]
-#[template(path = "components/miller-info-grid.html")]
-pub struct MillerInfoGridTemplate {
-    pub boolean_registers: Vec<BooleanRegisterTemplate>,
-}
+
