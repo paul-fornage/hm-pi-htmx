@@ -4,8 +4,9 @@
 {% include "components/header.html" %}
 
 <main class="container mx-auto">
-    <div class="flex">
-        <h2 class="text-xl font-bold mb-4">Machine Configuration</h2>
+    <div class="flex items-center justify-between mb-4 h-18">
+        <h2 class="text-xl font-bold my-auto ">Machine Configuration</h2>
+        <div id="status-message"></div>
     </div>
     {% include "components/machine_config/config-form.html" %}
 </main>

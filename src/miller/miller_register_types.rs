@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub enum WelderModel{
     Dynasty210 = 0,
     Dynasty280 = 1,
@@ -18,6 +19,24 @@ pub enum WelderModel{
     Maxstar800 = 7,
     Syncrowave300 = 8,
     Syncrowave400 = 9,
+}
+
+impl Display for WelderModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display_str = match self {
+            WelderModel::Dynasty210 => "Dynasty 210",
+            WelderModel::Dynasty280 => "Dynasty 280",
+            WelderModel::Dynasty400 => "Dynasty 400",
+            WelderModel::Dynasty800 => "Dynasty 800",
+            WelderModel::Maxstar210 => "Maxstar 210",
+            WelderModel::Maxstar280 => "Maxstar 280",
+            WelderModel::Maxstar400 => "Maxstar 400",
+            WelderModel::Maxstar800 => "Maxstar 800",
+            WelderModel::Syncrowave300 => "Syncrowave 300",
+            WelderModel::Syncrowave400 => "Syncrowave 400",
+        };
+        write!(f, "{}", display_str)
+    }
 }
 
 

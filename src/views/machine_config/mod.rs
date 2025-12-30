@@ -44,29 +44,18 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
 
 #[derive(serde::Deserialize)]
 pub struct MachineConfigForm {
-    pub welder_model: String,
+    pub welder_model: WelderModel,
 }
 
 pub async fn save_machine_config(
     State(state): State<AppState>,
     Form(form): Form<MachineConfigForm>,
 ) -> Response {
-    info_targeted!(HTTP, "Saving machine config: {:?}", form.welder_model);
-
-    // Parse the welder model
-    let welder_model = match parse_welder_model(&form.welder_model) {
-        Some(model) => model,
-        None => {
-            error_targeted!(HTTP, "Invalid welder model: {}", form.welder_model);
-            return StatusMessageTemplate {
-                save_status: Some(Err(crate::error::Error::InvalidWelderModel)),
-            }.into_response();
-        }
-    };
+    info_targeted!(HTTP, "Saving machine config: {}", form.welder_model);
 
     // Create new config
     let new_config = crate::machine_config::MachineConfig {
-        welder_model: welder_model.clone(),
+        welder_model: form.welder_model.clone(),
     };
 
     // Save to disk
@@ -102,52 +91,6 @@ pub async fn save_machine_config(
     };
 
     result.into_response()
-}
-
-fn parse_welder_model(s: &str) -> Option<WelderModel> {
-    match s {
-        "Dynasty210" => Some(WelderModel::Dynasty210),
-        "Dynasty280" => Some(WelderModel::Dynasty280),
-        "Dynasty400" => Some(WelderModel::Dynasty400),
-        "Dynasty800" => Some(WelderModel::Dynasty800),
-        "Maxstar210" => Some(WelderModel::Maxstar210),
-        "Maxstar280" => Some(WelderModel::Maxstar280),
-        "Maxstar400" => Some(WelderModel::Maxstar400),
-        "Maxstar800" => Some(WelderModel::Maxstar800),
-        "Syncrowave300" => Some(WelderModel::Syncrowave300),
-        "Syncrowave400" => Some(WelderModel::Syncrowave400),
-        _ => None,
-    }
-}
-
-pub fn welder_model_to_string(model: &WelderModel) -> &'static str {
-    match model {
-        WelderModel::Dynasty210 => "Dynasty210",
-        WelderModel::Dynasty280 => "Dynasty280",
-        WelderModel::Dynasty400 => "Dynasty400",
-        WelderModel::Dynasty800 => "Dynasty800",
-        WelderModel::Maxstar210 => "Maxstar210",
-        WelderModel::Maxstar280 => "Maxstar280",
-        WelderModel::Maxstar400 => "Maxstar400",
-        WelderModel::Maxstar800 => "Maxstar800",
-        WelderModel::Syncrowave300 => "Syncrowave300",
-        WelderModel::Syncrowave400 => "Syncrowave400",
-    }
-}
-
-pub fn welder_model_display(model: &WelderModel) -> &'static str {
-    match model {
-        WelderModel::Dynasty210 => "Dynasty 210",
-        WelderModel::Dynasty280 => "Dynasty 280",
-        WelderModel::Dynasty400 => "Dynasty 400",
-        WelderModel::Dynasty800 => "Dynasty 800",
-        WelderModel::Maxstar210 => "Maxstar 210",
-        WelderModel::Maxstar280 => "Maxstar 280",
-        WelderModel::Maxstar400 => "Maxstar 400",
-        WelderModel::Maxstar800 => "Maxstar 800",
-        WelderModel::Syncrowave300 => "Syncrowave 300",
-        WelderModel::Syncrowave400 => "Syncrowave 400",
-    }
 }
 
 pub const ALL_WELDER_MODELS: &[WelderModel] = &[

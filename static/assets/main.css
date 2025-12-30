@@ -256,6 +256,9 @@
   .mx-auto {
     margin-inline: auto;
   }
+  .my-auto {
+    margin-block: auto;
+  }
   .mt-1 {
     margin-top: calc(var(--spacing) * 1);
   }
@@ -309,6 +312,9 @@
   }
   .h-12 {
     height: calc(var(--spacing) * 12);
+  }
+  .h-18 {
+    height: calc(var(--spacing) * 18);
   }
   .w-3 {
     width: calc(var(--spacing) * 3);

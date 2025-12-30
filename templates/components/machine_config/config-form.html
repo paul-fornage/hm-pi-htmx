@@ -1,6 +1,4 @@
-<div id="status-message"></div>
-
-<form hx-post="/machine-config/save" hx-target="#status-message">
+<form hx-post="/machine-config/save" hx-target="#status-message" hx-swap="innerHTML">
     <div class="bg-white p-6 rounded shadow">
         <div class="mb-4">
             <label for="welder_model" class="block text-sm font-medium mb-2">Welder Model</label>
