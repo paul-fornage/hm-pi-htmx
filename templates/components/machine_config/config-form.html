@@ -1,0 +1,21 @@
+<div id="status-message"></div>
+
+<form hx-post="/machine-config/save" hx-target="#status-message">
+    <div class="bg-white p-6 rounded shadow">
+        <div class="mb-4">
+            <label for="welder_model" class="block text-sm font-medium mb-2">Welder Model</label>
+            <select
+                id="welder_model"
+                name="welder_model"
+                class="w-full p-2 border border-gray-300 rounded">
+                {% include "components/machine_config/welder-model-options.html" %}
+            </select>
+        </div>
+
+        <button
+            type="submit"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Save Configuration
+        </button>
+    </div>
+</form>

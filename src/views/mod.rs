@@ -1,10 +1,12 @@
 mod connections;
 mod operations;
 pub mod miller_info;
+pub mod machine_config;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
 pub use miller_info::MillerInfoTemplate;
+pub use machine_config::MachineConfigTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -12,12 +14,13 @@ pub enum AppView {
     Operations,
     MillerInfo,
     Connections,
+    MachineConfig,
 }
 
 impl AppView {
     // Returns a slice of all views to iterate over in the template
     pub fn all() -> &'static [AppView] {
-        &[AppView::Operations, AppView::MillerInfo, AppView::Connections]
+        &[AppView::Operations, AppView::MillerInfo, AppView::Connections, AppView::MachineConfig]
     }
 
     // The text displayed on the tab
@@ -26,6 +29,7 @@ impl AppView {
             AppView::Operations => "Operations",
             AppView::MillerInfo => "Miller Info",
             AppView::Connections => "Connections",
+            AppView::MachineConfig => "Config",
         }
     }
 
@@ -35,6 +39,7 @@ impl AppView {
             AppView::Operations => "/",
             AppView::MillerInfo => "/miller-info",
             AppView::Connections => "/connections",
+            AppView::MachineConfig => "/machine-config",
         }
     }
 }

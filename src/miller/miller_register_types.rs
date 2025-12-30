@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum WelderModel{
     Dynasty210 = 0,
     Dynasty280 = 1,
@@ -19,7 +19,6 @@ pub enum WelderModel{
     Syncrowave300 = 8,
     Syncrowave400 = 9,
 }
-
 
 
 

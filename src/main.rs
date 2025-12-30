@@ -7,6 +7,7 @@ mod clearcore_registers;
 mod miller;
 mod connection_management;
 mod views;
+mod machine_config;
 
 use axum::{
     response::{IntoResponse, Response},
@@ -18,9 +19,10 @@ use crate::logging::LogTarget;
 use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions::MILLER_REGISTERS;
 use crate::modbus::ModbusManager;
-use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate};
+use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate, MachineConfigTemplate};
 use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info};
+use crate::views::machine_config::{show_machine_config, save_machine_config};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -28,6 +30,7 @@ pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::f
 pub struct AppState {
     pub clearcore_modbus: ModbusManager,
     pub miller_registers: MillerMemory,
+    pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
 }
 
 pub const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate{};
@@ -129,10 +132,16 @@ async fn main() {
         }
     });
 
+    // Initialize machine config
+    let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
+        .unwrap_or_else(|_| machine_config::MachineConfig::default());
+    let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
+
     // Initialize state with the managers
     let state = AppState {
         clearcore_modbus,
         miller_registers,
+        machine_config,
     };
 
     debug_targeted!(HTTP, "Initialized application state");
@@ -142,6 +151,10 @@ async fn main() {
         .route(AppView::Operations.url(), get(show_operations))
         .route(AppView::Connections.url(), get(show_connections))
         .route(AppView::MillerInfo.url(), get(show_miller_info))
+        .route(AppView::MachineConfig.url(), get(show_machine_config))
+
+        // --- Machine Config Routes ---
+        .route("/machine-config/save", post(save_machine_config))
 
         // --- UI Component Routes ---
         .route("/ui/modal/{register_name}", get(register_details_modal::modal_handler))

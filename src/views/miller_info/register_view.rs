@@ -1,12 +1,33 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use crate::modbus::RegisterMetadata;
+use std::fmt::Display;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/boolean-read-only-register.html")]
 pub struct BooleanRegisterTemplate {
     pub meta: &'static RegisterMetadata,
     pub value: Option<bool>,
+}
+
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/enum-read-only-register.html")]
+pub struct EnumRegisterTemplate<T: Display> {
+    pub meta: &'static RegisterMetadata,
+    pub value: Option<T>,
+}
+impl<T: Display> EnumRegisterTemplate<T> {
+    pub fn has_value(&self) -> bool {
+        self.value.is_some()
+    }
+
+    pub fn formatted_value(&self) -> String {
+        match &self.value {
+            Some(val) => val.to_string(),
+            None => String::from("---")
+        }
+    }
 }
 
 
@@ -57,11 +78,11 @@ impl AnalogRegisterInfo {
     }
 
     pub const fn convert_from_raw_helper(scale: u16, offset: i16, raw_value: u16) -> f32 {
-        ((raw_value as f32 - offset as f32) / scale as f32)
+        ((raw_value as f32 + offset as f32) / scale as f32)
     }
 
     pub const fn convert_to_raw_helper(scale: u16, offset: i16, semantic_value: f32) -> u16 {
-        ((semantic_value * scale as f32) + offset as f32) as u16
+        ((semantic_value * scale as f32) - offset as f32) as u16
     }
 
     pub fn convert_from_raw(&self, raw_value: u16) -> f32 {

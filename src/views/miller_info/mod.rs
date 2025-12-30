@@ -14,8 +14,9 @@ use crate::modbus::RegisterMetadata;
 use crate::miller::miller_register_definitions;
 use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted, AppState};
 use crate::miller::miller_register_types::{SerialNumber, SoftwareUpdateRevision, SubModuleSoftwareVersion, WeldProcess, WeldState};
-use register_view::{BooleanRegisterTemplate, AnalogRegisterTemplate};
+use register_view::{BooleanRegisterTemplate, AnalogRegisterTemplate, EnumRegisterTemplate};
 use futures::future::join_all;
+use num_enum::FromPrimitive;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -78,9 +79,53 @@ pub async fn show_miller_info(
     }))
         .await;
 
+    // Read weld_state enum register
+    let weld_state = match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                                                state.miller_registers.read(&miller_register_definitions::WELD_STATE.address)).await {
+        Ok(Some(ModbusValue::U16(val))) => Some(WeldState::from_primitive(val)),
+        Ok(Some(val)) => {
+            error_targeted!(MODBUS, "Unexpected value type for WELD_STATE: {:?}", val);
+            None
+        }
+        Ok(_) => {
+            debug_targeted!(MODBUS, "Failed to retrieve WELD_STATE from cache");
+            None
+        }
+        Err(_) => {
+            warn_targeted!(MODBUS, "Timeout while reading WELD_STATE");
+            None
+        }
+    };
+
+    // Read weld_process enum register
+    let weld_process = match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                                                  state.miller_registers.read(&miller_register_definitions::WELD_PROCESS.address)).await {
+        Ok(Some(ModbusValue::U16(val))) => Some(WeldProcess::from_primitive(val)),
+        Ok(Some(val)) => {
+            error_targeted!(MODBUS, "Unexpected value type for WELD_PROCESS: {:?}", val);
+            None
+        }
+        Ok(_) => {
+            debug_targeted!(MODBUS, "Failed to retrieve WELD_PROCESS from cache");
+            None
+        }
+        Err(_) => {
+            warn_targeted!(MODBUS, "Timeout while reading WELD_PROCESS");
+            None
+        }
+    };
+
     MillerInfoTemplate {
         boolean_registers,
         analog_registers,
+        weld_state: EnumRegisterTemplate {
+            meta: &miller_register_definitions::WELD_STATE,
+            value: weld_state,
+        },
+        weld_process: EnumRegisterTemplate {
+            meta: &miller_register_definitions::WELD_PROCESS,
+            value: weld_process,
+        },
     }
 }
 
@@ -157,10 +202,9 @@ pub const MILLER_ANALOG_INFO_VIEW: [AnalogRegisterInfo; 27] = [
 pub struct MillerInfoTemplate {
     pub boolean_registers: Vec<BooleanRegisterTemplate>,
     pub analog_registers: Vec<AnalogRegisterTemplate>,
+    pub weld_state: EnumRegisterTemplate<WeldState>,
+    pub weld_process: EnumRegisterTemplate<WeldProcess>,
 
-    // pub weld_state: WeldState,
-    // pub weld_process: WeldProcess,
-    //
     // pub error_reg_1: MillerErrorReg,
     // pub error_reg_2: MillerErrorReg,
     // pub error_reg_3: MillerErrorReg,

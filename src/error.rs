@@ -35,6 +35,13 @@ pub enum Error {
     #[error("Tried to write to a read-only register. \
         value: {0:?}, address: {1:?})")]
     LocalRegisterTriedWriteReadOnly(ModbusValue, RegisterAddress),
+    #[error("Failed to parse JSON: {0}")]
+    JsonError(#[from] serde_json::Error),
+    #[error("Configuration file version mismatch. Expected fields may not match. \
+        This may indicate the file was created with a different version of the software.")]
+    ConfigVersionMismatch,
+    #[error("Invalid welder model")]
+    InvalidWelderModel,
 }
 
 

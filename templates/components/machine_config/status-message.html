@@ -1,0 +1,12 @@
+{% if let Some(status) = save_status %}
+    {% match status %}
+        {% when Ok with (_) %}
+        <div class="mb-4 p-2 bg-green-100 text-green-800 rounded" style="animation: fadeout 1s forwards;">
+            Saved successfully
+        </div>
+        {% when Err with (e) %}
+        <div class="mb-4 p-2 bg-red-100 text-red-800 rounded">
+            Error: {{ "{:?}"|format(e) }}
+        </div>
+    {% endmatch %}
+{% endif %}
