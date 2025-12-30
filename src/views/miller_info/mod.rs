@@ -76,12 +76,15 @@ async fn mb_read_dword_helper(state: &AppState,address: &RegisterAddress) -> Opt
 
 
 
-pub async fn show_miller_info(
+pub async fn show_miller_info() -> impl IntoResponse {
+    debug_targeted!(HTTP, "Rendering miller info view");
+    MillerInfoTemplate {}
+}
+
+pub async fn show_miller_info_grid(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Rendering miller info view");
-
-    use crate::modbus::ModbusValue;
+    debug_targeted!(HTTP, "Rendering miller info grid component");
 
     // Read all boolean register values from the cache
     let boolean_registers = join_all(MILLER_BOOLEAN_INFO_VIEW.iter().map(|register_meta| async {
@@ -119,7 +122,6 @@ pub async fn show_miller_info(
         .await.map(|raw_val|ErrorReg2(raw_val));
     let error_reg_3 = mb_read_word_helper(&state, &miller_register_definitions::ERROR_REG_3.address)
         .await.map(|raw_val|ErrorReg3(raw_val));
-
 
     // Get the welder model from machine config
     let welder_model = state.machine_config.read().await.welder_model.clone();
@@ -165,7 +167,7 @@ pub async fn show_miller_info(
         app_software_version_pcb_7,
     };
 
-    MillerInfoTemplate {
+    MillerInfoGridTemplate {
         boolean_registers,
         analog_registers,
         weld_state: EnumRegisterTemplate {
@@ -180,7 +182,6 @@ pub async fn show_miller_info(
         version_info,
     }
 }
-
 
 
 pub const MILLER_BOOLEAN_INFO_VIEW: [RegisterMetadata; 27] = [
@@ -247,22 +248,12 @@ pub const MILLER_ANALOG_INFO_VIEW: [AnalogRegisterInfo; 27] = [
 
 
 
-
-
 #[derive(Template, WebTemplate)]
 #[template(path = "views/miller-info.html")]
-pub struct MillerInfoTemplate {
-    pub boolean_registers: Vec<BooleanRegisterTemplate>,
-    pub analog_registers: Vec<AnalogRegisterTemplate>,
-    pub weld_state: EnumRegisterTemplate<WeldState>,
-    pub weld_process: EnumRegisterTemplate<WeldProcess>,
-    pub error_list: error_list::ErrorListTemplate,
-    pub version_info: version_info::VersionInfoTemplate,
-}
-
+pub struct MillerInfoTemplate {}
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "components/miller-info-grid.html")]
 pub struct MillerInfoGridTemplate {
     pub boolean_registers: Vec<BooleanRegisterTemplate>,

@@ -1,23 +1,17 @@
-<div class="w-full"
-     hx-get="/miller-info/grid"
-     hx-trigger="every 1s"
-     hx-swap="outerHTML"
-     id="register-grid">
-    <!-- Register Cards Grid -->
-    <div class="flex flex-wrap gap-4 justify-center">
-        {% for reg in boolean_registers %}
-        {{ reg|safe }}
-        {% endfor %}
-        {% for reg in analog_registers %}
-        {{ reg|safe }}
-        {% endfor %}
-        {{ weld_state|safe }}
-        {{ weld_process|safe }}
-    </div>
-
-    <!-- Error List Component -->
-    {{ error_list|safe }}
-
-    <!-- Version Info Component -->
-    {{ version_info|safe }}
+<!-- Register Cards Grid -->
+<div class="flex flex-wrap gap-4 justify-center">
+    {% for reg in boolean_registers %}
+    {{ reg|safe }}
+    {% endfor %}
+    {% for reg in analog_registers %}
+    {{ reg|safe }}
+    {% endfor %}
+    {{ weld_state|safe }}
+    {{ weld_process|safe }}
 </div>
+
+<!-- Error List Component -->
+{{ error_list|safe }}
+
+<!-- Version Info Component -->
+{{ version_info|safe }}

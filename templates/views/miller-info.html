@@ -6,8 +6,12 @@
 <div id="view-connections" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
     <h2 class="text-2xl font-bold text-slate-700 mb-6">System Registers</h2>
 
-    <!-- The Grid -->
-    {% include "components/miller-info-grid.html" %}
+    <!-- The Grid Container - HTMX will populate this -->
+    <div hx-get="/miller-info/grid"
+         hx-trigger="load, every 1s"
+         hx-swap="innerHTML">
+        Loading...
+    </div>
 </div>
 
 <!--

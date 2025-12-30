@@ -23,6 +23,7 @@ impl ErrorListTemplate {
         let mut all_errors = Vec::new();
 
         if let Some(reg1) = self.error_reg_1 {
+            todo!("looks like this isn't catchin the errors, glad I checked");
             all_errors.extend(reg1.get_active_errors(self.welder_model.clone()));
         }
 
