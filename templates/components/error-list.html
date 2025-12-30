@@ -1,0 +1,32 @@
+<div class="w-full mt-6">
+    <div class="bg-white rounded-lg shadow-md border-2 {% if self.has_errors() %}border-red-500{% else %}border-gray-300{% endif %}">
+        <div class="px-5 py-3 {% if self.has_errors() %}bg-red-50{% else %}bg-gray-50{% endif %} border-b border-gray-300 rounded-t-lg">
+            <h3 class="text-lg font-semibold {% if self.has_errors() %}text-red-700{% else %}text-gray-700{% endif %}">
+                Error Status ({{ welder_model }})
+            </h3>
+        </div>
+
+        <div class="p-4">
+            {% if self.has_unavailable_registers() %}
+            <div class="text-sm text-amber-600 mb-2 italic">
+                ⚠ Some error registers unavailable
+            </div>
+            {% endif %}
+
+            {% if self.has_errors() %}
+            <ul class="space-y-2">
+                {% for error in self.get_all_errors() %}
+                <li class="flex items-start">
+                    <span class="text-red-500 mr-2 mt-1">▪</span>
+                    <span class="text-sm text-gray-800 font-mono">{{ error }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center py-4">
+                <span class="text-green-600 font-medium">✓ No Active Errors</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

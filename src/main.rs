@@ -122,7 +122,8 @@ async fn main() {
                         }
                     } else {
                         trace_targeted!(MODBUS, "Miller registers not connected. \
-                        connection state: {connection_state:?}");
+                        connection state: {connection_state:?} Clearing cache");
+                        miller_registers_update_thread_copy.clear_cache().await;
                     }
                 }
                 Err(e) => {

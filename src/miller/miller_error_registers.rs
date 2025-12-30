@@ -149,6 +149,8 @@ pub trait MillerErrorRegister {
     /// Format: (Header String, List of Errors)
     fn all_error_groups() -> &'static [(&'static str, &'static [ErrorDetail])];
 
+    fn has_errors(&self) -> bool { self.value() != 0 }
+
     /// LOGIC: Returns a list of active errors formatted as strings for a specific model.
     /// This is defined once here and shared by all registers.
     fn get_active_errors(&self, model: WelderModel) -> Vec<String> {

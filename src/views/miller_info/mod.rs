@@ -4,13 +4,15 @@
 
 pub mod register_view;
 pub mod register_details_modal;
+pub mod error_list;
+pub mod version_info;
 
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::response::IntoResponse;
 use log::{error, warn};
 use crate::views::{AppView, ViewTemplate};
-use crate::modbus::RegisterMetadata;
+use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
 use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted, AppState};
 use crate::miller::miller_register_types::{SerialNumber, SoftwareUpdateRevision, SubModuleSoftwareVersion, WeldProcess, WeldState};
@@ -19,6 +21,60 @@ use futures::future::join_all;
 use num_enum::FromPrimitive;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
+
+async fn mb_read_helper(state: &AppState,address: &RegisterAddress) -> Option<ModbusValue>{
+    match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                               state.miller_registers.read(address)).await {
+        Ok(Some(val)) => {
+            Some(val)
+        }
+        Ok(None) => {
+            warn_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", address);
+            None
+        }
+        Err(_) => {
+            warn_targeted!(MODBUS, "Timeout while reading register {:?}", address);
+            None
+        }
+    }
+}
+async fn mb_read_bool_helper(state: &AppState,address: &RegisterAddress) -> Option<bool>{
+    match mb_read_helper(state,address).await {
+        Some(ModbusValue::Bool(val)) => Some(val),
+        _ => {
+            error_targeted!(MODBUS, "Unexpected value type for register {:?}", address);
+            None
+        }
+    }
+}
+async fn mb_read_word_helper(state: &AppState,address: &RegisterAddress) -> Option<u16>{
+    match mb_read_helper(state,address).await {
+        Some(ModbusValue::U16(val)) => Some(val),
+        _ => {
+            error_targeted!(MODBUS, "Unexpected value type for register {:?}", address);
+            None
+        }
+    }
+}
+
+async fn mb_read_dword_helper(state: &AppState,address: &RegisterAddress) -> Option<u32>{
+    match tokio::time::timeout(READ_TIMEOUT_DURATION,
+                               state.miller_registers.read_u32(address)).await {
+        Ok(Some(val)) => {
+            Some(val)
+        }
+        Ok(None) => {
+            warn_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", address);
+            None
+        }
+        Err(_) => {
+            warn_targeted!(MODBUS, "Timeout while reading register {:?}", address);
+            None
+        }
+    }
+}
+
+
 
 pub async fn show_miller_info(
     axum::extract::State(state): axum::extract::State<AppState>,
@@ -29,90 +85,84 @@ pub async fn show_miller_info(
 
     // Read all boolean register values from the cache
     let boolean_registers = join_all(MILLER_BOOLEAN_INFO_VIEW.iter().map(|register_meta| async {
-        let value = match tokio::time::timeout(READ_TIMEOUT_DURATION,
-                                               state.miller_registers.read(&register_meta.address)).await {
-            Ok(Some(ModbusValue::Bool(val))) => Some(val),
-            Ok(Some(val)) => {
-                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", register_meta.name, val);
-                None
-            }
-            Ok(_) => {
-                debug_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", register_meta.address);
-                None
-            }
-            Err(_) => {
-                warn_targeted!(MODBUS, "Timeout while reading register {}", register_meta.name);
-                None
-            },
-        };
+        let value = mb_read_bool_helper(&state, &register_meta.address).await;
 
         BooleanRegisterTemplate {
             meta: register_meta,
             value,
         }
-    }))
-        .await;
+    })).await;
 
     // Read all analog register values from the cache
     let analog_registers = join_all(MILLER_ANALOG_INFO_VIEW.iter().map(|info| async {
-        let raw_value = match tokio::time::timeout(READ_TIMEOUT_DURATION,
-                                                   state.miller_registers.read(&info.meta.address)).await {
-            Ok(Some(ModbusValue::U16(val))) => Some(val),
-            Ok(Some(val)) => {
-                error_targeted!(MODBUS, "Unexpected value type for register {}: {:?}", info.meta.name, val);
-                None
-            }
-            Ok(_) => {
-                debug_targeted!(MODBUS, "Failed to retrieve value from cache: {:?}", info.meta.address);
-                None
-            }
-            Err(_) => {
-                warn_targeted!(MODBUS, "Timeout while reading register {}", info.meta.name);
-                None
-            }
-        };
+        let raw_value = mb_read_word_helper(&state, &info.meta.address).await;
 
         AnalogRegisterTemplate {
             raw_value,
             register_info: info,
         }
-    }))
-        .await;
+    })).await;
 
     // Read weld_state enum register
-    let weld_state = match tokio::time::timeout(READ_TIMEOUT_DURATION,
-                                                state.miller_registers.read(&miller_register_definitions::WELD_STATE.address)).await {
-        Ok(Some(ModbusValue::U16(val))) => Some(WeldState::from_primitive(val)),
-        Ok(Some(val)) => {
-            error_targeted!(MODBUS, "Unexpected value type for WELD_STATE: {:?}", val);
-            None
-        }
-        Ok(_) => {
-            debug_targeted!(MODBUS, "Failed to retrieve WELD_STATE from cache");
-            None
-        }
-        Err(_) => {
-            warn_targeted!(MODBUS, "Timeout while reading WELD_STATE");
-            None
-        }
-    };
+    let weld_state = mb_read_word_helper(&state, &miller_register_definitions::WELD_STATE.address)
+        .await.map(WeldState::from_primitive);
 
     // Read weld_process enum register
-    let weld_process = match tokio::time::timeout(READ_TIMEOUT_DURATION,
-                                                  state.miller_registers.read(&miller_register_definitions::WELD_PROCESS.address)).await {
-        Ok(Some(ModbusValue::U16(val))) => Some(WeldProcess::from_primitive(val)),
-        Ok(Some(val)) => {
-            error_targeted!(MODBUS, "Unexpected value type for WELD_PROCESS: {:?}", val);
-            None
-        }
-        Ok(_) => {
-            debug_targeted!(MODBUS, "Failed to retrieve WELD_PROCESS from cache");
-            None
-        }
-        Err(_) => {
-            warn_targeted!(MODBUS, "Timeout while reading WELD_PROCESS");
-            None
-        }
+    let weld_process = mb_read_word_helper(&state, &miller_register_definitions::WELD_PROCESS.address)
+        .await.map(WeldProcess::from_primitive);
+
+    // Read error registers
+    use crate::miller::miller_error_registers::{ErrorReg1, ErrorReg2, ErrorReg3};
+    let error_reg_1 = mb_read_word_helper(&state, &miller_register_definitions::ERROR_REG_1.address)
+        .await.map(|raw_val|ErrorReg1(raw_val));
+    let error_reg_2 = mb_read_word_helper(&state, &miller_register_definitions::ERROR_REG_2.address)
+        .await.map(|raw_val|ErrorReg2(raw_val));
+    let error_reg_3 = mb_read_word_helper(&state, &miller_register_definitions::ERROR_REG_3.address)
+        .await.map(|raw_val|ErrorReg3(raw_val));
+
+
+    // Get the welder model from machine config
+    let welder_model = state.machine_config.read().await.welder_model.clone();
+
+    // Build the error list component
+    let error_list = error_list::ErrorListTemplate {
+        error_reg_1,
+        error_reg_2,
+        error_reg_3,
+        welder_model,
+    };
+
+    // Read version information registers (32-bit dword registers)
+    let software_version = mb_read_dword_helper(&state, &miller_register_definitions::SOFTWARE_VERSION.address)
+        .await.map(|val| SoftwareUpdateRevision(val));
+    let serial_number = mb_read_dword_helper(&state, &miller_register_definitions::SERIAL_NUMBER.address)
+        .await.map(|val| SerialNumber(val));
+    let app_software_version_pcb_1 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_1.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_2 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_2.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_3 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_3.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_4 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_4.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_5 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_5.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_6 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_6.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+    let app_software_version_pcb_7 = mb_read_dword_helper(&state, &miller_register_definitions::APP_SOFTWARE_VERSION_PCB_7.address)
+        .await.map(|val| SubModuleSoftwareVersion(val));
+
+    // Build the version info component
+    let version_info = version_info::VersionInfoTemplate {
+        software_version,
+        serial_number,
+        app_software_version_pcb_1,
+        app_software_version_pcb_2,
+        app_software_version_pcb_3,
+        app_software_version_pcb_4,
+        app_software_version_pcb_5,
+        app_software_version_pcb_6,
+        app_software_version_pcb_7,
     };
 
     MillerInfoTemplate {
@@ -126,6 +176,8 @@ pub async fn show_miller_info(
             meta: &miller_register_definitions::WELD_PROCESS,
             value: weld_process,
         },
+        error_list,
+        version_info,
     }
 }
 
@@ -204,22 +256,21 @@ pub struct MillerInfoTemplate {
     pub analog_registers: Vec<AnalogRegisterTemplate>,
     pub weld_state: EnumRegisterTemplate<WeldState>,
     pub weld_process: EnumRegisterTemplate<WeldProcess>,
-
-    // pub error_reg_1: MillerErrorReg,
-    // pub error_reg_2: MillerErrorReg,
-    // pub error_reg_3: MillerErrorReg,
-    //
-    // pub software_version: SoftwareUpdateRevision,
-    // pub serial_number: SerialNumber,
-    // pub app_software_version_pcb_1: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_2: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_3: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_4: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_5: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_6: SubModuleSoftwareVersion,
-    // pub app_software_version_pcb_7: SubModuleSoftwareVersion,
+    pub error_list: error_list::ErrorListTemplate,
+    pub version_info: version_info::VersionInfoTemplate,
 }
 
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
+
+#[derive(Template)]
+#[template(path = "components/miller-info-grid.html")]
+pub struct MillerInfoGridTemplate {
+    pub boolean_registers: Vec<BooleanRegisterTemplate>,
+    pub analog_registers: Vec<AnalogRegisterTemplate>,
+    pub weld_state: EnumRegisterTemplate<WeldState>,
+    pub weld_process: EnumRegisterTemplate<WeldProcess>,
+    pub error_list: error_list::ErrorListTemplate,
+    pub version_info: version_info::VersionInfoTemplate,
+}
 
 

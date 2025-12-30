@@ -146,7 +146,7 @@ E,EEEE == Evaluation / Test, 5 Bits 9 - 5, Bit Range 0 - 31,
 
 */
 
-pub struct SubModuleSoftwareVersion(u32);
+pub struct SubModuleSoftwareVersion(pub u32);
 impl SubModuleSoftwareVersion {
 
     /// 22 Bits 31 - 10, Bit Range 0 - 4,194,303, Actual 0-999999
@@ -226,7 +226,7 @@ L, LLLL = Revision Level’s Least Significant Designator, 5 Bits 4−0, Bit
 
 */
 
-pub struct SoftwareUpdateRevision(u32);
+pub struct SoftwareUpdateRevision(pub u32);
 impl SoftwareUpdateRevision {
     /// 22 Bits 31 - 10, Bit Range 0 - 4,194,303, Actual 0-999999
     pub fn get_part_number(&self) -> u32 {
@@ -306,7 +306,7 @@ Not used In Business Unit Code.
  */
 
 
-pub struct SerialNumber(u32);
+pub struct SerialNumber(pub u32);
 impl SerialNumber {
     /// Decade Code, 3 Bits 31 - 29.
     /// actual “M” - “U” (For Decades 201*-208*), Skip “O”

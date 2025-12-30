@@ -6,6 +6,8 @@ use crate::modbus::modbus_transaction_types::*;
 // Adjust import path for ModbusManager as needed
 use crate::modbus::{ModbusAddressType, ModbusManager, ModbusState, ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::error::{Error, Result};
+use crate::{debug_targeted, error_targeted};
+use crate::miller::miller_register_definitions::{ERROR_REG_1, ERROR_REG_2};
 
 #[derive(Clone)]
 pub struct MillerMemory {
@@ -17,6 +19,7 @@ pub struct MillerMemory {
     holding_registers: Arc<RwLock<HashMap<u16, u16>>>,
     input_registers: Arc<RwLock<HashMap<u16, u16>>>,
 }
+
 
 impl MillerMemory {
     /// Create a new cache manager.
@@ -45,23 +48,35 @@ impl MillerMemory {
         }
     }
 
+    pub async fn clear_cache(&self) {
+        self.coils.write().await.clear();
+        self.discrete_inputs.write().await.clear();
+        self.holding_registers.write().await.clear();
+        self.input_registers.write().await.clear();
+    }
+
     pub async fn get_connection_state(&self) -> Result<ModbusState> {
         self.manager.get_connection_state().await
     }
 
     pub async fn update(&self) -> Result<()> {
         // TODO round robin chunk this up
-        self.update_coils(0, 21).await?;
-        self.update_discs(2000, 19).await?;
-        self.update_ireg_chunk(4016, 22).await?;
-        self.update_ireg_chunk(4099, 5).await?;
-        self.update_ireg_chunk(4200, 7).await?;
-        self.update_ireg_chunk(4300, 8).await?;
-        self.update_ireg_chunk(4400, 9).await?;
-        self.update_hreg_chunk(6000, 4).await?;
-        self.update_hreg_chunk(6100, 4).await?;
-        self.update_hreg_chunk(6200, 18).await?;
-        self.update_hreg_chunk(6300, 19).await?;
+        if self.manager.get_connection_state().await? != ModbusState::Connected {
+            self.clear_cache().await;
+            return Err(Error::NotConnected)
+        } else {
+            self.update_coils(0, 21).await?;
+            self.update_discs(2000, 19).await?;
+            self.update_ireg_chunk(4016, 22).await?;
+            self.update_ireg_chunk(4099, 5).await?;
+            self.update_ireg_chunk(4200, 7).await?;
+            self.update_ireg_chunk(4300, 8).await?;
+            self.update_ireg_chunk(4400, 9).await?;
+            self.update_hreg_chunk(6000, 4).await?;
+            self.update_hreg_chunk(6100, 4).await?;
+            self.update_hreg_chunk(6200, 18).await?;
+            self.update_hreg_chunk(6300, 19).await?;
+        }
         Ok(())
     }
 
@@ -99,6 +114,12 @@ impl MillerMemory {
 
     /// Reads a value directly from the local cache. Returns None if value hasn't been cached yet.
     pub async fn read(&self, address: &RegisterAddress) -> Option<ModbusValue> {
+        debug_targeted!(MODBUS, "Reading register {:?} from cache", address);
+        // TODO: REMOVE TESTING THING!!!
+        if *address == ERROR_REG_1.address || *address == ERROR_REG_2.address {
+            return Some(ModbusValue::U16(1<<3 + 1<<13));
+            error_targeted!(MODBUS, "ERROR_REG_1 read testing temporary if you read this I left a bug here oops forgot to remove");
+        }
         let addr = address.address;
         match address.register_type {
             ModbusAddressType::Coil => {
@@ -113,6 +134,32 @@ impl MillerMemory {
             ModbusAddressType::InputRegister => {
                 self.input_registers.read().await.get(&addr).map(|&v| ModbusValue::U16(v))
             }
+        }
+    }
+
+    pub async fn read_u32(&self, address: &RegisterAddress) -> Option<u32> {
+        let addr = address.address;
+        let guard = match address.register_type {
+            ModbusAddressType::HoldingRegister => {
+                self.holding_registers.read().await
+
+            }
+            ModbusAddressType::InputRegister => {
+                self.input_registers.read().await
+            }
+            _ => {
+                error_targeted!(MODBUS, "tried to read unsupported register type: {:?}", address.register_type);
+                return None;
+            }
+        };
+        let lower = guard.get(&addr);
+        let upper = guard.get(&(addr + 1));
+        match (lower, upper) {
+            (Some(&lower), Some(&upper)) => {
+                let number: u32 = ((upper as u32) << 16) | lower as u32;
+                Some(number)
+            },
+            _ => None,
         }
     }
 

@@ -322,9 +322,10 @@ impl ModbusManager{
 
     /// returns true if was connected before
     pub async fn disconnect(&self) -> Result<bool> {
-        let config_handle = self.cloned_config().await?;
+        let mut config_handle = self.write_config().await?;
         let sock_addr = config_handle.socket_addr;
-
+        config_handle.state = ModbusState::Disconnected;
+        drop(config_handle);
         let mut ctx_guard = self.ctx_acquisition().await?;
         // TODO: If this lock acquisition fails, the UI will get stuck until reload not giving
         //  an option to disconnect.
@@ -350,7 +351,7 @@ impl ModbusManager{
         //  has bad implications if a `connect` is called to the same host while disconnecting.
         drop(ctx_guard);
 
-        self.write_config().await?.state = ModbusState::Disconnected;
+
         Ok(was_connected)
     }
 

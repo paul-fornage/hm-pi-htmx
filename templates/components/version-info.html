@@ -1,0 +1,175 @@
+<div class="w-full mt-6">
+    <div class="bg-white rounded-lg shadow-md border-2 border-gray-300">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-300 rounded-t-lg">
+            <h3 class="text-lg font-semibold text-gray-700">
+                Version Information
+            </h3>
+        </div>
+
+        <div class="p-4">
+            {% if self.has_unavailable_registers() %}
+            <div class="text-sm text-amber-600 mb-3 italic">
+                ⚠ Some version registers unavailable
+            </div>
+            {% endif %}
+
+            <div class="space-y-3">
+                <!-- Software Version -->
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/SOFTWARE VERSION"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        Software Version:
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match software_version %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <!-- Serial Number -->
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/SERIAL NUMBER"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        Serial Number:
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match serial_number %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <!-- PCB Software Versions -->
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 1"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 1 (SD Card):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_1 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 2"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 2 (User Interface):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_2 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 3"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 3 (Process):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_3 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 4"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 4 (Primary):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_4 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 5"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 5 (Cooler Power Supply):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_5 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start border-b border-gray-200 pb-2">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 6"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 6 (Gateway Interface):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_6 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+
+                <div class="flex justify-between items-start">
+                    <button class="text-sm font-medium text-gray-600 hover:text-blue-600 hover:underline cursor-pointer transition-colors text-left"
+                            hx-get="/ui/modal/APP SOFTWARE VERSION PCB 7"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        PCB 7 (Output Control):
+                    </button>
+                    <span class="text-sm text-gray-800 font-mono text-right">
+                        {% match app_software_version_pcb_7 %}
+                        {% when Some with (v) %}
+                        {{ v }}
+                        {% when None %}
+                        <span class="text-amber-600 italic">unavailable</span>
+                        {% endmatch %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

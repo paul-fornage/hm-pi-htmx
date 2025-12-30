@@ -8,7 +8,7 @@ pub mod modbus_transaction_types;
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModbusAddressType{
     Coil,
     DiscreteInput,
@@ -59,7 +59,7 @@ impl ModbusValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RegisterAddress{
     pub register_type: ModbusAddressType,
     pub address: u16,
