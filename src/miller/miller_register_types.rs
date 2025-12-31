@@ -362,3 +362,47 @@ impl Debug for SerialNumber {
         write!(f, "Serial Number: {}", self)
     }
 }
+
+pub struct ArcTime(pub u32);
+impl ArcTime {
+    pub fn get_hours(&self) -> u32 {
+        self.0 / 6000
+    }
+
+    pub fn get_minutes(&self) -> u32 {
+        (self.0 % 6000) / 100
+    }
+
+    pub fn get_seconds(&self) -> u32 {
+        ((self.0 % 100) * 60) / 100
+    }
+}
+
+impl Display for ArcTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}h {}m {}s",
+               self.get_hours(),
+               self.get_minutes(),
+               self.get_seconds())
+    }
+}
+
+impl Debug for ArcTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Arc Time: {}", self)
+    }
+}
+
+pub struct ArcCycles(pub u32);
+
+impl Display for ArcCycles {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Debug for ArcCycles {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Arc Cycles: {}", self.0)
+    }
+}

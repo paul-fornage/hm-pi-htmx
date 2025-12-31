@@ -1,0 +1,27 @@
+<div class="w-full mt-6">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-5 py-3 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-700 flex items-center">
+                Statistics
+            </h3>
+            <div class="flex space-x-12">
+                <button
+                        class="text-right flex items-center gap-3 bg-slate-50 rounded-md px-1"
+                        hx-get="/ui/modal/ARC TIME"
+                        hx-target="#global-modal-layer"
+                        hx-swap="innerHTML">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Arc Time</span>
+                    <span class="font-mono text-lg font-bold text-gray-800">{{ arc_time_display() }}</span>
+                </button>
+                <button
+                        class="text-right flex items-center gap-3 bg-slate-50 rounded-md px-1"
+                        hx-get="/ui/modal/ARC CYCLES"
+                        hx-target="#global-modal-layer"
+                        hx-swap="innerHTML">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Arc Cycles</span>
+                    <span class="font-mono text-lg font-bold text-gray-800">{{ arc_cycles_display() }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

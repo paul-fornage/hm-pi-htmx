@@ -115,4 +115,26 @@ impl AnalogRegisterInfo {
     }
 }
 
+#[derive(Template, WebTemplate)]
+#[template(path = "components/statistics-bar.html")]
+pub struct StatisticsBarTemplate {
+    pub arc_time: Option<crate::miller::miller_register_types::ArcTime>,
+    pub arc_cycles: Option<crate::miller::miller_register_types::ArcCycles>,
+}
+impl StatisticsBarTemplate {
+    pub fn arc_time_display(&self) -> String {
+        match &self.arc_time {
+            Some(val) => val.to_string(),
+            None => String::from("---")
+        }
+    }
+
+    pub fn arc_cycles_display(&self) -> String {
+        match &self.arc_cycles {
+            Some(val) => format!("arc cycles: {}", val),
+            None => String::from("arc cycles: ---")
+        }
+    }
+}
+
 

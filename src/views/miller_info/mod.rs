@@ -15,8 +15,8 @@ use crate::views::{AppView, ViewTemplate};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
 use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted, AppState};
-use crate::miller::miller_register_types::{SerialNumber, SoftwareUpdateRevision, SubModuleSoftwareVersion, WeldProcess, WeldState};
-use register_view::{BooleanRegisterTemplate, AnalogRegisterTemplate, EnumRegisterTemplate};
+use crate::miller::miller_register_types::{ArcCycles, ArcTime, SerialNumber, SoftwareUpdateRevision, SubModuleSoftwareVersion, WeldProcess, WeldState};
+use register_view::{BooleanRegisterTemplate, AnalogRegisterTemplate, EnumRegisterTemplate, StatisticsBarTemplate};
 use futures::future::join_all;
 use num_enum::FromPrimitive;
 
@@ -167,6 +167,16 @@ pub async fn show_miller_info_grid(
         app_software_version_pcb_7,
     };
 
+    let arc_time = mb_read_dword_helper(&state, &miller_register_definitions::ARC_TIME.address)
+        .await.map(|val| ArcTime(val));
+    let arc_cycles = mb_read_dword_helper(&state, &miller_register_definitions::ARC_CYCLES.address)
+        .await.map(|val| ArcCycles(val));
+
+    let statistics_bar = StatisticsBarTemplate {
+        arc_time,
+        arc_cycles,
+    };
+
     MillerInfoGridTemplate {
         boolean_registers,
         analog_registers,
@@ -178,6 +188,7 @@ pub async fn show_miller_info_grid(
             meta: &miller_register_definitions::WELD_PROCESS,
             value: weld_process,
         },
+        statistics_bar,
         error_list,
         version_info,
     }
@@ -260,6 +271,7 @@ pub struct MillerInfoGridTemplate {
     pub analog_registers: Vec<AnalogRegisterTemplate>,
     pub weld_state: EnumRegisterTemplate<WeldState>,
     pub weld_process: EnumRegisterTemplate<WeldProcess>,
+    pub statistics_bar: StatisticsBarTemplate,
     pub error_list: error_list::ErrorListTemplate,
     pub version_info: version_info::VersionInfoTemplate,
 }
