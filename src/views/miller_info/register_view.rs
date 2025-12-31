@@ -32,14 +32,6 @@ impl<T: Display> EnumRegisterTemplate<T> {
 
 
 
-// #[derive(Template, WebTemplate)]
-// #[template(path = "components/read-only-register.html")]
-// pub struct RegisterTemplate {
-//     pub name: &'static str,
-//     pub string_value: Option<String>,
-// }
-
-
 #[derive(Template, WebTemplate)]
 #[template(path = "components/analog-read-only-register.html")]
 pub struct AnalogRegisterTemplate {

@@ -114,11 +114,6 @@ impl MillerMemory {
 
     /// Reads a value directly from the local cache. Returns None if value hasn't been cached yet.
     pub async fn read(&self, address: &RegisterAddress) -> Option<ModbusValue> {
-        // TODO: REMOVE TESTING THING!!!
-        if address.address == ERROR_REG_1.address.address || address.address == ERROR_REG_2.address.address {
-            error_targeted!(MODBUS, "ERROR_REG read testing temporary if you read this I left a bug here oops forgot to remove");
-            return Some(ModbusValue::U16(1<<3 + 1<<13));
-        }
         let addr = address.address;
         match address.register_type {
             ModbusAddressType::Coil => {

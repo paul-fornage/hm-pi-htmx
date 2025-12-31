@@ -19,10 +19,11 @@ use crate::logging::LogTarget;
 use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions::MILLER_REGISTERS;
 use crate::modbus::ModbusManager;
-use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate, MachineConfigTemplate};
+use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate, MachineConfigTemplate, WelderProfileTemplate};
 use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
 use crate::views::machine_config::{show_machine_config, save_machine_config};
+use crate::views::welder_profile::show_welder_profile;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -153,6 +154,7 @@ async fn main() {
         .route(AppView::Connections.url(), get(show_connections))
         .route(AppView::MillerInfo.url(), get(show_miller_info))
         .route(AppView::MachineConfig.url(), get(show_machine_config))
+        .route(AppView::WelderProfile.url(), get(show_welder_profile))
 
         // --- Miller Info Component Routes ---
         .route("/miller-info/grid", get(show_miller_info_grid))

@@ -1,4 +1,4 @@
-use crate::miller::miller_error_registers::{ErrorReg1, ErrorReg2, ErrorReg3};
+
 use crate::miller::miller_register_types::*;
 
 pub struct MillerStats {

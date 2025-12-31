@@ -123,19 +123,38 @@ Bit/Error#/Description
 use std::fmt::{Display, Formatter};
 use super::miller_register_types::WelderModel;
 
-/// Represents a single defined error bit.
+/// Represents a single defined error.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ErrorDetail {
-    pub bit: u8,
     pub code: &'static str,
     pub description: &'static str,
 }
 
 impl Display for ErrorDetail {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {} | {}", self.bit, self.code, self.description)
+        write!(f, "{} | {}", self.code, self.description)
     }
 }
+
+/// Represents an active error with its bit index.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IndexedMillerError {
+    pub bit: u8,
+    pub detail: &'static ErrorDetail,
+}
+
+impl Display for IndexedMillerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.bit, self.detail)
+    }
+}
+
+pub type ErrorDefinitionList = [Option<ErrorDetail>; 16];
+
+pub const DEFAULT_ERROR: ErrorDetail = ErrorDetail {
+    code: "---",
+    description: "Reserved / Undefined Error",
+};
 
 /// Shared trait that defines how to interpret an error register.
 pub trait MillerErrorRegister {
@@ -143,22 +162,36 @@ pub trait MillerErrorRegister {
     fn value(&self) -> u16;
 
     /// Returns the specific error list applicable to the given model.
-    fn errors_for_model(model: WelderModel) -> &'static [ErrorDetail];
+    fn errors_for_model(model: &WelderModel) -> &'static ErrorDefinitionList;
 
     /// Returns all possible groupings of error definitions for display purposes.
     /// Format: (Header String, List of Errors)
-    fn all_error_groups() -> &'static [(&'static str, &'static [ErrorDetail])];
+    fn all_error_groups() -> &'static [(&'static str, &'static ErrorDefinitionList)];
 
     fn has_errors(&self) -> bool { self.value() != 0 }
 
+
+    fn get_active_errors(&self, model: &WelderModel) -> Vec<IndexedMillerError> {
+        let val = self.value();
+        let defs = Self::errors_for_model(model);
+
+        let mut errors = Vec::new();
+        for (i, opt) in defs.iter().enumerate() {
+            if (val >> i) & 1 == 1 {
+                let detail = opt.as_ref().unwrap_or(&DEFAULT_ERROR);
+                errors.push(IndexedMillerError {
+                    bit: i as u8,
+                    detail,
+                });
+            }
+        }
+        errors
+    }
+
     /// LOGIC: Returns a list of active errors formatted as strings for a specific model.
     /// This is defined once here and shared by all registers.
-    fn get_active_errors(&self, model: WelderModel) -> Vec<String> {
-        let val = self.value();
-        Self::errors_for_model(model)
-            .iter()
-            .filter(|err| (val >> err.bit) & 1 == 1)
-            .map(|err| err.to_string())
+    fn get_active_errors_string(&self, model: &WelderModel) -> Vec<String> {
+        self.get_active_errors(model).into_iter().map(|err| err.to_string())
             .collect()
     }
 
@@ -170,9 +203,11 @@ pub trait MillerErrorRegister {
         for (header, specs) in Self::all_error_groups() {
             writeln!(f, "    {}:", header)?;
             let mut found = false;
-            for err in *specs {
-                if (val >> err.bit) & 1 == 1 {
-                    writeln!(f, "        {}", err)?;
+
+            for (i, opt) in specs.iter().enumerate() {
+                if (val >> i) & 1 == 1 {
+                    let detail = opt.as_ref().unwrap_or(&DEFAULT_ERROR);
+                    writeln!(f, "        {}: {}", i, detail)?;
                     found = true;
                 }
             }
@@ -192,211 +227,209 @@ pub trait MillerErrorRegister {
 pub struct ErrorReg1(pub u16);
 
 impl ErrorReg1 {
-    pub const GROUP_210_280_SYNC300: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "0.3.1", description: "Secondary Over Temp" },
-        ErrorDetail { bit: 1, code: "0.3.2", description: "Ambient Over Temp" },
-        ErrorDetail { bit: 2, code: "7.3.6", description: "Process Serial Communication With Gateway" },
-        ErrorDetail { bit: 3, code: "3.3.1", description: "Secondary Thermistor Failure" },
-        ErrorDetail { bit: 4, code: "3.3.2", description: "Ambient Thermistor Failure" },
-        ErrorDetail { bit: 5, code: "1.3.1", description: "Fan Failure" },
-        ErrorDetail { bit: 6, code: "1.3.2", description: "Clamp/Output Over Voltage" },
-        ErrorDetail { bit: 7, code: "1.3.3", description: "AC Commutation Time Out" },
-        ErrorDetail { bit: 8, code: "1.3.4", description: "Output Over Voltage" },
-        ErrorDetail { bit: 9, code: "1.3.5", description: "Output Current Or Voltage Feedback With Output Off" },
-        ErrorDetail { bit: 10, code: "1.3.6", description: "No Cooler Detected With Output Current" },
-        ErrorDetail { bit: 11, code: "7.3.4", description: "Process Serial Communication With Primary" },
-        ErrorDetail { bit: 12, code: "7.3.2", description: "Process Serial Communication With User Interface" },
-        ErrorDetail { bit: 13, code: "7.3.1", description: "Process Serial Communication With Memory Card" },
-        ErrorDetail { bit: 14, code: "7.3.5", description: "Process Serial Communication With CPS" },
-        ErrorDetail { bit: 15, code: "7.2.3", description: "User Interface Serial Communication With Process" },
+    pub const GROUP_210_280_SYNC300: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "0.3.1", description: "Secondary Over Temp" }),
+        Some(ErrorDetail { code: "0.3.2", description: "Ambient Over Temp" }),
+        Some(ErrorDetail { code: "7.3.6", description: "Process Serial Communication With Gateway" }),
+        Some(ErrorDetail { code: "3.3.1", description: "Secondary Thermistor Failure" }),
+        Some(ErrorDetail { code: "3.3.2", description: "Ambient Thermistor Failure" }),
+        Some(ErrorDetail { code: "1.3.1", description: "Fan Failure" }),
+        Some(ErrorDetail { code: "1.3.2", description: "Clamp/Output Over Voltage" }),
+        Some(ErrorDetail { code: "1.3.3", description: "AC Commutation Time Out" }),
+        Some(ErrorDetail { code: "1.3.4", description: "Output Over Voltage" }),
+        Some(ErrorDetail { code: "1.3.5", description: "Output Current Or Voltage Feedback With Output Off" }),
+        Some(ErrorDetail { code: "1.3.6", description: "No Cooler Detected With Output Current" }),
+        Some(ErrorDetail { code: "7.3.4", description: "Process Serial Communication With Primary" }),
+        Some(ErrorDetail { code: "7.3.2", description: "Process Serial Communication With User Interface" }),
+        Some(ErrorDetail { code: "7.3.1", description: "Process Serial Communication With Memory Card" }),
+        Some(ErrorDetail { code: "7.3.5", description: "Process Serial Communication With CPS" }),
+        Some(ErrorDetail { code: "7.2.3", description: "User Interface Serial Communication With Process" }),
     ];
 
-    pub const GROUP_400_800: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "0.3.2", description: "Ambient Over Temp" },
-        ErrorDetail { bit: 1, code: "0.3.1", description: "Secondary Over Temp RC20" },
-        ErrorDetail { bit: 2, code: "0.3.1", description: "Secondary Over Temp RC30" },
-        ErrorDetail { bit: 3, code: "0.4.1", description: "Primary Power Over Temp 400/800 Top" },
-        ErrorDetail { bit: 4, code: "0.4.2/0.7.1", description: "Primary Power Over Temp 800 Bottom" },
-        ErrorDetail { bit: 11, code: "7.3.7", description: "Process serial communication with Primary 800 Bottom" },
-        ErrorDetail { bit: 12, code: "7.3.4", description: "Process serial communication with Primary 400/800 Top" },
-        ErrorDetail { bit: 13, code: "3.3.2", description: "Ambient thermistor failure" },
-        ErrorDetail { bit: 14, code: "3.3.1", description: "Secondary thermistor failure RC20" },
-        ErrorDetail { bit: 15, code: "3.3.1", description: "Secondary thermistor failure RC30" },
+    pub const GROUP_400_800: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "0.3.2", description: "Ambient Over Temp" }),
+        Some(ErrorDetail { code: "0.3.1", description: "Secondary Over Temp RC20" }),
+        Some(ErrorDetail { code: "0.3.1", description: "Secondary Over Temp RC30" }),
+        Some(ErrorDetail { code: "0.4.1", description: "Primary Power Over Temp 400/800 Top" }),
+        Some(ErrorDetail { code: "0.4.2/0.7.1", description: "Primary Power Over Temp 800 Bottom" }),
+        None, // 5
+        None, // 6
+        None, // 7
+        None, // 8
+        None, // 9
+        None, // 10
+        Some(ErrorDetail { code: "7.3.7", description: "Process serial communication with Primary 800 Bottom" }),
+        Some(ErrorDetail { code: "7.3.4", description: "Process serial communication with Primary 400/800 Top" }),
+        Some(ErrorDetail { code: "3.3.2", description: "Ambient thermistor failure" }),
+        Some(ErrorDetail { code: "3.3.1", description: "Secondary thermistor failure RC20" }),
+        Some(ErrorDetail { code: "3.3.1", description: "Secondary thermistor failure RC30" }),
     ];
 }
 
 impl MillerErrorRegister for ErrorReg1 {
     fn value(&self) -> u16 { self.0 }
 
-    fn errors_for_model(model: WelderModel) -> &'static [ErrorDetail] {
+    fn errors_for_model(model: &WelderModel) -> &'static ErrorDefinitionList {
         match model {
             WelderModel::Dynasty210 | WelderModel::Dynasty280 |
             WelderModel::Maxstar210 | WelderModel::Maxstar280 |
-            WelderModel::Syncrowave300 => Self::GROUP_210_280_SYNC300,
-            _ => Self::GROUP_400_800,
+            WelderModel::Syncrowave300 => &Self::GROUP_210_280_SYNC300,
+            _ => &Self::GROUP_400_800,
         }
     }
 
-    fn all_error_groups() -> &'static [(&'static str, &'static [ErrorDetail])] {
+    fn all_error_groups() -> &'static [(&'static str, &'static ErrorDefinitionList)] {
         &[
-            ("Dynasty/Maxstar 210/280, Syncrowave 300", Self::GROUP_210_280_SYNC300),
-            ("Dynasty/Maxstar 400/800", Self::GROUP_400_800),
+            ("Dynasty/Maxstar 210/280, Syncrowave 300", &Self::GROUP_210_280_SYNC300),
+            ("Dynasty/Maxstar 400/800", &Self::GROUP_400_800),
         ]
     }
 }
-
-impl Display for ErrorReg1 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.fmt_register_display(f, "Reg 1")
-    }
-}
-
-// =============================================================================
-// Error Register 2
-// =============================================================================
-
+// ... existing code ...
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ErrorReg2(pub u16);
 
 impl ErrorReg2 {
-    pub const GROUP_210_280_SYNC300: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "0.4.1", description: "Primary Power 1 Over Temp" },
-        ErrorDetail { bit: 1, code: "0.4.2", description: "Primary Power 2 Over Temp" },
-        ErrorDetail { bit: 2, code: "1.4.8", description: "Ground Current" },
-        ErrorDetail { bit: 3, code: "1.4.0", description: "Primary Not Ready" },
-        ErrorDetail { bit: 4, code: "1.4.1", description: "Primary Capacitor Imbalance" },
-        ErrorDetail { bit: 5, code: "1.4.2", description: "Input Over Voltage" },
-        ErrorDetail { bit: 6, code: "1.4.3", description: "Input Over Current" },
-        ErrorDetail { bit: 7, code: "1.4.4", description: "Primary Bus Under Voltage" },
-        ErrorDetail { bit: 8, code: "1.4.5", description: "Input Under Voltage" },
-        ErrorDetail { bit: 9, code: "3.4.1", description: "Primary Power 1 Thermistor Failure" },
-        ErrorDetail { bit: 10, code: "3.4.2", description: "Primary Power 2 Thermistor Failure" },
-        ErrorDetail { bit: 11, code: "7.4.3", description: "Primary Serial Communication With Process" },
-        ErrorDetail { bit: 12, code: "1.4.6", description: "Primary Capacitor Failure" },
-        ErrorDetail { bit: 13, code: "1.4.7", description: "Primary Control Power" },
-        ErrorDetail { bit: 14, code: "0.4.1L", description: "Primary Power 1 Latched Over Temp" },
-        ErrorDetail { bit: 15, code: "0.4.2L", description: "Primary Power 2 Latched Over Temp" },
+    pub const GROUP_210_280_SYNC300: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "0.4.1", description: "Primary Power 1 Over Temp" }),
+        Some(ErrorDetail { code: "0.4.2", description: "Primary Power 2 Over Temp" }),
+        Some(ErrorDetail { code: "1.4.8", description: "Ground Current" }),
+        Some(ErrorDetail { code: "1.4.0", description: "Primary Not Ready" }),
+        Some(ErrorDetail { code: "1.4.1", description: "Primary Capacitor Imbalance" }),
+        Some(ErrorDetail { code: "1.4.2", description: "Input Over Voltage" }),
+        Some(ErrorDetail { code: "1.4.3", description: "Input Over Current" }),
+        Some(ErrorDetail { code: "1.4.4", description: "Primary Bus Under Voltage" }),
+        Some(ErrorDetail { code: "1.4.5", description: "Input Under Voltage" }),
+        Some(ErrorDetail { code: "3.4.1", description: "Primary Power 1 Thermistor Failure" }),
+        Some(ErrorDetail { code: "3.4.2", description: "Primary Power 2 Thermistor Failure" }),
+        Some(ErrorDetail { code: "7.4.3", description: "Primary Serial Communication With Process" }),
+        Some(ErrorDetail { code: "1.4.6", description: "Primary Capacitor Failure" }),
+        Some(ErrorDetail { code: "1.4.7", description: "Primary Control Power" }),
+        Some(ErrorDetail { code: "0.4.1L", description: "Primary Power 1 Latched Over Temp" }),
+        Some(ErrorDetail { code: "0.4.2L", description: "Primary Power 2 Latched Over Temp" }),
     ];
 
-    pub const GROUP_400_800_SYNC400: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "3.4.1", description: "Primary Power Thermistor Failure 400/800 Top" },
-        ErrorDetail { bit: 1, code: "3.4.2/3.7.1", description: "Primary Power Thermistor Failure 800 Bottom" },
-        ErrorDetail { bit: 2, code: "1.3.2", description: "Clamp/Output over voltage" },
-        ErrorDetail { bit: 3, code: "1.3.3", description: "AC Communication time out" },
-        ErrorDetail { bit: 4, code: "1.3.4", description: "Output over voltage" },
-        ErrorDetail { bit: 5, code: "1.3.5", description: "Output current or voltage feedback with output off" },
-        ErrorDetail { bit: 6, code: "1.4.8", description: "Ground current" },
-        ErrorDetail { bit: 7, code: "1.4.3", description: "Input over current 400/800 Top" },
-        ErrorDetail { bit: 8, code: "1.4.3/1.7.3", description: "Input over current 800 Bottom" },
-        ErrorDetail { bit: 9, code: "1.4.7", description: "Primary control power" },
-        ErrorDetail { bit: 10, code: "1.4.5", description: "Input under voltage" },
-        ErrorDetail { bit: 11, code: "1.4.4", description: "Primary bus under voltage" },
-        ErrorDetail { bit: 12, code: "7.3.6", description: "Process serial communication with Gateway" },
-        ErrorDetail { bit: 13, code: "7.3.2", description: "Process serial communication with User Interface" },
-        ErrorDetail { bit: 14, code: "7.3.1", description: "Process serial communication with Memory Card" },
-        ErrorDetail { bit: 15, code: "7.2.3", description: "User interface serial communication with Process" },
+    pub const GROUP_400_800_SYNC400: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "3.4.1", description: "Primary Power Thermistor Failure 400/800 Top" }),
+        Some(ErrorDetail { code: "3.4.2/3.7.1", description: "Primary Power Thermistor Failure 800 Bottom" }),
+        Some(ErrorDetail { code: "1.3.2", description: "Clamp/Output over voltage" }),
+        Some(ErrorDetail { code: "1.3.3", description: "AC Communication time out" }),
+        Some(ErrorDetail { code: "1.3.4", description: "Output over voltage" }),
+        Some(ErrorDetail { code: "1.3.5", description: "Output current or voltage feedback with output off" }),
+        Some(ErrorDetail { code: "1.4.8", description: "Ground current" }),
+        Some(ErrorDetail { code: "1.4.3", description: "Input over current 400/800 Top" }),
+        Some(ErrorDetail { code: "1.4.3/1.7.3", description: "Input over current 800 Bottom" }),
+        Some(ErrorDetail { code: "1.4.7", description: "Primary control power" }),
+        Some(ErrorDetail { code: "1.4.5", description: "Input under voltage" }),
+        Some(ErrorDetail { code: "1.4.4", description: "Primary bus under voltage" }),
+        Some(ErrorDetail { code: "7.3.6", description: "Process serial communication with Gateway" }),
+        Some(ErrorDetail { code: "7.3.2", description: "Process serial communication with User Interface" }),
+        Some(ErrorDetail { code: "7.3.1", description: "Process serial communication with Memory Card" }),
+        Some(ErrorDetail { code: "7.2.3", description: "User interface serial communication with Process" }),
     ];
 }
 
 impl MillerErrorRegister for ErrorReg2 {
     fn value(&self) -> u16 { self.0 }
 
-    fn errors_for_model(model: WelderModel) -> &'static [ErrorDetail] {
+    fn errors_for_model(model: &WelderModel) -> &'static ErrorDefinitionList {
         match model {
             WelderModel::Dynasty210 | WelderModel::Dynasty280 |
             WelderModel::Maxstar210 | WelderModel::Maxstar280 |
-            WelderModel::Syncrowave300 => Self::GROUP_210_280_SYNC300,
-            _ => Self::GROUP_400_800_SYNC400,
+            WelderModel::Syncrowave300 => &Self::GROUP_210_280_SYNC300,
+            _ => &Self::GROUP_400_800_SYNC400,
         }
     }
 
-    fn all_error_groups() -> &'static [(&'static str, &'static [ErrorDetail])] {
+    fn all_error_groups() -> &'static [(&'static str, &'static ErrorDefinitionList)] {
         &[
-            ("Dynasty/Maxstar 210/280, Syncrowave 300", Self::GROUP_210_280_SYNC300),
-            ("Dynasty/Maxstar 400/800, Syncrowave 400", Self::GROUP_400_800_SYNC400),
+            ("Dynasty/Maxstar 210/280, Syncrowave 300", &Self::GROUP_210_280_SYNC300),
+            ("Dynasty/Maxstar 400/800, Syncrowave 400", &Self::GROUP_400_800_SYNC400),
         ]
     }
 }
-
-impl Display for ErrorReg2 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.fmt_register_display(f, "Reg 2")
-    }
-}
-
-// =============================================================================
-// Error Register 3
-// =============================================================================
-
+// ... existing code ...
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ErrorReg3(pub u16);
 
 impl ErrorReg3 {
-    pub const GROUP_210_280: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "0.5.1", description: "CPS Power Module 1 Over Temp" },
-        ErrorDetail { bit: 1, code: "0.5.2", description: "CPS Power Module 2 Over Temp" },
-        ErrorDetail { bit: 2, code: "0.5.3", description: "CPS Power Module 3 Over Temp" },
-        ErrorDetail { bit: 3, code: "1.5.9", description: "CPS Primary Bus Under Voltage" },
-        ErrorDetail { bit: 4, code: "7.5.3", description: "CPS Serial Communication With Process" },
-        ErrorDetail { bit: 5, code: "3.5.1", description: "CPS Power Module 1 Thermistor Failure" },
-        ErrorDetail { bit: 6, code: "3.5.2", description: "CPS Power Module 2 Thermistor Failure" },
-        ErrorDetail { bit: 7, code: "3.5.3", description: "CPS Power Module 3 Thermistor Failure" },
-        ErrorDetail { bit: 8, code: "1.5.1", description: "CPS Secondary Bus Under Voltage" },
-        ErrorDetail { bit: 9, code: "1.5.2", description: "CPS Output Over Current" },
-        ErrorDetail { bit: 10, code: "1.5.3", description: "CPS Secondary Bus Over Voltage" },
-        ErrorDetail { bit: 11, code: "1.5.4", description: "CPS Current Or Voltage feedback With CPS off" },
-        ErrorDetail { bit: 12, code: "1.5.5", description: "CPS Secondary Control Power" },
-        ErrorDetail { bit: 13, code: "1.5.6", description: "CPS Capacitor Imbalance" },
-        ErrorDetail { bit: 14, code: "1.5.7", description: "CPS Primary Control Power" },
-        ErrorDetail { bit: 15, code: "1.5.8", description: "CPS Secondary Communication With CPS Primary" },
+    pub const GROUP_210_280: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "0.5.1", description: "CPS Power Module 1 Over Temp" }),
+        Some(ErrorDetail { code: "0.5.2", description: "CPS Power Module 2 Over Temp" }),
+        Some(ErrorDetail { code: "0.5.3", description: "CPS Power Module 3 Over Temp" }),
+        Some(ErrorDetail { code: "1.5.9", description: "CPS Primary Bus Under Voltage" }),
+        Some(ErrorDetail { code: "7.5.3", description: "CPS Serial Communication With Process" }),
+        Some(ErrorDetail { code: "3.5.1", description: "CPS Power Module 1 Thermistor Failure" }),
+        Some(ErrorDetail { code: "3.5.2", description: "CPS Power Module 2 Thermistor Failure" }),
+        Some(ErrorDetail { code: "3.5.3", description: "CPS Power Module 3 Thermistor Failure" }),
+        Some(ErrorDetail { code: "1.5.1", description: "CPS Secondary Bus Under Voltage" }),
+        Some(ErrorDetail { code: "1.5.2", description: "CPS Output Over Current" }),
+        Some(ErrorDetail { code: "1.5.3", description: "CPS Secondary Bus Over Voltage" }),
+        Some(ErrorDetail { code: "1.5.4", description: "CPS Current Or Voltage feedback With CPS off" }),
+        Some(ErrorDetail { code: "1.5.5", description: "CPS Secondary Control Power" }),
+        Some(ErrorDetail { code: "1.5.6", description: "CPS Capacitor Imbalance" }),
+        Some(ErrorDetail { code: "1.5.7", description: "CPS Primary Control Power" }),
+        Some(ErrorDetail { code: "1.5.8", description: "CPS Secondary Communication With CPS Primary" }),
     ];
 
-    pub const GROUP_SYNC300: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 3, code: "1.5.9", description: "CPS Primary Bus Under Voltage" },
+    pub const GROUP_SYNC300: ErrorDefinitionList = [
+        None, // 0
+        None, // 1
+        None, // 2
+        Some(ErrorDetail { code: "1.5.9", description: "CPS Primary Bus Under Voltage" }),
+        None, // 4
+        None, // 5
+        None, // 6
+        None, // 7
+        None, // 8
+        None, // 9
+        None, // 10
+        None, // 11
+        None, // 12
+        None, // 13
+        None, // 14
+        None, // 15
     ];
 
-    pub const GROUP_400_800_SYNC400: &'static [ErrorDetail] = &[
-        ErrorDetail { bit: 0, code: "1.5.9", description: "CPS Primary Bus Under Voltage" },
-        ErrorDetail { bit: 1, code: "1.4.4", description: "Primary Bus Under Voltage 400/800 Top" },
-        ErrorDetail { bit: 2, code: "1.4.5", description: "Input Under Voltage 400/800 Top" },
-        ErrorDetail { bit: 3, code: "1.4.2", description: "Input Over Voltage 400/800 Top" },
-        ErrorDetail { bit: 4, code: "1.4.7", description: "Primary Control Power 400/800 Top" },
-        ErrorDetail { bit: 5, code: "7.4.3", description: "Primary Serial Communication With Process 400/800 Top" },
-        ErrorDetail { bit: 6, code: "1.4.0", description: "Primary Not Ready 400/800 Top" },
-        ErrorDetail { bit: 9, code: "1.7.4", description: "Primary Bus Under Voltage 800 Bottom" },
-        ErrorDetail { bit: 10, code: "1.7.5", description: "Input Under Voltage 800 Bottom" },
-        ErrorDetail { bit: 11, code: "1.7.2", description: "Input Over Voltage 800 Bottom" },
-        ErrorDetail { bit: 12, code: "1.7.7", description: "Primary Control Power 800 Bottom" },
-        ErrorDetail { bit: 13, code: "7.7.3", description: "Primary Serial Communication With Process 800 Bottom" },
-        ErrorDetail { bit: 14, code: "1.7.0", description: "Primary Not Ready 800 Bottom" },
+    pub const GROUP_400_800_SYNC400: ErrorDefinitionList = [
+        Some(ErrorDetail { code: "1.5.9", description: "CPS Primary Bus Under Voltage" }),
+        Some(ErrorDetail { code: "1.4.4", description: "Primary Bus Under Voltage 400/800 Top" }),
+        Some(ErrorDetail { code: "1.4.5", description: "Input Under Voltage 400/800 Top" }),
+        Some(ErrorDetail { code: "1.4.2", description: "Input Over Voltage 400/800 Top" }),
+        Some(ErrorDetail { code: "1.4.7", description: "Primary Control Power 400/800 Top" }),
+        Some(ErrorDetail { code: "7.4.3", description: "Primary Serial Communication With Process 400/800 Top" }),
+        Some(ErrorDetail { code: "1.4.0", description: "Primary Not Ready 400/800 Top" }),
+        None, // 7
+        None, // 8
+        Some(ErrorDetail { code: "1.7.4", description: "Primary Bus Under Voltage 800 Bottom" }),
+        Some(ErrorDetail { code: "1.7.5", description: "Input Under Voltage 800 Bottom" }),
+        Some(ErrorDetail { code: "1.7.2", description: "Input Over Voltage 800 Bottom" }),
+        Some(ErrorDetail { code: "1.7.7", description: "Primary Control Power 800 Bottom" }),
+        Some(ErrorDetail { code: "7.7.3", description: "Primary Serial Communication With Process 800 Bottom" }),
+        Some(ErrorDetail { code: "1.7.0", description: "Primary Not Ready 800 Bottom" }),
+        None, // 15
     ];
 }
 
 impl MillerErrorRegister for ErrorReg3 {
     fn value(&self) -> u16 { self.0 }
 
-    fn errors_for_model(model: WelderModel) -> &'static [ErrorDetail] {
+    fn errors_for_model(model: &WelderModel) -> &'static ErrorDefinitionList {
         match model {
             WelderModel::Dynasty210 | WelderModel::Dynasty280 |
-            WelderModel::Maxstar210 | WelderModel::Maxstar280 => Self::GROUP_210_280,
+            WelderModel::Maxstar210 | WelderModel::Maxstar280 => &Self::GROUP_210_280,
 
-            WelderModel::Syncrowave300 => Self::GROUP_SYNC300,
+            WelderModel::Syncrowave300 => &Self::GROUP_SYNC300,
 
-            _ => Self::GROUP_400_800_SYNC400,
+            _ => &Self::GROUP_400_800_SYNC400,
         }
     }
 
-    fn all_error_groups() -> &'static [(&'static str, &'static [ErrorDetail])] {
+    fn all_error_groups() -> &'static [(&'static str, &'static ErrorDefinitionList)] {
         &[
-            ("Dynasty/Maxstar 210/280", Self::GROUP_210_280),
-            ("Syncrowave 300", Self::GROUP_SYNC300),
-            ("Dynasty/Maxstar 400/800, Syncrowave 400", Self::GROUP_400_800_SYNC400),
+            ("Dynasty/Maxstar 210/280", &Self::GROUP_210_280),
+            ("Syncrowave 300", &Self::GROUP_SYNC300),
+            ("Dynasty/Maxstar 400/800, Syncrowave 400", &Self::GROUP_400_800_SYNC400),
         ]
-    }
-}
-
-impl Display for ErrorReg3 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.fmt_register_display(f, "Reg 3")
     }
 }

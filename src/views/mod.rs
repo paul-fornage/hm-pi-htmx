@@ -2,11 +2,13 @@ mod connections;
 mod operations;
 pub mod miller_info;
 pub mod machine_config;
+pub mod welder_profile;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
 pub use miller_info::MillerInfoTemplate;
 pub use machine_config::MachineConfigTemplate;
+pub use welder_profile::WelderProfileTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -15,12 +17,19 @@ pub enum AppView {
     MillerInfo,
     Connections,
     MachineConfig,
+    WelderProfile,
 }
 
 impl AppView {
     // Returns a slice of all views to iterate over in the template
     pub fn all() -> &'static [AppView] {
-        &[AppView::Operations, AppView::MillerInfo, AppView::Connections, AppView::MachineConfig]
+        &[
+            AppView::Operations,
+            AppView::WelderProfile,
+            AppView::MillerInfo,
+            AppView::Connections,
+            AppView::MachineConfig,
+        ]
     }
 
     // The text displayed on the tab
@@ -30,6 +39,7 @@ impl AppView {
             AppView::MillerInfo => "Miller Info",
             AppView::Connections => "Connections",
             AppView::MachineConfig => "Config",
+            AppView::WelderProfile => "Welder Profile",
         }
     }
 
@@ -40,6 +50,7 @@ impl AppView {
             AppView::MillerInfo => "/miller-info",
             AppView::Connections => "/connections",
             AppView::MachineConfig => "/machine-config",
+            AppView::WelderProfile => "/welder-profile",
         }
     }
 }

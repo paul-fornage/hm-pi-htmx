@@ -1,32 +1,106 @@
 <div class="w-full mt-6">
-    <div class="bg-white rounded-lg shadow-md border-2 {% if self.has_errors() %}border-red-500{% else %}border-gray-300{% endif %}">
-        <div class="px-5 py-3 {% if self.has_errors() %}bg-red-50{% else %}bg-gray-50{% endif %} border-b border-gray-300 rounded-t-lg">
-            <h3 class="text-lg font-semibold {% if self.has_errors() %}text-red-700{% else %}text-gray-700{% endif %}">
-                Error Status ({{ welder_model }})
+    {% if !self.has_errors() %}
+    <!-- Collapsed "Happy Path" View -->
+    <div class="bg-white rounded-lg shadow-sm border border-green-200 overflow-hidden">
+        <div class="px-5 py-3 bg-green-50 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-200 flex items-center justify-center">
+                    <span class="text-green-700 text-sm font-bold">✓</span>
+                </div>
+                <h3 class="text-lg font-semibold text-green-800">
+                    System Healthy ({{ welder_model }})
+                </h3>
+            </div>
+            <span class="text-xs text-green-600 font-medium uppercase tracking-wider">No Errors</span>
+        </div>
+    </div>
+    {% else %}
+    <!-- Expanded Error/Status View -->
+    <div class="bg-white rounded-lg shadow-md border-2 border-red-500 overflow-hidden">
+        <div class="px-5 py-3 bg-red-50 border-b border-red-200">
+            <h3 class="text-lg font-semibold text-red-800 flex items-center">
+                <span class="mr-2">⚠</span> Error Status ({{ welder_model }})
             </h3>
         </div>
 
-        <div class="p-4">
-            {% if self.has_unavailable_registers() %}
-            <div class="text-sm text-amber-600 mb-2 italic">
-                ⚠ Some error registers unavailable
-            </div>
-            {% endif %}
+        <div class="p-4 space-y-4 bg-gray-50">
 
-            {% if self.has_errors() %}
-            <ul class="space-y-2">
-                {% for error in self.get_all_errors() %}
-                <li class="flex items-start">
-                    <span class="text-red-500 mr-2 mt-1">▪</span>
-                    <span class="text-sm text-gray-800 font-mono">{{ error }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <div class="text-center py-4">
-                <span class="text-green-600 font-medium">✓ No Active Errors</span>
+            <!-- Register 1 -->
+            <div class="bg-white rounded border border-gray-200 p-3 shadow-sm">
+                <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Miller Error Register 1</span>
+                    <span class="font-mono text-xs text-gray-400">Addr: 4101</span>
+                </div>
+                {% if let Some(errors) = self.reg_1_errors() %}
+                {% if errors.is_empty() %}
+                <div class="text-sm text-gray-400 italic">✓ No active errors</div>
+                {% else %}
+                <ul class="space-y-1">
+                    {% for error in errors %}
+                    <li class="flex items-start text-sm text-red-600 font-medium">
+                        <span class="mr-2">•</span> {{ error }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% else %}
+                <div class="flex items-center text-red-600 text-sm font-bold">
+                    <span class="mr-2">✕</span> Read Error: Register Unavailable
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
+
+            <!-- Register 2 -->
+            <div class="bg-white rounded border border-gray-200 p-3 shadow-sm">
+                <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Miller Error Register 2</span>
+                    <span class="font-mono text-xs text-gray-400">Addr: 4102</span>
+                </div>
+                {% if let Some(errors) = self.reg_2_errors() %}
+                {% if errors.is_empty() %}
+                <div class="text-sm text-gray-400 italic">✓ No active errors</div>
+                {% else %}
+                <ul class="space-y-1">
+                    {% for error in errors %}
+                    <li class="flex items-start text-sm text-red-600 font-medium">
+                        <span class="mr-2">•</span> {{ error }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% else %}
+                <div class="flex items-center text-red-600 text-sm font-bold">
+                    <span class="mr-2">✕</span> Read Error: Register Unavailable
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Register 3 -->
+            <div class="bg-white rounded border border-gray-200 p-3 shadow-sm">
+                <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Miller Error Register 3</span>
+                    <span class="font-mono text-xs text-gray-400">Addr: 4103</span>
+                </div>
+                {% if let Some(errors) = self.reg_3_errors() %}
+                {% if errors.is_empty() %}
+                <div class="text-sm text-gray-400 italic">✓ No active errors</div>
+                {% else %}
+                <ul class="space-y-1">
+                    {% for error in errors %}
+                    <li class="flex items-start text-sm text-red-600 font-medium">
+                        <span class="mr-2">•</span> {{ error }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% else %}
+                <div class="flex items-center text-red-600 text-sm font-bold">
+                    <span class="mr-2">✕</span> Read Error: Register Unavailable
+                </div>
+                {% endif %}
+            </div>
+
         </div>
     </div>
+    {% endif %}
 </div>
