@@ -867,3 +867,12 @@ pub const MILLER_REGISTERS: &[RegisterMetadata] = &[
 ];
 
 
+pub fn get_register_metadata(register_name: &str) -> Option<&'static RegisterMetadata> {
+    static REGISTER_MAP: std::sync::OnceLock<std::collections::HashMap<&'static str, &'static RegisterMetadata>> = std::sync::OnceLock::new();
+
+    let map = REGISTER_MAP.get_or_init(|| {
+        MILLER_REGISTERS.iter().map(|r| (r.name, r)).collect()
+    });
+    
+    map.get(register_name).copied()
+}
