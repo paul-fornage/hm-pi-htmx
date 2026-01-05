@@ -7,7 +7,7 @@
     <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md border border-slate-300 z-10 animate-in fade-in zoom-in duration-200">
 
         <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
-            <h3 class="font-bold font-mono text-lg text-slate-800">{{ register_info.meta.name }}</h3>
+            <h3 class="font-bold font-mono text-lg text-slate-800">{{ meta.name }}</h3>
             <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
                     class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
         </div>
@@ -16,37 +16,26 @@
             <div>
                 <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Description</span>
                 <p class="text-sm text-slate-700 leading-relaxed mt-1">
-                    {{ register_info.meta.description }}
+                    {{ meta.description }}
                 </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Type</span>
-                    <div class="font-mono text-sm">{{ register_info.meta.address.register_type }}</div>
+                    <div class="font-mono text-sm">{{ meta.address.register_type }}</div>
                 </div>
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Address</span>
-                    <div class="font-mono text-sm">{{ register_info.meta.address.address }}</div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-slate-50 p-2 rounded border border-slate-200">
-                    <span class="text-xs font-bold uppercase text-slate-400">Min</span>
-                    <div class="font-mono text-sm">{{ semantic_min() }} {{ register_info.unit }}</div>
-                </div>
-                <div class="bg-slate-50 p-2 rounded border border-slate-200">
-                    <span class="text-xs font-bold uppercase text-slate-400">Max</span>
-                    <div class="font-mono text-sm">{{ semantic_max() }} {{ register_info.unit }}</div>
+                    <div class="font-mono text-sm">{{ meta.address.address }}</div>
                 </div>
             </div>
 
             <div class="bg-blue-50 p-3 rounded border border-blue-200">
                 <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
-                <div class="font-bold text-lg mt-1 text-slate-700">
-{% if let Some(val) = current_semantic_value() %}
-                    {{ val }} {{ register_info.unit }}
+                <div class="font-bold text-sm mt-1">
+{% if let Some(val) = current_value %}
+                    <span class="text-slate-700">{{ val }}</span>
 {% else %}
                     <span class="text-gray-400">---</span>
 {% endif %}
@@ -56,25 +45,26 @@
             <form hx-post="/welder-profile/write/{{ register_name }}"
                   hx-swap="none"
                   onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)">
-                <label class="block">
-                    <span class="text-sm font-bold text-slate-700">New Value</span>
-                    <div class="flex gap-2 items-center mt-1">
-                        <input type="number"
-                               name="value"
-                               step="{{ step() }}"
-                               min="{{ semantic_min() }}"
-                               max="{{ semantic_max() }}"
-{% if let Some(val) = current_semantic_value() %}
-                               value="{{ val }}"
-{% endif %}
-                               required
-                               class="flex-1 px-3 py-2 border border-slate-300 rounded font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <span class="text-slate-600 font-mono">{{ register_info.unit }}</span>
-                    </div>
-                </label>
+                <div class="space-y-3">
+                    <label class="block text-sm font-medium text-slate-700">
+                        Select Value
+                    </label>
+                    <select name="value"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% for (value, label) in options %}
+                        <option value="{{ value }}"
+                                {% if let Some(curr) = current_value %}
+                                    {% if curr == value %}selected{% endif %}
+                                {% endif %}>
+                            [{{ value }}] {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
                 <button type="submit"
-                        class="w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors">
-                    Write Value
+                        class="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                    Set Value
                 </button>
             </form>
         </div>

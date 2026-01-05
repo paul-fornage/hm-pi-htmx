@@ -1,6 +1,7 @@
 pub mod register_view;
 pub mod register_edit_modal;
 mod analog_details;
+mod special_case_registers;
 
 use askama::Template;
 use askama_web::WebTemplate;
@@ -12,9 +13,10 @@ use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
+use crate::miller::analog_register::AnalogRegisterInfo;
 use crate::{debug_targeted, warn_targeted, AppState};
-use register_view::{EditableBooleanRegister, EditableAnalogRegister};
-use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate};
+use register_view::{EditableBooleanRegister, EditableAnalogRegister, EditableEnumRegister, EditablePostflowRegister};
+use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate, EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -29,51 +31,89 @@ const WELD_PROFILE_BOOLEAN_REGISTERS: [&'static RegisterMetadata; 8] = [
     &miller_register_definitions::AC_INDEPENDANT_EN,
 ];
 
-struct AnalogRegisterConfig {
-    meta: &'static RegisterMetadata,
-    unit: &'static str,
-    scale: u16,
-    precision: u16,
-    min_value: u16,
-    max_value: u16,
-}
+const WELD_PROFILE_ENUM_REGISTERS: [&'static RegisterMetadata; 4] = [
+    &miller_register_definitions::TUNGSTEN_PRESET,
+    &miller_register_definitions::ARC_START_POLARITY_PHASE,
+    &miller_register_definitions::AC_EN_WAVE_SHAPE,
+    &miller_register_definitions::AC_EP_WAVE_SHAPE,
+];
 
-const WELD_PROFILE_ANALOG_REGISTERS: [AnalogRegisterConfig; 27] = [
-    AnalogRegisterConfig { meta: &miller_register_definitions::TUNGSTEN_PRESET, unit: "", scale: 1, precision: 0, min_value: 0, max_value: 9 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::PRESET_MIN_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 1, max_value: 63 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::ARC_START_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 5, max_value: 200 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::ARC_START_TIME, unit: "×10ms", scale: 1, precision: 0, min_value: 0, max_value: 25 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::ARC_START_SLOPE_TIME, unit: "×10ms", scale: 1, precision: 0, min_value: 0, max_value: 25 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::ARC_START_AC_TIME, unit: "×10ms", scale: 1, precision: 0, min_value: 0, max_value: 25 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::ARC_START_POLARITY_PHASE, unit: "", scale: 1, precision: 0, min_value: 0, max_value: 1 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_EN_WAVE_SHAPE, unit: "", scale: 1, precision: 0, min_value: 0, max_value: 3 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_EP_WAVE_SHAPE, unit: "", scale: 1, precision: 0, min_value: 0, max_value: 3 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::HOT_START_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 20 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_EN_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 0, max_value: 1023 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_EP_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 0, max_value: 1023 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_BALANCE, unit: "%", scale: 1, precision: 0, min_value: 30, max_value: 99 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::AC_FREQUENCY, unit: "Hz", scale: 1, precision: 0, min_value: 20, max_value: 400 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::WELD_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 0, max_value: 1023 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::PULSER_PPS, unit: "Hz", scale: 10, precision: 1, min_value: 0, max_value: 50000 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::PULSER_PEAK_TIME, unit: "%", scale: 1, precision: 0, min_value: 5, max_value: 95 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::PREFLOW_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 250 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::INITIAL_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 0, max_value: 1023 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::INITIAL_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 250 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::INITIAL_SLOPE_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 500 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::MAIN_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 9990 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::FINAL_SLOPE_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 500 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::FINAL_AMPERAGE, unit: "A", scale: 1, precision: 0, min_value: 0, max_value: 1023 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::FINAL_TIME, unit: "×0.1s", scale: 1, precision: 0, min_value: 0, max_value: 250 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::POSTFLOW_TIME, unit: "s", scale: 1, precision: 0, min_value: 0, max_value: 51 },
-    AnalogRegisterConfig { meta: &miller_register_definitions::HOT_WIRE_VOLTAGE, unit: "V", scale: 1, precision: 0, min_value: 5, max_value: 20 },
+
+
+const WELD_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 22] = [
+    // Preset Amperage Minimum: Power Source AC / DC Amperage Minimum -25A(Tungsten General) Or 63A(Tungsten Disabled), Res 1A
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::PRESET_MIN_AMPERAGE, "A", 0, 0, 63, 1),
+    // Arc Start Amperage: 5A - 200A, Res: 1A
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::ARC_START_AMPERAGE, "A", 0, 0, 200, 5),
+    // Arc Start Time: 0(Off) - 25(x10ms), Res: 1(x10ms) -> 0.01s res
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::ARC_START_TIME, "s", 2, 0, 25, 0),
+    // Arc Start Slope Time: 0(Off) - 25(x10ms), Res: 1(x10ms) -> 0.01s res
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::ARC_START_SLOPE_TIME, "s", 2, 0, 25, 0),
+    // Arc Start AC Time: 0(Off) - 25(x10ms), Res: 1(x10ms) -> 0.01s res
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::ARC_START_AC_TIME, "s", 2, 0, 25, 0),
+    // Hot Start Time: Range: 0(Off) -20, Resolution: 0.1 Second
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::HOT_START_TIME, "s", 1, 0, 20, 0),
+    // AC EN Amperage, Preset Amps Min - PS Amps Max, Res: 1A
+    AnalogRegisterInfo::new(&miller_register_definitions::AC_EN_AMPERAGE, "A", 0, 0),
+    // AC EP Amperage, Preset Amps Min - PS Amps Max, Res: 1A
+    AnalogRegisterInfo::new(&miller_register_definitions::AC_EP_AMPERAGE, "A", 0, 0),
+    // AC Balance, 30-99%, Res: 1%
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::AC_BALANCE, "%", 0, 0, 99, 30),
+    // AC Frequency, 20-400Hz, Res: 1Hz
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::AC_FREQUENCY, "Hz", 0, 0, 400, 20),
+    // Weld Amperage(DC or AC), Preset Amps Min - PS Amps Max, Res: 1A
+    AnalogRegisterInfo::new(&miller_register_definitions::WELD_AMPERAGE, "A", 0, 0),
+    // Pulser - Pulses Per Second (PPS): Range: 0(Off) – 50000 / 5000 Power Source Dependent, Resolution: 0.1 Hertz
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::PULSER_PPS, "Hz", 1, 0, 50000, 0),
+    // Pulser - Peak Time, 5-95%, Res: 1%
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::PULSER_PEAK_TIME, "%", 0, 0, 95, 5),
+    // Prelow Time, 0(Off) - 250, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::PREFLOW_TIME, "s", 1, 0, 250, 0),
+    // Initial Amperage, Preset Amps Min - PS Amps Max, Res: 1A
+    AnalogRegisterInfo::new(&miller_register_definitions::INITIAL_AMPERAGE, "A", 0, 0),
+    // Initial Time, 0(Off) - 250, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::INITIAL_TIME, "s", 1, 0, 250, 0),
+    // Initial Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::INITIAL_SLOPE_TIME, "s", 1, 0, 500, 0),
+    // Main Time, 0(Off) - 9990, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::MAIN_TIME, "s", 1, 0, 9990, 0),
+    // Final Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::FINAL_SLOPE_TIME, "s", 1, 0, 500, 0),
+    // Final Amperage, Preset Amps Min - PS Amps Max, Res: 1A
+    AnalogRegisterInfo::new(&miller_register_definitions::FINAL_AMPERAGE, "A", 0, 0),
+    // Final Time, 0(Off) - 250, Res: 1(x0.1Sec)
+    AnalogRegisterInfo::new_with_raw_bounds(&miller_register_definitions::FINAL_TIME, "s", 1, 0, 250, 0),
+    // Hot Wire Voltage, 5-20, Res: 1V
+    AnalogRegisterInfo::new_bounded(&miller_register_definitions::HOT_WIRE_VOLTAGE, "V", 0, 0, 20, 5),
 ];
 
 fn find_boolean_register(name: &str) -> Option<&'static RegisterMetadata> {
     WELD_PROFILE_BOOLEAN_REGISTERS.iter().find(|reg| reg.name == name).copied()
 }
 
-fn find_analog_register(name: &str) -> Option<&AnalogRegisterConfig> {
+fn find_analog_register(name: &str) -> Option<&'static AnalogRegisterInfo> {
     WELD_PROFILE_ANALOG_REGISTERS.iter().find(|reg| reg.meta.name == name)
+}
+
+fn find_enum_register(name: &str) -> Option<&'static RegisterMetadata> {
+    WELD_PROFILE_ENUM_REGISTERS.iter().find(|reg| reg.name == name).copied()
+}
+
+enum EnumRegisterType {
+    TungstenPreset,
+    Polarity,
+    WaveShapeEN,
+    WaveShapeEP,
+}
+
+fn get_enum_register_type(name: &str) -> Option<EnumRegisterType> {
+    match name {
+        "TUNGSTEN PRESET" => Some(EnumRegisterType::TungstenPreset),
+        "ARC START POLARITY PHASE" => Some(EnumRegisterType::Polarity),
+        "AC EN WAVE SHAPE" => Some(EnumRegisterType::WaveShapeEN),
+        "AC EP WAVE SHAPE" => Some(EnumRegisterType::WaveShapeEP),
+        _ => None,
+    }
 }
 
 async fn mb_read_bool_helper(state: &AppState, address: &RegisterAddress) -> Option<bool> {
@@ -110,22 +150,39 @@ pub async fn show_welder_profile_grid(
     }
 
     let mut analog_registers = Vec::new();
-    for config in WELD_PROFILE_ANALOG_REGISTERS.iter() {
-        let value = mb_read_word_helper(&state, &config.meta.address).await;
+    for info in WELD_PROFILE_ANALOG_REGISTERS.iter() {
+        let value = mb_read_word_helper(&state, &info.meta.address).await;
         analog_registers.push(EditableAnalogRegister {
-            meta: config.meta,
+            register_info: info,
             value,
-            unit: config.unit,
-            scale: config.scale,
-            precision: config.precision,
-            min_value: config.min_value,
-            max_value: config.max_value,
         });
     }
+
+    let mut enum_registers = Vec::new();
+    for meta in WELD_PROFILE_ENUM_REGISTERS.iter() {
+        let value = mb_read_word_helper(&state, &meta.address).await;
+        let register = match get_enum_register_type(meta.name) {
+            Some(EnumRegisterType::TungstenPreset) => EditableEnumRegister::new_tungsten(meta, value),
+            Some(EnumRegisterType::Polarity) => EditableEnumRegister::new_polarity(meta, value),
+            Some(EnumRegisterType::WaveShapeEN) | Some(EnumRegisterType::WaveShapeEP) =>
+                EditableEnumRegister::new_wave_shape(meta, value),
+            None => continue,
+        };
+        enum_registers.push(register);
+    }
+
+    // Handle postflow time separately
+    let postflow_value = mb_read_word_helper(&state, &miller_register_definitions::POSTFLOW_TIME.address).await;
+    let postflow_register = EditablePostflowRegister {
+        meta: &miller_register_definitions::POSTFLOW_TIME,
+        value: postflow_value,
+    };
 
     WelderProfileGridTemplate {
         boolean_registers,
         analog_registers,
+        enum_registers,
+        postflow_register,
     }
 }
 
@@ -145,17 +202,46 @@ pub async fn show_edit_modal(
         return Html(template.render().unwrap());
     }
 
-    if let Some(config) = find_analog_register(&register_name) {
-        let current_value = mb_read_word_helper(&state, &config.meta.address).await;
+    if let Some(info) = find_analog_register(&register_name) {
+        let current_value = mb_read_word_helper(&state, &info.meta.address).await;
         let template = AnalogEditModalTemplate {
-            meta: config.meta,
+            register_info: info,
             current_value,
             register_name,
-            unit: config.unit,
-            scale: config.scale,
-            precision: config.precision,
-            min_value: config.min_value,
-            max_value: config.max_value,
+        };
+        return Html(template.render().unwrap());
+    }
+
+    if let Some(meta) = find_enum_register(&register_name) {
+        let current_value = mb_read_word_helper(&state, &meta.address).await;
+        let template = match get_enum_register_type(&register_name) {
+            Some(EnumRegisterType::TungstenPreset) =>
+                EnumEditModalTemplate::new_tungsten(meta, current_value, register_name),
+            Some(EnumRegisterType::Polarity) => {
+                let polarity_template = PolarityEditModalTemplate {
+                    meta,
+                    current_value,
+                    register_name,
+                };
+                return Html(polarity_template.render().unwrap());
+            },
+            Some(EnumRegisterType::WaveShapeEN) | Some(EnumRegisterType::WaveShapeEP) =>
+                EnumEditModalTemplate::new_wave_shape(meta, current_value, register_name),
+            None => {
+                warn_targeted!(HTTP, "Unknown enum register type: {}", register_name);
+                return Html("<div>Error: Unknown enum register type</div>".to_string());
+            }
+        };
+        return Html(template.render().unwrap());
+    }
+
+    // Handle postflow time specially
+    if register_name == "POSTFLOW TIME" {
+        let current_value = mb_read_word_helper(&state, &miller_register_definitions::POSTFLOW_TIME.address).await;
+        let template = PostflowEditModalTemplate {
+            meta: &miller_register_definitions::POSTFLOW_TIME,
+            current_value,
+            register_name,
         };
         return Html(template.render().unwrap());
     }
@@ -174,6 +260,11 @@ pub struct AnalogWriteForm {
     value: f32,
 }
 
+#[derive(Deserialize)]
+pub struct EnumWriteForm {
+    value: u16,
+}
+
 pub async fn submit_register_write(
     axum::extract::State(state): axum::extract::State<AppState>,
     Path(register_name): Path<String>,
@@ -184,30 +275,72 @@ pub async fn submit_register_write(
     if let Some(meta) = find_boolean_register(&register_name) {
         let form: BooleanWriteForm = serde_json::from_value(form).unwrap();
         let value = form.value == "true";
-        let result = state.miller_registers.manager.write_single_coil(crate::modbus::modbus_transaction_types::WriteSingleCoilRequest {
-            address: meta.address.address,
-            value,
-        }).await;
-
-        match result {
-            Ok(_) => debug_targeted!(HTTP, "Successfully wrote boolean register: {}", register_name),
-            Err(e) => warn!("Failed to write boolean register {}: {:?}", register_name, e),
-        }
+        println!("Would write boolean to address {}: {}", meta.address.address, value);
         return axum::http::StatusCode::OK.into_response();
     }
 
-    if let Some(config) = find_analog_register(&register_name) {
+    if let Some(info) = find_analog_register(&register_name) {
         let form: AnalogWriteForm = serde_json::from_value(form).unwrap();
-        let raw_value = (form.value * config.scale as f32) as u16;
-        let result = state.miller_registers.manager.write_single_register(crate::modbus::modbus_transaction_types::WriteSingleRegisterRequest {
-            address: config.meta.address.address,
-            value: raw_value,
-        }).await;
 
-        match result {
-            Ok(_) => debug_targeted!(HTTP, "Successfully wrote analog register: {}", register_name),
-            Err(e) => warn!("Failed to write analog register {}: {:?}", register_name, e),
+        if let Err(msg) = info.validate_semantic_value(form.value) {
+            warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
+            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
         }
+
+        let raw_value = info.convert_to_raw(form.value);
+        println!("Would write analog to address {}: {} (raw: {})", info.meta.address.address, form.value, raw_value);
+        return axum::http::StatusCode::OK.into_response();
+    }
+
+    if let Some(meta) = find_enum_register(&register_name) {
+        let form: EnumWriteForm = serde_json::from_value(form).unwrap();
+
+        // Validate the value based on register type
+        let validation_result = match get_enum_register_type(&register_name) {
+            Some(EnumRegisterType::TungstenPreset) => {
+                use special_case_registers::TungstenPreset;
+                use num_enum::TryFromPrimitive;
+                TungstenPreset::try_from_primitive(form.value)
+                    .map(|_| ())
+                    .map_err(|_| "Invalid tungsten preset value".to_string())
+            },
+            Some(EnumRegisterType::Polarity) => {
+                use special_case_registers::ElectrodePolarity;
+                use num_enum::TryFromPrimitive;
+                ElectrodePolarity::try_from_primitive(form.value)
+                    .map(|_| ())
+                    .map_err(|_| "Invalid polarity value".to_string())
+            },
+            Some(EnumRegisterType::WaveShapeEN) | Some(EnumRegisterType::WaveShapeEP) => {
+                use special_case_registers::WaveShape;
+                use num_enum::TryFromPrimitive;
+                WaveShape::try_from_primitive(form.value)
+                    .map(|_| ())
+                    .map_err(|_| "Invalid wave shape value".to_string())
+            },
+            None => Err("Unknown enum register type".to_string()),
+        };
+
+        if let Err(msg) = validation_result {
+            warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
+            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
+        }
+
+        println!("Would write enum to address {}: {}", meta.address.address, form.value);
+        return axum::http::StatusCode::OK.into_response();
+    }
+
+    // Handle postflow time specially
+    if register_name == "POSTFLOW TIME" {
+        let form: EnumWriteForm = serde_json::from_value(form).unwrap();
+
+        use special_case_registers::PostFlowTime;
+        if let Err(msg) = PostFlowTime::from_raw(form.value) {
+            warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
+            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
+        }
+
+        println!("Would write postflow time to address {}: {}", miller_register_definitions::POSTFLOW_TIME.address.address, form.value);
         return axum::http::StatusCode::OK.into_response();
     }
 
@@ -225,4 +358,6 @@ impl ViewTemplate for WelderProfileTemplate { const APP_VIEW_VARIANT: AppView = 
 pub struct WelderProfileGridTemplate {
     pub boolean_registers: Vec<EditableBooleanRegister>,
     pub analog_registers: Vec<EditableAnalogRegister>,
+    pub enum_registers: Vec<EditableEnumRegister>,
+    pub postflow_register: EditablePostflowRegister,
 }

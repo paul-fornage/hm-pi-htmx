@@ -1,7 +1,7 @@
 {% extends "components/welder-profile/base-editable-register-card.html" %}
 
 {% block display_value %}
-<div class="h-8 flex items-center justify-center font-bold text-xl
+<div class="h-8 w-full flex items-center justify-center font-bold text-xl
 {% if has_value() %}
     bg-slate-100 text-slate-400
 {% else %}
@@ -11,5 +11,5 @@
 </div>
 {% endblock %}
 
-{% block register_name_url %}{{ meta.name }}{% endblock %}
-{% block register_name_text %}{{ meta.name }}{% endblock %}
+{% block register_name_url %}{{ register_info.meta.name }}{% endblock %}
+{% block register_name_text %}{{ register_info.meta.name }}{% endblock %}

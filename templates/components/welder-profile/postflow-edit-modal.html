@@ -1,0 +1,153 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+     id="modal-backdrop"
+     hx-preserve="true">
+
+    <div class="absolute inset-0" onclick="document.getElementById('global-modal-layer').innerHTML = ''"></div>
+
+    <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md border border-slate-300 z-10 animate-in fade-in zoom-in duration-200">
+
+        <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
+            <h3 class="font-bold font-mono text-lg text-slate-800">{{ meta.name }}</h3>
+            <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                    class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
+        </div>
+
+        <div class="p-4 space-y-4">
+            <div>
+                <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Description</span>
+                <p class="text-sm text-slate-700 leading-relaxed mt-1">
+                    {{ meta.description }}
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Type</span>
+                    <div class="font-mono text-sm">{{ meta.address.register_type }}</div>
+                </div>
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Address</span>
+                    <div class="font-mono text-sm">{{ meta.address.address }}</div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
+                <div class="font-bold text-lg mt-1 text-slate-700">
+                    {{ current_display_value() }}
+                </div>
+            </div>
+
+            <form hx-post="/welder-profile/write/{{ register_name }}"
+                  hx-swap="none"
+                  onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)"
+                  id="postflow-form">
+
+                <input type="hidden" name="value" id="postflow-value" value="0">
+
+                <div class="space-y-4">
+                    <div class="relative py-4">
+                        <input type="range"
+                               id="mode-slider"
+                               min="0"
+                               max="2"
+                               step="1"
+                               value="0"
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider"
+                               oninput="
+                                   const mode = parseInt(this.value);
+                                   const manualSection = document.getElementById('manual-section');
+                                   const modeLabel = document.getElementById('mode-label');
+                                   const valueInput = document.getElementById('postflow-value');
+
+                                   if (mode === 0) {
+                                       modeLabel.textContent = 'OFF';
+                                       modeLabel.className = 'text-lg font-bold text-slate-500';
+                                       manualSection.classList.add('hidden');
+                                       valueInput.value = 0;
+                                   } else if (mode === 1) {
+                                       modeLabel.textContent = 'MANUAL';
+                                       modeLabel.className = 'text-lg font-bold text-blue-600';
+                                       manualSection.classList.remove('hidden');
+                                       const seconds = parseInt(document.getElementById('seconds-input').value);
+                                       valueInput.value = seconds;
+                                   } else {
+                                       modeLabel.textContent = 'AUTO';
+                                       modeLabel.className = 'text-lg font-bold text-green-600';
+                                       manualSection.classList.add('hidden');
+                                       valueInput.value = 51;
+                                   }
+                               ">
+
+                        <div class="flex justify-between text-xs text-slate-600 mt-2">
+                            <span>OFF</span>
+                            <span>MANUAL</span>
+                            <span>AUTO</span>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <div id="mode-label" class="text-lg font-bold text-slate-500">OFF</div>
+                    </div>
+
+                    <div id="manual-section" class="hidden space-y-2 p-3 bg-slate-50 rounded border border-slate-200">
+                        <label class="block text-sm font-medium text-slate-700">
+                            Time (seconds)
+                        </label>
+                        <input type="number"
+                               id="seconds-input"
+                               min="1"
+                               max="50"
+                               step="1"
+                               value="25"
+                               class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               oninput="document.getElementById('postflow-value').value = this.value;">
+                        <p class="text-xs text-slate-500">Range: 1-50 seconds</p>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                    Set Value
+                </button>
+            </form>
+
+            <script>
+                (function() {
+                    const currentVal = {% if let Some(val) = current_value %}{{ val }}{% else %}0{% endif %};
+                    const slider = document.getElementById('mode-slider');
+                    const manualSection = document.getElementById('manual-section');
+                    const modeLabel = document.getElementById('mode-label');
+                    const valueInput = document.getElementById('postflow-value');
+                    const secondsInput = document.getElementById('seconds-input');
+
+                    if (currentVal === 0) {
+                        slider.value = 0;
+                        modeLabel.textContent = 'OFF';
+                        modeLabel.className = 'text-lg font-bold text-slate-500';
+                        valueInput.value = 0;
+                    } else if (currentVal === 51) {
+                        slider.value = 2;
+                        modeLabel.textContent = 'AUTO';
+                        modeLabel.className = 'text-lg font-bold text-green-600';
+                        valueInput.value = 51;
+                    } else {
+                        slider.value = 1;
+                        modeLabel.textContent = 'MANUAL';
+                        modeLabel.className = 'text-lg font-bold text-blue-600';
+                        manualSection.classList.remove('hidden');
+                        secondsInput.value = currentVal;
+                        valueInput.value = currentVal;
+                    }
+                })();
+            </script>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-b-lg border-t border-slate-100 text-right">
+            <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                    class="px-4 py-2 bg-white border border-slate-300 rounded text-sm font-medium hover:bg-slate-100 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>

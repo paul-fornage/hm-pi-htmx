@@ -161,8 +161,8 @@ async fn main() {
 
         // --- Welder Profile Component Routes ---
         .route("/welder-profile/grid", get(show_welder_profile_grid))
-        .route("/welder-profile/edit/:register_name", get(show_edit_modal))
-        .route("/welder-profile/write/:register_name", post(submit_register_write))
+        .route("/welder-profile/edit/{register_name}", get(show_edit_modal))
+        .route("/welder-profile/write/{register_name}", post(submit_register_write))
 
         // --- Machine Config Routes ---
         .route("/machine-config/save", post(save_machine_config))

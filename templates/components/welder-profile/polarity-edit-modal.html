@@ -1,0 +1,138 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+     id="modal-backdrop"
+     hx-preserve="true">
+
+    <div class="absolute inset-0" onclick="document.getElementById('global-modal-layer').innerHTML = ''"></div>
+
+    <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md border border-slate-300 z-10 animate-in fade-in zoom-in duration-200">
+
+        <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
+            <h3 class="font-bold font-mono text-lg text-slate-800">{{ meta.name }}</h3>
+            <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                    class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
+        </div>
+
+        <div class="p-4 space-y-4">
+            <div>
+                <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Description</span>
+                <p class="text-sm text-slate-700 leading-relaxed mt-1">
+                    {{ meta.description }}
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Type</span>
+                    <div class="font-mono text-sm">{{ meta.address.register_type }}</div>
+                </div>
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Address</span>
+                    <div class="font-mono text-sm">{{ meta.address.address }}</div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
+                <div class="font-bold text-sm mt-1">
+{% if let Some(val) = current_value %}
+                    <span class="text-slate-700">{% if *val == 0 %}EN (Electrode Negative){% else %}EP (Electrode Positive){% endif %}</span>
+{% else %}
+                    <span class="text-gray-400">---</span>
+{% endif %}
+                </div>
+            </div>
+
+            <form hx-post="/welder-profile/write/{{ register_name }}"
+                  hx-swap="none"
+                  onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)"
+                  id="polarity-form">
+
+                <input type="hidden" name="value" id="polarity-value" value="0">
+
+                <div class="flex items-center justify-center gap-4 py-6">
+                    <span id="en-label" class="text-lg font-bold text-blue-600">EN</span>
+
+                    <label class="relative inline-block w-16 h-8">
+                        <input type="checkbox"
+                               id="polarity-switch"
+                               class="opacity-0 w-0 h-0"
+                               onchange="
+                                   const isEP = this.checked;
+                                   const valueInput = document.getElementById('polarity-value');
+                                   const enLabel = document.getElementById('en-label');
+                                   const epLabel = document.getElementById('ep-label');
+
+                                   if (isEP) {
+                                       valueInput.value = 1;
+                                       enLabel.className = 'text-lg font-medium text-slate-400';
+                                       epLabel.className = 'text-lg font-bold text-blue-600';
+                                   } else {
+                                       valueInput.value = 0;
+                                       enLabel.className = 'text-lg font-bold text-blue-600';
+                                       epLabel.className = 'text-lg font-medium text-slate-400';
+                                   }
+                               ">
+                        <span class="absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-slate-300 rounded-full transition-all duration-300 before:absolute before:content-[''] before:h-6 before:w-6 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-all before:duration-300"
+                              style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);"></span>
+                    </label>
+
+                    <span id="ep-label" class="text-lg font-medium text-slate-400">EP</span>
+                </div>
+
+                <div class="text-center text-sm text-slate-600 mb-4">
+                    <div id="polarity-description">Electrode Negative</div>
+                </div>
+
+                <button type="submit"
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                    Set Value
+                </button>
+            </form>
+
+            <style>
+                #polarity-switch:checked + span {
+                    background-color: #3b82f6;
+                }
+                #polarity-switch:checked + span:before {
+                    transform: translateX(32px);
+                }
+            </style>
+
+            <script>
+                (function() {
+                    const currentVal = {% if let Some(val) = current_value %}{{ val }}{% else %}0{% endif %};
+                    const switchEl = document.getElementById('polarity-switch');
+                    const valueInput = document.getElementById('polarity-value');
+                    const enLabel = document.getElementById('en-label');
+                    const epLabel = document.getElementById('ep-label');
+                    const description = document.getElementById('polarity-description');
+
+                    if (currentVal === 1) {
+                        switchEl.checked = true;
+                        valueInput.value = 1;
+                        enLabel.className = 'text-lg font-medium text-slate-400';
+                        epLabel.className = 'text-lg font-bold text-blue-600';
+                        description.textContent = 'Electrode Positive';
+                    } else {
+                        switchEl.checked = false;
+                        valueInput.value = 0;
+                        enLabel.className = 'text-lg font-bold text-blue-600';
+                        epLabel.className = 'text-lg font-medium text-slate-400';
+                        description.textContent = 'Electrode Negative';
+                    }
+
+                    switchEl.addEventListener('change', function() {
+                        description.textContent = this.checked ? 'Electrode Positive' : 'Electrode Negative';
+                    });
+                })();
+            </script>
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-b-lg border-t border-slate-100 text-right">
+            <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                    class="px-4 py-2 bg-white border border-slate-300 rounded text-sm font-medium hover:bg-slate-100 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>

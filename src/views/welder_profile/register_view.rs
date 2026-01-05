@@ -1,6 +1,9 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use crate::modbus::RegisterMetadata;
+use crate::miller::analog_register::AnalogRegisterInfo;
+use super::special_case_registers::{TungstenPreset, ElectrodePolarity, WaveShape, PostFlowTime};
+use num_enum::TryFromPrimitive;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-profile/editable-boolean-register.html")]
@@ -12,13 +15,8 @@ pub struct EditableBooleanRegister {
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-profile/editable-analog-register.html")]
 pub struct EditableAnalogRegister {
-    pub meta: &'static RegisterMetadata,
+    pub register_info: &'static AnalogRegisterInfo,
     pub value: Option<u16>,
-    pub unit: &'static str,
-    pub scale: u16,
-    pub precision: u16,
-    pub min_value: u16,
-    pub max_value: u16,
 }
 
 impl EditableAnalogRegister {
@@ -27,24 +25,72 @@ impl EditableAnalogRegister {
     }
 
     pub fn formatted_value(&self) -> String {
-        match self.value {
-            Some(val) => {
-                let scaled = val as f32 / self.scale as f32;
-                format!("{:.*} {}", self.precision as usize, scaled, self.unit)
-            }
-            None => String::from("---")
+        self.register_info.formatted_value(self.value)
+    }
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/welder-profile/editable-enum-register.html")]
+pub struct EditableEnumRegister {
+    pub meta: &'static RegisterMetadata,
+    pub value: Option<u16>,
+    pub display_value: String,
+}
+
+impl EditableEnumRegister {
+    pub fn new_tungsten(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
+        let display_value = match value.and_then(|v| TungstenPreset::try_from_primitive(v).ok()) {
+            Some(preset) => preset.display_name().to_string(),
+            None => "---".to_string(),
+        };
+        Self { meta, value, display_value }
+    }
+
+    pub fn new_polarity(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
+        let display_value = match value.and_then(|v| ElectrodePolarity::try_from_primitive(v).ok()) {
+            Some(polarity) => polarity.display_name().to_string(),
+            None => "---".to_string(),
+        };
+        Self { meta, value, display_value }
+    }
+
+    pub fn new_wave_shape(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
+        let display_value = match value.and_then(|v| WaveShape::try_from_primitive(v).ok()) {
+            Some(shape) => shape.display_name().to_string(),
+            None => "---".to_string(),
+        };
+        Self { meta, value, display_value }
+    }
+
+    pub fn new_postflow(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
+        let display_value = match value.and_then(|v| PostFlowTime::from_raw(v).ok()) {
+            Some(time) => time.display_value(),
+            None => "---".to_string(),
+        };
+        Self { meta, value, display_value }
+    }
+
+    pub fn has_value(&self) -> bool {
+        self.value.is_some()
+    }
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/welder-profile/editable-postflow-register.html")]
+pub struct EditablePostflowRegister {
+    pub meta: &'static RegisterMetadata,
+    pub value: Option<u16>,
+}
+
+impl EditablePostflowRegister {
+    pub fn has_value(&self) -> bool {
+        self.value.is_some()
+    }
+
+    pub fn formatted_value(&self) -> String {
+        match self.value.and_then(|v| PostFlowTime::from_raw(v).ok()) {
+            Some(time) => time.display_value(),
+            None => "---".to_string(),
         }
-    }
-
-    pub fn semantic_min(&self) -> f32 {
-        self.min_value as f32 / self.scale as f32
-    }
-
-    pub fn semantic_max(&self) -> f32 {
-        self.max_value as f32 / self.scale as f32
-    }
-
-    pub fn step(&self) -> f32 {
-        1.0 / self.scale as f32
     }
 }
