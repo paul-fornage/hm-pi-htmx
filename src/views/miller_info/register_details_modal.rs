@@ -8,14 +8,9 @@ use axum::{
 };
 use std::fmt;
 use crate::{debug_targeted, info_targeted, trace_targeted, warn_targeted};
-use crate::miller::miller_register_definitions::MILLER_REGISTERS;
+use crate::miller::miller_register_definitions::{get_register_metadata, MILLER_REGISTERS};
 use crate::modbus::RegisterMetadata;
 
-
-fn find_metadata_by_name(name: &str) -> Option<&'static RegisterMetadata> {
-    // TODO: Hashmap? IDK only ~140 registers and popup is not a hot loop
-    MILLER_REGISTERS.iter().find(|reg| reg.name == name)
-}
 
 
 #[derive(Template)]
@@ -27,7 +22,7 @@ pub struct RegisterModalTemplate {
 pub async fn modal_handler(Path(name): Path<String>) -> impl IntoResponse {
     info_targeted!(HTTP, "Modal handler called for register: {}", name);
 
-    match find_metadata_by_name(&name) {
+    match get_register_metadata(&name) {
         Some(meta) => {
             debug_targeted!(HTTP, "Found metadata for register: {}", name);
             let template = RegisterModalTemplate { meta };
