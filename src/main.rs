@@ -23,7 +23,7 @@ use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsT
 use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
 use crate::views::machine_config::{show_machine_config, save_machine_config};
-use crate::views::welder_profile::show_welder_profile;
+use crate::views::welder_profile::{show_welder_profile, show_welder_profile_grid, show_edit_modal, submit_register_write};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -158,6 +158,11 @@ async fn main() {
 
         // --- Miller Info Component Routes ---
         .route("/miller-info/grid", get(show_miller_info_grid))
+
+        // --- Welder Profile Component Routes ---
+        .route("/welder-profile/grid", get(show_welder_profile_grid))
+        .route("/welder-profile/edit/:register_name", get(show_edit_modal))
+        .route("/welder-profile/write/:register_name", post(submit_register_write))
 
         // --- Machine Config Routes ---
         .route("/machine-config/save", post(save_machine_config))
