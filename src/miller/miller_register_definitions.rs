@@ -674,10 +674,10 @@ pub const PULSER_BACKGROUND_AMPS: RegisterMetadata = RegisterMetadata {
     description: "*Pulser - Background Amperage, 5-95%, Res: 1%",
 };
 
-pub const PRELOW_TIME: RegisterMetadata = RegisterMetadata {
+pub const PREFLOW_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6308 },
-    name: "PRELOW TIME",
-    description: "*Prelow Time, 0(Off) - 250, Res: 1(x0.1Sec)",
+    name: "PRE-FLOW TIME",
+    description: "*Prelow Time, 0(Off) - 250, Res: 1(x0.1Sec) (miller says prelow, assuming preflow)",
 };
 
 pub const INITIAL_AMPERAGE: RegisterMetadata = RegisterMetadata {
@@ -853,7 +853,7 @@ pub const MILLER_REGISTERS: &[RegisterMetadata] = &[
     PULSER_PPS,
     PULSER_PEAK_TIME,
     PULSER_BACKGROUND_AMPS,
-    PRELOW_TIME,
+    PREFLOW_TIME,
     INITIAL_AMPERAGE,
     INITIAL_TIME,
     INITIAL_SLOPE_TIME,

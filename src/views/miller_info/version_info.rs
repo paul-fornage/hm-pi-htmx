@@ -5,7 +5,7 @@ use crate::miller::miller_register_types::{SerialNumber, SoftwareUpdateRevision,
 /// Component that displays version and serial number information.
 /// All fields are Option<T> to gracefully handle read failures.
 #[derive(Template, WebTemplate)]
-#[template(path = "components/version-info.html")]
+#[template(path = "components/welder-info/version-info.html")]
 pub struct VersionInfoTemplate {
     pub software_version: Option<SoftwareUpdateRevision>,
     pub serial_number: Option<SerialNumber>,

@@ -265,7 +265,7 @@ pub struct MillerInfoTemplate {}
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/miller-info-grid.html")]
+#[template(path = "components/welder-info/miller-info-grid.html")]
 pub struct MillerInfoGridTemplate {
     pub boolean_registers: Vec<BooleanRegisterTemplate>,
     pub analog_registers: Vec<AnalogRegisterTemplate>,

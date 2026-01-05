@@ -4,7 +4,7 @@ use crate::modbus::RegisterMetadata;
 use std::fmt::Display;
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/boolean-read-only-register.html")]
+#[template(path = "components/welder-info/boolean-read-only-register.html")]
 pub struct BooleanRegisterTemplate {
     pub meta: &'static RegisterMetadata,
     pub value: Option<bool>,
@@ -12,7 +12,7 @@ pub struct BooleanRegisterTemplate {
 
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/enum-read-only-register.html")]
+#[template(path = "components/welder-info/enum-read-only-register.html")]
 pub struct EnumRegisterTemplate<T: Display> {
     pub meta: &'static RegisterMetadata,
     pub value: Option<T>,
@@ -33,7 +33,7 @@ impl<T: Display> EnumRegisterTemplate<T> {
 
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/analog-read-only-register.html")]
+#[template(path = "components/welder-info/analog-read-only-register.html")]
 pub struct AnalogRegisterTemplate {
     pub raw_value: Option<u16>,
     pub register_info: &'static AnalogRegisterInfo,
@@ -116,7 +116,7 @@ impl AnalogRegisterInfo {
 }
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/statistics-bar.html")]
+#[template(path = "components/welder-info/statistics-bar.html")]
 pub struct StatisticsBarTemplate {
     pub arc_time: Option<crate::miller::miller_register_types::ArcTime>,
     pub arc_cycles: Option<crate::miller::miller_register_types::ArcCycles>,

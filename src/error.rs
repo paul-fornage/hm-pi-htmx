@@ -35,6 +35,9 @@ pub enum Error {
     #[error("Tried to write to a read-only register. \
         value: {0:?}, address: {1:?})")]
     LocalRegisterTriedWriteReadOnly(ModbusValue, RegisterAddress),
+    #[error("Tried to read a register from cache that has not been populated. \
+        This could be because it isn't a real register, or MB isn't working. address: {0:?})")]
+    ReadUnpopulatedRegister(RegisterAddress),
     #[error("Failed to parse JSON: {0}")]
     JsonError(#[from] serde_json::Error),
     #[error("Configuration file version mismatch. Expected fields may not match. \
