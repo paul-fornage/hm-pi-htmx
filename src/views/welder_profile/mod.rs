@@ -251,70 +251,71 @@ pub async fn show_edit_modal(
 }
 
 #[derive(Deserialize)]
-pub struct BooleanWriteForm {
+pub struct RawWriteForm {
     value: String,
-}
-
-#[derive(Deserialize)]
-pub struct AnalogWriteForm {
-    value: f32,
-}
-
-#[derive(Deserialize)]
-pub struct EnumWriteForm {
-    value: u16,
 }
 
 pub async fn submit_register_write(
     axum::extract::State(state): axum::extract::State<AppState>,
     Path(register_name): Path<String>,
-    Form(form): Form<serde_json::Value>,
+    Form(form): Form<RawWriteForm>,
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Writing register: {}", register_name);
 
     if let Some(meta) = find_boolean_register(&register_name) {
-        let form: BooleanWriteForm = serde_json::from_value(form).unwrap();
         let value = form.value == "true";
         println!("Would write boolean to address {}: {}", meta.address.address, value);
         return axum::http::StatusCode::OK.into_response();
     }
 
     if let Some(info) = find_analog_register(&register_name) {
-        let form: AnalogWriteForm = serde_json::from_value(form).unwrap();
+        let val_f32 = match form.value.parse::<f32>() {
+            Ok(v) => v,
+            Err(_) => {
+                warn_targeted!(HTTP, "Invalid float format for {}: {}", register_name, form.value);
+                return (axum::http::StatusCode::BAD_REQUEST, "Invalid number format").into_response();
+            }
+        };
 
-        if let Err(msg) = info.validate_semantic_value(form.value) {
+        if let Err(msg) = info.validate_semantic_value(val_f32) {
             warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
             return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
         }
 
-        let raw_value = info.convert_to_raw(form.value);
-        println!("Would write analog to address {}: {} (raw: {})", info.meta.address.address, form.value, raw_value);
+        let raw_value = info.convert_to_raw(val_f32);
+        println!("Would write analog to address {}: {} (raw: {})", info.meta.address.address, val_f32, raw_value);
         return axum::http::StatusCode::OK.into_response();
     }
 
     if let Some(meta) = find_enum_register(&register_name) {
-        let form: EnumWriteForm = serde_json::from_value(form).unwrap();
+        let val_u16 = match form.value.parse::<u16>() {
+            Ok(v) => v,
+            Err(_) => {
+                warn_targeted!(HTTP, "Invalid int format for {}: {}", register_name, form.value);
+                return (axum::http::StatusCode::BAD_REQUEST, "Invalid integer format").into_response();
+            }
+        };
 
         // Validate the value based on register type
         let validation_result = match get_enum_register_type(&register_name) {
             Some(EnumRegisterType::TungstenPreset) => {
                 use special_case_registers::TungstenPreset;
                 use num_enum::TryFromPrimitive;
-                TungstenPreset::try_from_primitive(form.value)
+                TungstenPreset::try_from_primitive(val_u16)
                     .map(|_| ())
                     .map_err(|_| "Invalid tungsten preset value".to_string())
             },
             Some(EnumRegisterType::Polarity) => {
                 use special_case_registers::ElectrodePolarity;
                 use num_enum::TryFromPrimitive;
-                ElectrodePolarity::try_from_primitive(form.value)
+                ElectrodePolarity::try_from_primitive(val_u16)
                     .map(|_| ())
                     .map_err(|_| "Invalid polarity value".to_string())
             },
             Some(EnumRegisterType::WaveShapeEN) | Some(EnumRegisterType::WaveShapeEP) => {
                 use special_case_registers::WaveShape;
                 use num_enum::TryFromPrimitive;
-                WaveShape::try_from_primitive(form.value)
+                WaveShape::try_from_primitive(val_u16)
                     .map(|_| ())
                     .map_err(|_| "Invalid wave shape value".to_string())
             },
@@ -326,21 +327,27 @@ pub async fn submit_register_write(
             return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
         }
 
-        println!("Would write enum to address {}: {}", meta.address.address, form.value);
+        println!("Would write enum to address {}: {}", meta.address.address, val_u16);
         return axum::http::StatusCode::OK.into_response();
     }
 
     // Handle postflow time specially
     if register_name == "POSTFLOW TIME" {
-        let form: EnumWriteForm = serde_json::from_value(form).unwrap();
+        let val_u16 = match form.value.parse::<u16>() {
+            Ok(v) => v,
+            Err(_) => {
+                warn_targeted!(HTTP, "Invalid int format for {}: {}", register_name, form.value);
+                return (axum::http::StatusCode::BAD_REQUEST, "Invalid integer format").into_response();
+            }
+        };
 
         use special_case_registers::PostFlowTime;
-        if let Err(msg) = PostFlowTime::from_raw(form.value) {
+        if let Err(msg) = PostFlowTime::from_raw(val_u16) {
             warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
             return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
         }
 
-        println!("Would write postflow time to address {}: {}", miller_register_definitions::POSTFLOW_TIME.address.address, form.value);
+        println!("Would write postflow time to address {}: {}", miller_register_definitions::POSTFLOW_TIME.address.address, val_u16);
         return axum::http::StatusCode::OK.into_response();
     }
 

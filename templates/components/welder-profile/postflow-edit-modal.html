@@ -31,6 +31,18 @@
                 </div>
             </div>
 
+            <!-- Hardcoded bounds as requested -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Min</span>
+                    <div class="font-mono text-sm">0 s</div>
+                </div>
+                <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-xs font-bold uppercase text-slate-400">Max</span>
+                    <div class="font-mono text-sm">51 s</div>
+                </div>
+            </div>
+
             <div class="bg-blue-50 p-3 rounded border border-blue-200">
                 <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
                 <div class="font-bold text-lg mt-1 text-slate-700">
@@ -40,105 +52,150 @@
 
             <form hx-post="/welder-profile/write/{{ register_name }}"
                   hx-swap="none"
-                  onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)"
-                  id="postflow-form">
+                  hx-on::after-request="document.getElementById('global-modal-layer').innerHTML = ''">
 
-                <input type="hidden" name="value" id="postflow-value" value="0">
+                <!-- State Initialization -->
+                {% let val = current_value.copied().unwrap_or(0) %}
+                {% let is_off = val == 0 %}
+                {% let is_auto = val == 51 %}
+                {% let is_manual = !is_off && !is_auto %}
+                {% let manual_display = if is_manual { val } else { 5 } %}
 
-                <div class="space-y-4">
-                    <div class="relative py-4">
-                        <input type="range"
-                               id="mode-slider"
-                               min="0"
-                               max="2"
-                               step="1"
-                               value="0"
-                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer slider"
-                               oninput="
-                                   const mode = parseInt(this.value);
-                                   const manualSection = document.getElementById('manual-section');
-                                   const modeLabel = document.getElementById('mode-label');
-                                   const valueInput = document.getElementById('postflow-value');
+                <!-- The actual value submitted to server -->
+                <input type="hidden" name="value" id="submission_value" value="{{ val }}">
 
-                                   if (mode === 0) {
-                                       modeLabel.textContent = 'OFF';
-                                       modeLabel.className = 'text-lg font-bold text-slate-500';
-                                       manualSection.classList.add('hidden');
-                                       valueInput.value = 0;
-                                   } else if (mode === 1) {
-                                       modeLabel.textContent = 'MANUAL';
-                                       modeLabel.className = 'text-lg font-bold text-blue-600';
-                                       manualSection.classList.remove('hidden');
-                                       const seconds = parseInt(document.getElementById('seconds-input').value);
-                                       valueInput.value = seconds;
-                                   } else {
-                                       modeLabel.textContent = 'AUTO';
-                                       modeLabel.className = 'text-lg font-bold text-green-600';
-                                       manualSection.classList.add('hidden');
-                                       valueInput.value = 51;
-                                   }
-                               ">
+                <div class="space-y-4" id="weld-controller">
+                    <div class="flex gap-2">
+                        <!-- Off Button -->
+                        <button type="button"
+                                id="btn-off"
+                                onclick="setMode('off')"
+                                class="flex-1 py-2 px-3 border rounded font-medium text-sm transition-colors
+                                       {% if is_off %} bg-slate-600 text-white border-slate-600 shadow-inner {% else %} bg-white text-slate-700 border-slate-300 hover:bg-slate-50 {% endif %}">
+                            OFF
+                        </button>
 
-                        <div class="flex justify-between text-xs text-slate-600 mt-2">
-                            <span>OFF</span>
-                            <span>MANUAL</span>
-                            <span>AUTO</span>
+                        <!-- Manual Button -->
+                        <button type="button"
+                                id="btn-manual"
+                                onclick="setMode('manual')"
+                                class="flex-1 py-2 px-3 border rounded font-medium text-sm transition-colors
+                                       {% if is_manual %} bg-blue-600 text-white border-blue-600 shadow-inner {% else %} bg-white text-blue-700 border-blue-200 hover:bg-blue-50 {% endif %}">
+                            MANUAL
+                        </button>
+
+                        <!-- Auto Button -->
+                        <button type="button"
+                                id="btn-auto"
+                                onclick="setMode('auto')"
+                                class="flex-1 py-2 px-3 border rounded font-medium text-sm transition-colors
+                                       {% if is_auto %} bg-green-600 text-white border-green-600 shadow-inner {% else %} bg-white text-green-700 border-green-200 hover:bg-green-50 {% endif %}">
+                            AUTO
+                        </button>
+                    </div>
+
+                    <label class="block">
+                        <span class="text-sm font-bold text-slate-700">Value</span>
+                        <div class="mt-1">
+                            <!-- Off Display -->
+                            <div id="display-off" class="w-full px-3 py-2 border border-slate-300 rounded font-mono text-lg bg-slate-100 text-slate-500 {% if !is_off %}hidden{% endif %}">
+                                0 | Off
+                            </div>
+
+                            <!-- Auto Display -->
+                            <div id="display-auto" class="w-full px-3 py-2 border border-green-200 rounded font-mono text-lg bg-green-50 text-green-700 {% if !is_auto %}hidden{% endif %}">
+                                51 | Auto
+                            </div>
+
+                            <!-- Manual Input -->
+                            <div id="display-manual" class="flex gap-2 items-center {% if !is_manual %}hidden{% endif %}">
+                                <input type="number"
+                                       id="manual-input"
+                                       min="1"
+                                       max="50"
+                                       value="{{ manual_display }}"
+                                       oninput="document.getElementById('submission_value').value = this.value"
+                                       class="flex-1 px-3 py-2 border border-blue-300 rounded font-mono text-lg
+                                              focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700">
+                                <span class="text-slate-600 font-mono">s</span>
+                            </div>
                         </div>
-                    </div>
+                    </label>
 
-                    <div class="text-center">
-                        <div id="mode-label" class="text-lg font-bold text-slate-500">OFF</div>
-                    </div>
-
-                    <div id="manual-section" class="hidden space-y-2 p-3 bg-slate-50 rounded border border-slate-200">
-                        <label class="block text-sm font-medium text-slate-700">
-                            Time (seconds)
-                        </label>
-                        <input type="number"
-                               id="seconds-input"
-                               min="1"
-                               max="50"
-                               step="1"
-                               value="25"
-                               class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               oninput="document.getElementById('postflow-value').value = this.value;">
-                        <p class="text-xs text-slate-500">Range: 1-50 seconds</p>
-                    </div>
+                    <button type="submit"
+                            class="w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                        Write Value
+                    </button>
                 </div>
-
-                <button type="submit"
-                        class="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
-                    Set Value
-                </button>
             </form>
 
             <script>
                 (function() {
-                    const currentVal = {% if let Some(val) = current_value %}{{ val }}{% else %}0{% endif %};
-                    const slider = document.getElementById('mode-slider');
-                    const manualSection = document.getElementById('manual-section');
-                    const modeLabel = document.getElementById('mode-label');
-                    const valueInput = document.getElementById('postflow-value');
-                    const secondsInput = document.getElementById('seconds-input');
+                    const submissionInput = document.getElementById('submission_value');
+                    const manualInput = document.getElementById('manual-input');
 
-                    if (currentVal === 0) {
-                        slider.value = 0;
-                        modeLabel.textContent = 'OFF';
-                        modeLabel.className = 'text-lg font-bold text-slate-500';
-                        valueInput.value = 0;
-                    } else if (currentVal === 51) {
-                        slider.value = 2;
-                        modeLabel.textContent = 'AUTO';
-                        modeLabel.className = 'text-lg font-bold text-green-600';
-                        valueInput.value = 51;
-                    } else {
-                        slider.value = 1;
-                        modeLabel.textContent = 'MANUAL';
-                        modeLabel.className = 'text-lg font-bold text-blue-600';
-                        manualSection.classList.remove('hidden');
-                        secondsInput.value = currentVal;
-                        valueInput.value = currentVal;
+                    const els = {
+                        off: { btn: document.getElementById('btn-off'), display: document.getElementById('display-off') },
+                        manual: { btn: document.getElementById('btn-manual'), display: document.getElementById('display-manual') },
+                        auto: { btn: document.getElementById('btn-auto'), display: document.getElementById('display-auto') }
+                    };
+
+                    function resetStyles() {
+                        // Reset classes to inactive state
+                        els.off.btn.className = "flex-1 py-2 px-3 border border-slate-300 rounded font-medium text-sm transition-colors bg-white text-slate-700 hover:bg-slate-50";
+                        els.manual.btn.className = "flex-1 py-2 px-3 border border-blue-200 rounded font-medium text-sm transition-colors bg-white text-blue-700 hover:bg-blue-50";
+                        els.auto.btn.className = "flex-1 py-2 px-3 border border-green-200 rounded font-medium text-sm transition-colors bg-white text-green-700 hover:bg-green-50";
+
+                        // Hide all displays
+                        els.off.display.classList.add('hidden');
+                        els.manual.display.classList.add('hidden');
+                        els.auto.display.classList.add('hidden');
                     }
+
+                    function setActive(mode) {
+                        if (mode === 'off') {
+                            els.off.btn.className = "flex-1 py-2 px-3 border border-slate-600 rounded font-medium text-sm transition-colors bg-slate-600 text-white shadow-inner";
+                            els.off.display.classList.remove('hidden');
+                        } else if (mode === 'manual') {
+                            els.manual.btn.className = "flex-1 py-2 px-3 border border-blue-600 rounded font-medium text-sm transition-colors bg-blue-600 text-white shadow-inner";
+                            els.manual.display.classList.remove('hidden');
+                        } else if (mode === 'auto') {
+                            els.auto.btn.className = "flex-1 py-2 px-3 border border-green-600 rounded font-medium text-sm transition-colors bg-green-600 text-white shadow-inner";
+                            els.auto.display.classList.remove('hidden');
+                        }
+                    }
+
+                    window.setMode = function(mode) {
+                        const currentVal = parseInt(submissionInput.value);
+
+                        // Robustness: Ignore if clicking the active mode
+                        // Off is 0
+                        if (mode === 'off' && currentVal === 0) return;
+                        // Auto is 51
+                        if (mode === 'auto' && currentVal === 51) return;
+                        // Manual is anywhere between 1 and 50
+                        if (mode === 'manual' && (currentVal > 0 && currentVal < 51)) return;
+
+                        resetStyles();
+                        setActive(mode);
+
+                        if (mode === 'off') {
+                            submissionInput.value = 0;
+                        } else if (mode === 'auto') {
+                            submissionInput.value = 51;
+                        } else {
+                            // Manual Mode Logic
+                            let val = parseInt(manualInput.value);
+                            // Safety: If existing manual value is invalid (e.g. was previously auto/off or empty), reset to safe default
+                            if (isNaN(val) || val <= 0 || val >= 51) {
+                                val = 5;
+                                manualInput.value = 5;
+                            }
+                            submissionInput.value = val;
+                            // Focus for UX
+                            setTimeout(() => manualInput.focus(), 50);
+                        }
+                    };
                 })();
             </script>
         </div>
