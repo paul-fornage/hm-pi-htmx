@@ -40,7 +40,7 @@ pub struct EditableEnumRegister {
 impl EditableEnumRegister {
     pub fn new_tungsten(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
         let display_value = match value.and_then(|v| TungstenPreset::try_from_primitive(v).ok()) {
-            Some(preset) => preset.display_name().to_string(),
+            Some(preset) => preset.to_string(),
             None => "---".to_string(),
         };
         Self { meta, value, display_value }
@@ -48,7 +48,7 @@ impl EditableEnumRegister {
 
     pub fn new_polarity(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
         let display_value = match value.and_then(|v| ElectrodePolarity::try_from_primitive(v).ok()) {
-            Some(polarity) => polarity.display_name().to_string(),
+            Some(polarity) => polarity.to_string(),
             None => "---".to_string(),
         };
         Self { meta, value, display_value }
@@ -56,7 +56,7 @@ impl EditableEnumRegister {
 
     pub fn new_wave_shape(meta: &'static RegisterMetadata, value: Option<u16>) -> Self {
         let display_value = match value.and_then(|v| WaveShape::try_from_primitive(v).ok()) {
-            Some(shape) => shape.display_name().to_string(),
+            Some(shape) => shape.to_string(),
             None => "---".to_string(),
         };
         Self { meta, value, display_value }

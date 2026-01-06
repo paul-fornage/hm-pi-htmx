@@ -4,6 +4,7 @@ use crate::modbus::RegisterMetadata;
 use crate::miller::analog_register::AnalogRegisterInfo;
 use super::special_case_registers::{TungstenPreset, ElectrodePolarity, WaveShape, PostFlowTime};
 use num_enum::TryFromPrimitive;
+use strum::VariantArray;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-profile/boolean-edit-modal.html")]
@@ -50,25 +51,25 @@ pub struct EnumEditModalTemplate {
 
 impl EnumEditModalTemplate {
     pub fn new_tungsten(meta: &'static RegisterMetadata, current_value: Option<u16>, register_name: String) -> Self {
-        let options = TungstenPreset::all_variants()
+        let options = TungstenPreset::VARIANTS
             .iter()
-            .map(|(val, name)| (*val, name.to_string()))
+            .map(|variant| (u16::from(*variant), variant.to_string()))
             .collect();
         Self { meta, current_value, register_name, options }
     }
 
     pub fn new_polarity(meta: &'static RegisterMetadata, current_value: Option<u16>, register_name: String) -> Self {
-        let options = ElectrodePolarity::all_variants()
+        let options = ElectrodePolarity::VARIANTS
             .iter()
-            .map(|(val, name)| (*val, name.to_string()))
+            .map(|variant| (u16::from(*variant), variant.to_string()))
             .collect();
         Self { meta, current_value, register_name, options }
     }
 
     pub fn new_wave_shape(meta: &'static RegisterMetadata, current_value: Option<u16>, register_name: String) -> Self {
-        let options = WaveShape::all_variants()
+        let options = WaveShape::VARIANTS
             .iter()
-            .map(|(val, name)| (*val, name.to_string()))
+            .map(|variant| (u16::from(*variant), variant.to_string()))
             .collect();
         Self { meta, current_value, register_name, options }
     }
@@ -82,11 +83,58 @@ pub struct PostflowEditModalTemplate {
     pub register_name: String,
 }
 
+pub enum PostFlowEnum {
+    Off,
+    Manual(u8),
+    Auto,
+}
+impl PostFlowEnum {
+    pub fn as_u16(&self) -> u16 {
+        match self {
+            PostFlowEnum::Off => 0,
+            PostFlowEnum::Auto => 51,
+            PostFlowEnum::Manual(v) => *v as u16,
+        }
+    }
+    
+    pub fn is_off(&self) -> bool {
+        matches!(self, PostFlowEnum::Off)
+    }
+    pub fn is_auto(&self) -> bool {
+        matches!(self, PostFlowEnum::Auto)
+    }
+    pub fn is_manual(&self) -> bool {
+        matches!(self, PostFlowEnum::Manual(_))
+    }
+    pub fn as_manual(&self) -> Option<u8> {
+        match self {
+            PostFlowEnum::Manual(v) => Some(*v),
+            _ => None,
+        }
+    }
+}
+
 impl PostflowEditModalTemplate {
     pub fn current_display_value(&self) -> String {
         match self.current_value.and_then(|v| PostFlowTime::from_raw(v).ok()) {
-            Some(time) => time.display_value(),
+            Some(raw_u16) => raw_u16.display_value(),
             None => "---".to_string(),
+        }
+    }
+    
+    pub fn as_enum(&self) -> PostFlowEnum{
+        match self.current_value {
+            Some(0) => PostFlowEnum::Off,
+            Some(51) => PostFlowEnum::Auto,
+            Some(v) if v < 51 => PostFlowEnum::Manual(v as u8),
+            Some(_) | None => PostFlowEnum::Off,
+        }
+    }
+    
+    pub fn initial_manual_mem(&self) -> u8 {
+        match self.current_value {
+            Some(v) if v < 51 => v as u8,
+            _ => 5,
         }
     }
 }

@@ -1,4 +1,5 @@
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
+use strum::{Display, IntoStaticStr, VariantArray, VariantNames};
 
 // *Postflow Time, 0(Off) - 50S & Auto(51), Res: 1Sec
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,99 +33,57 @@ impl PostFlowTime {
 
 
 #[repr(u16)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq,
+    TryFromPrimitive, IntoPrimitive,
+    VariantArray, IntoStaticStr, Display)]
 pub enum ElectrodePolarity {
+    #[strum(to_string = "Electrode Neg.")]
     ElectrodeNegative = 0,
+    #[strum(to_string = "Electrode Pos.")]
     ElectrodePositive = 1,
 }
-impl ElectrodePolarity {
-    pub fn display_name(self) -> &'static str {
-        match self {
-            Self::ElectrodeNegative => "EN (Electrode Negative)",
-            Self::ElectrodePositive => "EP (Electrode Positive)",
-        }
-    }
-
-    pub fn all_variants() -> &'static [(u16, &'static str)] {
-        &[
-            (0, "EN (Electrode Negative)"),
-            (1, "EP (Electrode Positive)"),
-        ]
-    }
-}
 
 
 #[repr(u16)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq,
+    TryFromPrimitive, IntoPrimitive,
+    VariantArray, IntoStaticStr, Display)]
 pub enum WaveShape {
+    #[strum(to_string = "Advanced Square")]
     AdvancedSquare = 0,
+    #[strum(to_string = "Soft Square")]
     SoftSquare = 1,
+    #[strum(to_string = "Sine")]
     Sine = 2,
+    #[strum(to_string = "Triangle")]
     Triangle = 3,
 }
-impl WaveShape {
-    pub fn display_name(self) -> &'static str {
-        match self {
-            Self::AdvancedSquare => "Advanced Square",
-            Self::SoftSquare => "Soft Square",
-            Self::Sine => "Sine",
-            Self::Triangle => "Triangle",
-        }
-    }
-
-    pub fn all_variants() -> &'static [(u16, &'static str)] {
-        &[
-            (0, "Advanced Square"),
-            (1, "Soft Square"),
-            (2, "Sine"),
-            (3, "Triangle"),
-        ]
-    }
-}
 
 
 #[repr(u16)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq,
+    TryFromPrimitive, IntoPrimitive,
+    VariantArray, IntoStaticStr, Display)]
 pub enum TungstenPreset {
+    #[strum(to_string = "0.020\" (0.5mm)")]
     Diameter0_5mm = 0,
+    #[strum(to_string = "0.040\" (1.0mm)")]
     Diameter1_0mm = 1,
+    #[strum(to_string = "1/16\" (1.6mm)")]
     Diameter1_6mm = 2,
+    #[strum(to_string = "3/32\" (2.4mm)")]
     Diameter2_4mm = 3,
+    #[strum(to_string = "1/8\" (3.2mm)")]
     Diameter3_2mm = 4,
+    #[strum(to_string = "5/32\" (4.0mm)")]
     Diameter4_0mm = 5,
+    #[strum(to_string = "3/16\" (4.8mm)")]
     Diameter4_8mm = 6,
+    #[strum(to_string = "1/4\" (6.4mm)")]
     Diameter6_4mm = 7,
+    #[strum(to_string = "General (custom)")]
     General = 8,
+    #[strum(to_string = "Disabled")]
     Disabled = 9,
 }
-impl TungstenPreset {
-    pub fn display_name(self) -> &'static str {
-        match self {
-            Self::Diameter0_5mm => "0.020\" (0.5mm)",
-            Self::Diameter1_0mm => "0.040\" (1.0mm)",
-            Self::Diameter1_6mm => "1/16\" (1.6mm)",
-            Self::Diameter2_4mm => "3/32\" (2.4mm)",
-            Self::Diameter3_2mm => "1/8\" (3.2mm)",
-            Self::Diameter4_0mm => "5/32\" (4.0mm)",
-            Self::Diameter4_8mm => "3/16\" (4.8mm)",
-            Self::Diameter6_4mm => "1/4\" (6.4mm)",
-            Self::General => "General (User Defined)",
-            Self::Disabled => "Disabled",
-        }
-    }
 
-    pub fn all_variants() -> &'static [(u16, &'static str)] {
-        &[
-            (0, "0.020\" (0.5mm)"),
-            (1, "0.040\" (1.0mm)"),
-            (2, "1/16\" (1.6mm)"),
-            (3, "3/32\" (2.4mm)"),
-            (4, "1/8\" (3.2mm)"),
-            (5, "5/32\" (4.0mm)"),
-            (6, "3/16\" (4.8mm)"),
-            (7, "1/4\" (6.4mm)"),
-            (8, "General (User Defined)"),
-            (9, "Disabled"),
-        ]
-    }
-}

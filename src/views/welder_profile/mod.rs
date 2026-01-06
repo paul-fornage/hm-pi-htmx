@@ -2,6 +2,7 @@ pub mod register_view;
 pub mod register_edit_modal;
 mod analog_details;
 mod special_case_registers;
+mod write_error_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
@@ -17,6 +18,7 @@ use crate::miller::analog_register::AnalogRegisterInfo;
 use crate::{debug_targeted, warn_targeted, AppState};
 use register_view::{EditableBooleanRegister, EditableAnalogRegister, EditableEnumRegister, EditablePostflowRegister};
 use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate, EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
+use crate::views::welder_profile::write_error_modal::WriteErrorModalTemplate;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -138,7 +140,7 @@ pub async fn show_welder_profile() -> impl IntoResponse {
 pub async fn show_welder_profile_grid(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Rendering welder profile grid component");
+    // debug_targeted!(HTTP, "Rendering welder profile grid component");
 
     let mut boolean_registers = Vec::new();
     for meta in WELD_PROFILE_BOOLEAN_REGISTERS.iter() {
@@ -262,10 +264,22 @@ pub async fn submit_register_write(
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Writing register: {}", register_name);
 
+    let render_error = |msg: &str| -> Html<String> {
+        let t = WriteErrorModalTemplate {
+            title: "Write Failed".to_string(),
+            message: msg.to_string(),
+        };
+        Html(t.render().unwrap())
+    };
+
     if let Some(meta) = find_boolean_register(&register_name) {
         let value = form.value == "true";
-        println!("Would write boolean to address {}: {}", meta.address.address, value);
-        return axum::http::StatusCode::OK.into_response();
+        debug_targeted!(HTTP, "Writing boolean to address {}: {}", meta.address.address, value);
+
+        match state.miller_registers.write_coil(meta.address.address, value).await {
+            Ok(_) => return Html("".to_string()).into_response(),
+            Err(e) => return render_error(&e.to_string()).into_response(),
+        }
     }
 
     if let Some(info) = find_analog_register(&register_name) {
@@ -273,18 +287,22 @@ pub async fn submit_register_write(
             Ok(v) => v,
             Err(_) => {
                 warn_targeted!(HTTP, "Invalid float format for {}: {}", register_name, form.value);
-                return (axum::http::StatusCode::BAD_REQUEST, "Invalid number format").into_response();
+                return render_error("Invalid number format provided.").into_response();
             }
         };
 
         if let Err(msg) = info.validate_semantic_value(val_f32) {
             warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
-            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
+            return render_error(&msg).into_response();
         }
 
         let raw_value = info.convert_to_raw(val_f32);
-        println!("Would write analog to address {}: {} (raw: {})", info.meta.address.address, val_f32, raw_value);
-        return axum::http::StatusCode::OK.into_response();
+        debug_targeted!(HTTP, "Writing analog to address {}: {} (raw: {})", info.meta.address.address, val_f32, raw_value);
+
+        match state.miller_registers.write_hreg(info.meta.address.address, raw_value).await {
+            Ok(_) => return Html("".to_string()).into_response(),
+            Err(e) => return render_error(&e.to_string()).into_response(),
+        }
     }
 
     if let Some(meta) = find_enum_register(&register_name) {
@@ -292,7 +310,7 @@ pub async fn submit_register_write(
             Ok(v) => v,
             Err(_) => {
                 warn_targeted!(HTTP, "Invalid int format for {}: {}", register_name, form.value);
-                return (axum::http::StatusCode::BAD_REQUEST, "Invalid integer format").into_response();
+                return render_error("Invalid integer format provided.").into_response();
             }
         };
 
@@ -324,11 +342,15 @@ pub async fn submit_register_write(
 
         if let Err(msg) = validation_result {
             warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
-            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
+            return render_error(&msg).into_response();
         }
 
-        println!("Would write enum to address {}: {}", meta.address.address, val_u16);
-        return axum::http::StatusCode::OK.into_response();
+        debug_targeted!(HTTP, "Writing enum to address {}: {}", meta.address.address, val_u16);
+
+        match state.miller_registers.write_hreg(meta.address.address, val_u16).await {
+            Ok(_) => return Html("".to_string()).into_response(),
+            Err(e) => return render_error(&e.to_string()).into_response(),
+        }
     }
 
     // Handle postflow time specially
@@ -337,18 +359,22 @@ pub async fn submit_register_write(
             Ok(v) => v,
             Err(_) => {
                 warn_targeted!(HTTP, "Invalid int format for {}: {}", register_name, form.value);
-                return (axum::http::StatusCode::BAD_REQUEST, "Invalid integer format").into_response();
+                return render_error("Invalid integer format provided.").into_response();
             }
         };
 
         use special_case_registers::PostFlowTime;
         if let Err(msg) = PostFlowTime::from_raw(val_u16) {
             warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
-            return (axum::http::StatusCode::BAD_REQUEST, msg).into_response();
+            return render_error(&msg).into_response();
         }
 
-        println!("Would write postflow time to address {}: {}", miller_register_definitions::POSTFLOW_TIME.address.address, val_u16);
-        return axum::http::StatusCode::OK.into_response();
+        debug_targeted!(HTTP, "Writing postflow time to address {}: {}", miller_register_definitions::POSTFLOW_TIME.address.address, val_u16);
+
+        match state.miller_registers.write_hreg(miller_register_definitions::POSTFLOW_TIME.address.address, val_u16).await {
+            Ok(_) => return Html("".to_string()).into_response(),
+            Err(e) => return render_error(&e.to_string()).into_response(),
+        }
     }
 
     warn_targeted!(HTTP, "Unknown register name: {}", register_name);

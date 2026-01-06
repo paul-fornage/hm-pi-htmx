@@ -17,3 +17,4 @@ thiserror = "2.0.17"
 num_enum = { version = "0.7.5", features = ["complex-expressions"] }
 askama_web = { version = "0.15.0", features = ["axum-0.8", "log-0.4"] }
 futures = "0.3.31"
+strum = { version = "0.27.2", features = ["derive", "strum_macros"] }
