@@ -16,6 +16,11 @@
         </div>
     </div>
 
+    <div id="profile-metadata"
+         hx-get="/welder-profile/metadata"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+    </div>
 
     <div hx-get="/welder-profile/grid"
          hx-trigger="load, every 1s"

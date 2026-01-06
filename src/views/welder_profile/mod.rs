@@ -1,8 +1,10 @@
 pub mod register_view;
 pub mod register_edit_modal;
+pub mod profile_metadata;
 mod analog_details;
 mod special_case_registers;
 mod write_error_modal;
+mod description_edit_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
@@ -19,6 +21,7 @@ use crate::{debug_targeted, warn_targeted, AppState};
 use register_view::{EditableBooleanRegister, EditableAnalogRegister, EditableEnumRegister, EditablePostflowRegister};
 use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate, EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
 use crate::views::welder_profile::write_error_modal::WriteErrorModalTemplate;
+use crate::views::welder_profile::description_edit_modal::DescriptionEditModalTemplate;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -186,6 +189,56 @@ pub async fn show_welder_profile_grid(
         enum_registers,
         postflow_register,
     }
+}
+
+pub async fn show_profile_metadata(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    let metadata_lock = state.weld_profile_metadata.lock().await;
+    ProfileMetadataDisplayTemplate {
+        name: metadata_lock.name.clone(),
+        description: metadata_lock.description.clone(),
+    }
+}
+
+pub async fn show_description_edit_modal(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Rendering description edit modal");
+
+    let metadata_lock = state.weld_profile_metadata.lock().await;
+    let current_description = metadata_lock.description.clone();
+
+    DescriptionEditModalTemplate {
+        current_description,
+    }
+}
+
+pub async fn update_description(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    Form(form): Form<DescriptionUpdateForm>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Updating profile description");
+
+    let mut metadata_lock = state.weld_profile_metadata.lock().await;
+
+    if form.description.trim().is_empty() {
+        metadata_lock.description = None;
+    } else {
+        metadata_lock.set_description(form.description.trim().to_string());
+    }
+
+    let response = ProfileMetadataDisplayTemplate {
+        name: metadata_lock.name.clone(),
+        description: metadata_lock.description.clone(),
+    };
+
+    response
+}
+
+#[derive(Deserialize)]
+pub struct DescriptionUpdateForm {
+    description: String,
 }
 
 pub async fn show_edit_modal(
@@ -393,4 +446,11 @@ pub struct WelderProfileGridTemplate {
     pub analog_registers: Vec<EditableAnalogRegister>,
     pub enum_registers: Vec<EditableEnumRegister>,
     pub postflow_register: EditablePostflowRegister,
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/welder-profile/profile-metadata-display.html")]
+pub struct ProfileMetadataDisplayTemplate {
+    pub name: Option<String>,
+    pub description: Option<String>,
 }
