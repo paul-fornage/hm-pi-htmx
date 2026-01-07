@@ -1,6 +1,9 @@
 pub mod register_view;
 pub mod register_edit_modal;
 pub mod profile_metadata;
+pub mod raw_weld_profile;
+pub mod weld_profile;
+pub mod file_operations;
 mod analog_details;
 mod special_case_registers;
 mod write_error_modal;
