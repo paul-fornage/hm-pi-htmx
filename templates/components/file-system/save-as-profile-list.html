@@ -1,0 +1,41 @@
+{% if profiles.is_empty() %}
+<div class="flex items-center justify-center h-full">
+    <div class="text-slate-400 text-sm text-center py-12">
+        <div class="text-2xl mb-2">📁</div>
+        <div>No profiles found</div>
+    </div>
+</div>
+{% else %}
+<script>
+function checkNameCollision() {
+    const inputName = document.getElementById('profile-name-input').value.trim().toLowerCase();
+    const profileNames = [
+        {% for profile in profiles %}'{{ profile.name }}'.toLowerCase(){% if !loop.last %},{% endif %}{% endfor %}
+    ];
+    window.saveAsNeedsConfirm = profileNames.includes(inputName);
+
+    const btn = document.getElementById('save-as-submit-btn');
+    if (window.saveAsNeedsConfirm) {
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+        btn.textContent = 'Overwrite';
+    } else {
+        btn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        btn.textContent = 'Save';
+    }
+}
+
+document.getElementById('profile-name-input').addEventListener('input', checkNameCollision);
+setTimeout(checkNameCollision, 0);
+</script>
+
+{% for profile in profiles %}
+<div
+    onclick="document.getElementById('profile-name-input').value = '{{ profile.name }}'; document.getElementById('profile-name-input').dispatchEvent(new Event('input'));"
+    class="px-4 py-3 cursor-pointer border-b border-slate-200 last:border-b-0 hover:bg-blue-50 transition-colors">
+    <div class="font-semibold text-sm text-slate-800 mb-1">{{ profile.name }}</div>
+    <div class="text-xs text-slate-500 line-clamp-2">{{ profile.description }}</div>
+</div>
+{% endfor %}
+{% endif %}

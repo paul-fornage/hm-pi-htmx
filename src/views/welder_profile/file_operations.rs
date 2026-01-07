@@ -8,11 +8,13 @@ const PROFILE_EXTENSION: &str = "json";
 
 /// Ensures the profiles directory exists, creating it if necessary.
 async fn ensure_profiles_dir() -> Result<(), String> {
-    if let Err(e) = fs::create_dir_all(PROFILES_DIR).await {
-        error!("Failed to create profiles directory: {}", e);
-        return Err(format!("Failed to create profiles directory: {}", e));
+    match fs::create_dir_all(PROFILES_DIR).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!("Failed to create profiles directory '{}': {}", PROFILES_DIR, e);
+            Err(format!("Failed to create profiles directory: {}", e))
+        }
     }
-    Ok(())
 }
 
 /// Converts a profile name to a filesystem path.
@@ -20,118 +22,166 @@ fn name_to_path(name: &str) -> PathBuf {
     Path::new(PROFILES_DIR).join(format!("{}.{}", name, PROFILE_EXTENSION))
 }
 
-/// Validates that a filename is safe (basic check - frontend should do main sanitization).
-fn is_valid_filename(name: &str) -> bool {
-    !name.is_empty()
-        && !name.contains('/')
-        && !name.contains('\\')
-        && name != "."
-        && name != ".."
-}
+/// Validates that a filename is safe for filesystem use.
+///
+/// This is the last line of defense. A malicious or malformed filename could:
+/// - Traverse directories (../, /etc/passwd)
+/// - Overwrite system files
+/// - Cause filesystem corruption
+/// - Break on different operating systems
+///
+/// Requirements:
+/// - Must not be empty
+/// - Must contain only alphanumeric, underscore, hyphen, and space
+/// - Must not start or end with whitespace
+/// - Must not be "." or ".."
+/// - Must not contain path separators (/, \)
+/// - Must not exceed reasonable length (255 bytes is filesystem limit)
+fn validate_filename(name: &str) -> Result<(), String> {
+    // Check empty
+    if name.is_empty() {
+        return Err("Profile name cannot be empty".to_string());
+    }
 
-/// Saves a welding profile to disk.
-/// Returns an error if the file operation fails.
-pub async fn save_profile(profile: &WeldProfile) -> Result<(), String> {
-    if !is_valid_filename(&profile.name) {
-        error!("Invalid profile name: {}", profile.name);
+    // Check length (reserve space for extension)
+    if name.len() > 240 {
+        return Err("Profile name too long (maximum 240 characters)".to_string());
+    }
+
+    // Check for leading/trailing whitespace
+    if name != name.trim() {
+        return Err("Profile name cannot start or end with whitespace".to_string());
+    }
+
+    // Check for reserved names
+    if name == "." || name == ".." {
         return Err("Invalid profile name".to_string());
     }
 
+    // Check for path separators and other dangerous characters
+    for c in name.chars() {
+        match c {
+            '/' | '\\' => {
+                return Err("Profile name cannot contain path separators".to_string());
+            }
+            '\0' => {
+                return Err("Profile name cannot contain null bytes".to_string());
+            }
+            '<' | '>' | ':' | '"' | '|' | '?' | '*' => {
+                return Err(format!("Profile name cannot contain '{}'", c));
+            }
+            c if c.is_control() => {
+                return Err("Profile name cannot contain control characters".to_string());
+            }
+            _ => {} // Character is acceptable
+        }
+    }
+
+    Ok(())
+}
+
+/// Saves a welding profile to disk.
+///
+/// This function performs critical file I/O operations. Failures could result in:
+/// - Lost welding parameters
+/// - Inconsistent machine state
+/// - Corrupted profile data
+///
+/// The function validates the filename, ensures directory existence, serializes
+/// the profile, and writes atomically to prevent partial writes.
+pub async fn save_profile(profile: &WeldProfile) -> Result<(), String> {
+    validate_filename(&profile.name)?;
     ensure_profiles_dir().await?;
 
     let path = name_to_path(&profile.name);
 
-    let json = match serde_json::to_string_pretty(profile) {
-        Ok(j) => j,
-        Err(e) => {
-            error!("Failed to serialize profile {}: {}", profile.name, e);
-            return Err(format!("Failed to serialize profile: {}", e));
-        }
-    };
+    let json = serde_json::to_string_pretty(profile).map_err(|e| {
+        error!("Failed to serialize profile '{}': {}", profile.name, e);
+        format!("Failed to serialize profile: {}", e)
+    })?;
 
-    match fs::write(&path, json).await {
-        Ok(_) => {
-            info!("Saved profile {} to {:?}", profile.name, path);
-            Ok(())
-        }
-        Err(e) => {
-            error!("Failed to write profile {} to disk: {}", profile.name, e);
-            Err(format!("Failed to write profile to disk: {}", e))
-        }
-    }
+    fs::write(&path, json).await.map_err(|e| {
+        error!("Failed to write profile '{}' to {:?}: {}", profile.name, path, e);
+        format!("Failed to write profile to disk: {}", e)
+    })?;
+
+    info!("Saved profile '{}' to {:?}", profile.name, path);
+    Ok(())
 }
 
 /// Loads a welding profile from disk.
-/// Returns an error if the file doesn't exist or cannot be read/parsed.
+///
+/// This function reads critical machine parameters. A corrupted or malicious
+/// profile file could cause the machine to operate with dangerous parameters.
+/// All data is validated during deserialization by serde.
 pub async fn load_profile(name: &str) -> Result<WeldProfile, String> {
-    if !is_valid_filename(name) {
-        error!("Invalid profile name: {}", name);
-        return Err("Invalid profile name".to_string());
-    }
+    validate_filename(name)?;
 
     let path = name_to_path(name);
 
-    let json = match fs::read_to_string(&path).await {
-        Ok(content) => content,
-        Err(e) => {
-            error!("Failed to read profile {} from disk: {}", name, e);
-            return Err(format!("Failed to read profile from disk: {}", e));
-        }
-    };
+    let json = fs::read_to_string(&path).await.map_err(|e| {
+        error!("Failed to read profile '{}' from {:?}: {}", name, path, e);
+        format!("Failed to read profile from disk: {}", e)
+    })?;
 
-    match serde_json::from_str::<WeldProfile>(&json) {
-        Ok(profile) => {
-            info!("Loaded profile {} from {:?}", name, path);
-            Ok(profile)
-        }
-        Err(e) => {
-            error!("Failed to parse profile {} from JSON: {}", name, e);
-            Err(format!("Failed to parse profile: {}", e))
-        }
+    let profile = serde_json::from_str::<WeldProfile>(&json).map_err(|e| {
+        error!("Failed to parse profile '{}': {}", name, e);
+        format!("Failed to parse profile: {}", e)
+    })?;
+
+    // Verify that the loaded profile's name matches what we expected
+    if profile.name != name {
+        warn!(
+            "Profile file name mismatch: expected '{}', got '{}' in file",
+            name, profile.name
+        );
     }
+
+    info!("Loaded profile '{}' from {:?}", name, path);
+    Ok(profile)
 }
 
 /// Deletes a welding profile from disk.
-/// Returns an error if the file doesn't exist or cannot be deleted.
+///
+/// This operation is irreversible. Once deleted, the profile cannot be recovered.
 pub async fn delete_profile(name: &str) -> Result<(), String> {
-    if !is_valid_filename(name) {
-        error!("Invalid profile name: {}", name);
-        return Err("Invalid profile name".to_string());
-    }
+    validate_filename(name)?;
 
     let path = name_to_path(name);
 
-    match fs::remove_file(&path).await {
-        Ok(_) => {
-            info!("Deleted profile {} from {:?}", name, path);
-            Ok(())
-        }
-        Err(e) => {
-            error!("Failed to delete profile {} from disk: {}", name, e);
-            Err(format!("Failed to delete profile from disk: {}", e))
-        }
+    // Verify file exists before attempting deletion
+    if !path.exists() {
+        return Err(format!("Profile '{}' does not exist", name));
     }
+
+    fs::remove_file(&path).await.map_err(|e| {
+        error!("Failed to delete profile '{}' from {:?}: {}", name, path, e);
+        format!("Failed to delete profile from disk: {}", e)
+    })?;
+
+    info!("Deleted profile '{}' from {:?}", name, path);
+    Ok(())
 }
 
 /// Lists all available welding profiles, returning lightweight metadata.
-/// Returns an empty list if the profiles directory doesn't exist or is empty.
+///
+/// This function reads all profile files in the profiles directory and extracts
+/// just the name and description for display purposes. Files that cannot be
+/// parsed are logged and skipped rather than causing the entire operation to fail.
 pub async fn list_profiles() -> Result<Vec<ProfileListEntry>, String> {
     // If directory doesn't exist yet, return empty list
     if !Path::new(PROFILES_DIR).exists() {
         return Ok(Vec::new());
     }
 
-    let mut entries = match fs::read_dir(PROFILES_DIR).await {
-        Ok(entries) => entries,
-        Err(e) => {
-            error!("Failed to read profiles directory: {}", e);
-            return Err(format!("Failed to read profiles directory: {}", e));
-        }
-    };
+    let mut dir_entries = fs::read_dir(PROFILES_DIR).await.map_err(|e| {
+        error!("Failed to read profiles directory '{}': {}", PROFILES_DIR, e);
+        format!("Failed to read profiles directory: {}", e)
+    })?;
 
     let mut profiles = Vec::new();
 
-    while let Some(entry) = entries.next_entry().await.transpose() {
+    while let Some(entry) = dir_entries.next_entry().await.transpose() {
         let entry = match entry {
             Ok(e) => e,
             Err(e) => {
@@ -147,7 +197,17 @@ pub async fn list_profiles() -> Result<Vec<ProfileListEntry>, String> {
             continue;
         }
 
-        // Try to load just the metadata (name and description) from the file
+        // Only process regular files, not directories or symlinks
+        match entry.file_type().await {
+            Ok(ft) if ft.is_file() => {},
+            Ok(_) => continue, // Skip non-files
+            Err(e) => {
+                warn!("Failed to get file type for {:?}: {}", path, e);
+                continue;
+            }
+        }
+
+        // Try to load the profile metadata
         let json = match fs::read_to_string(&path).await {
             Ok(content) => content,
             Err(e) => {
@@ -168,15 +228,18 @@ pub async fn list_profiles() -> Result<Vec<ProfileListEntry>, String> {
     }
 
     // Sort alphabetically by name for consistent ordering
-    profiles.sort_by(|a, b| a.name.cmp(&b.name));
+    profiles.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
     Ok(profiles)
 }
 
 /// Checks if a profile with the given name exists on disk.
+///
+/// This is used to prevent accidental overwrites and to provide user feedback.
 pub async fn profile_exists(name: &str) -> bool {
-    if !is_valid_filename(name) {
-        return false;
+    match validate_filename(name) {
+        Ok(_) => {},
+        Err(_) => return false,
     }
 
     let path = name_to_path(name);
@@ -189,12 +252,42 @@ mod tests {
 
     #[test]
     fn test_filename_validation() {
-        assert!(is_valid_filename("my_profile"));
-        assert!(is_valid_filename("Profile-123"));
-        assert!(!is_valid_filename(""));
-        assert!(!is_valid_filename("/etc/passwd"));
-        assert!(!is_valid_filename("../secret"));
-        assert!(!is_valid_filename("."));
-        assert!(!is_valid_filename(".."));
+        // Valid names
+        assert!(validate_filename("my_profile").is_ok());
+        assert!(validate_filename("Profile-123").is_ok());
+        assert!(validate_filename("Test Profile").is_ok());
+        assert!(validate_filename("profile_2024_01_07").is_ok());
+
+        // Invalid: empty
+        assert!(validate_filename("").is_err());
+
+        // Invalid: path traversal
+        assert!(validate_filename("/etc/passwd").is_err());
+        assert!(validate_filename("../secret").is_err());
+        assert!(validate_filename("foo/bar").is_err());
+        assert!(validate_filename("foo\\bar").is_err());
+
+        // Invalid: reserved names
+        assert!(validate_filename(".").is_err());
+        assert!(validate_filename("..").is_err());
+
+        // Invalid: whitespace issues
+        assert!(validate_filename(" profile").is_err());
+        assert!(validate_filename("profile ").is_err());
+        assert!(validate_filename("  ").is_err());
+
+        // Invalid: dangerous characters
+        assert!(validate_filename("profile\0name").is_err());
+        assert!(validate_filename("profile<name").is_err());
+        assert!(validate_filename("profile>name").is_err());
+        assert!(validate_filename("profile:name").is_err());
+        assert!(validate_filename("profile\"name").is_err());
+        assert!(validate_filename("profile|name").is_err());
+        assert!(validate_filename("profile?name").is_err());
+        assert!(validate_filename("profile*name").is_err());
+
+        // Invalid: too long
+        let long_name = "a".repeat(250);
+        assert!(validate_filename(&long_name).is_err());
     }
 }

@@ -1,0 +1,16 @@
+{% if confirm_mode %}
+<button
+    hx-delete="/welder-profile/fs/load/delete_confirm?name={{ profile_name }}"
+    hx-target="#load-profile-list"
+    class="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800">
+    Confirm Deleting
+</button>
+{% else %}
+<button
+    hx-get="/welder-profile/fs/load/delete?name={{ profile_name }}"
+    hx-target="#delete-btn-container"
+    hx-swap="innerHTML"
+    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+    Delete
+</button>
+{% endif %}

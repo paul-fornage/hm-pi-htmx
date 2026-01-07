@@ -24,6 +24,11 @@ use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
 use crate::views::machine_config::{show_machine_config, save_machine_config};
 use crate::views::welder_profile::{show_welder_profile, show_welder_profile_grid, show_edit_modal, submit_register_write, show_description_edit_modal, update_description, show_profile_metadata};
+use crate::views::welder_profile::file_system_handlers::{
+    handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit,
+    handle_load_modal, handle_load_preview, handle_load_apply,
+    handle_delete_profile_button, handle_delete_profile_confirm,
+};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
@@ -173,6 +178,17 @@ async fn main() {
         .route("/welder-profile/write/{register_name}", post(submit_register_write))
         .route("/welder-profile/edit-description", get(show_description_edit_modal))
         .route("/welder-profile/update-description", post(update_description))
+
+        // --- Welder Profile File System Routes ---
+        .route("/welder-profile/fs/save", get(handle_save))
+        .route("/welder-profile/fs/save_as", get(handle_save_as_modal))
+        .route("/welder-profile/fs/save_as/search", get(handle_save_as_search))
+        .route("/welder-profile/fs/save_as/submit", post(handle_save_as_submit))
+        .route("/welder-profile/fs/load", get(handle_load_modal))
+        .route("/welder-profile/fs/load/preview", get(handle_load_preview))
+        .route("/welder-profile/fs/load/apply", post(handle_load_apply))
+        .route("/welder-profile/fs/load/delete", get(handle_delete_profile_button))
+        .route("/welder-profile/fs/load/delete_confirm", axum::routing::delete(handle_delete_profile_confirm))
 
         // --- Machine Config Routes ---
         .route("/machine-config/save", post(save_machine_config))

@@ -1,0 +1,80 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+     id="modal-backdrop">
+
+    <div class="absolute inset-0" onclick="document.getElementById('global-modal-layer').innerHTML = ''"></div>
+
+    <div class="relative bg-white rounded-lg shadow-2xl w-[90vw] h-[90vh] max-w-5xl border border-slate-300 z-10 flex flex-col">
+
+        <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-lg flex-shrink-0">
+            <h2 class="text-xl font-bold text-slate-800">Save Profile As</h2>
+            <button
+                type="button"
+                onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                class="text-slate-400 hover:text-red-500 font-bold px-2 text-2xl leading-none transition-colors">
+                &times;
+            </button>
+        </div>
+
+        <form hx-post="/welder-profile/fs/save_as/submit"
+              hx-target="#save-status"
+              class="flex flex-col flex-1 min-h-0">
+
+            <div class="px-6 pt-6 pb-4 border-b border-slate-200 flex-shrink-0 bg-white">
+                <div class="flex gap-4 items-end">
+                    <div class="flex-1">
+                        <label for="profile-name-input" class="text-xs font-semibold uppercase text-slate-600 tracking-wider block mb-2">
+                            Profile Name
+                        </label>
+                        <input
+                            type="text"
+                            id="profile-name-input"
+                            name="name"
+                            value="{% if let Some(name) = current_name %}{{ name }}{% endif %}"
+                            required
+                            hx-get="/welder-profile/fs/save_as/search"
+                            hx-trigger="keyup changed delay:200ms"
+                            hx-target="#save-as-profile-list"
+                            hx-include="this"
+                            class="w-full px-4 py-2.5 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
+                            placeholder="Enter profile name">
+                    </div>
+                    <div class="flex gap-2">
+                        <button
+                            type="button"
+                            onclick="document.getElementById('global-modal-layer').innerHTML = ''"
+                            class="px-5 py-2.5 bg-white border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-all">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            id="save-as-submit-btn"
+                            onclick="if(window.saveAsNeedsConfirm) { if(!confirm('Overwrite existing profile?')) return false; } return true;"
+                            class="px-5 py-2.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 shadow-sm hover:shadow transition-all">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-hidden px-6 py-4">
+                <div class="h-full border border-slate-300 rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex-shrink-0">
+                        <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider">Existing Profiles</h3>
+                    </div>
+                    <div id="save-as-profile-list" class="flex-1 overflow-y-auto">
+                        {% include "components/file-system/save-as-profile-list.html" %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+window.saveAsNeedsConfirm = false;
+
+document.body.addEventListener('profileUpdated', function() {
+    document.getElementById('global-modal-layer').innerHTML = '';
+    document.getElementById('profile-metadata').dispatchEvent(new Event('load'));
+});
+</script>
