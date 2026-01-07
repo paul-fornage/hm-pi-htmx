@@ -8,6 +8,7 @@ mod miller;
 mod connection_management;
 mod views;
 mod machine_config;
+mod askama_components;
 
 use axum::{
     response::{IntoResponse, Response},
@@ -27,7 +28,7 @@ use crate::views::welder_profile::{show_welder_profile, show_welder_profile_grid
 use crate::views::welder_profile::file_system_handlers::{
     handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit,
     handle_load_modal, handle_load_preview, handle_load_apply,
-    handle_delete_profile_button, handle_delete_profile_confirm,
+    handle_delete_profile_confirm,
 };
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
@@ -182,12 +183,10 @@ async fn main() {
         // --- Welder Profile File System Routes ---
         .route("/welder-profile/fs/save", get(handle_save))
         .route("/welder-profile/fs/save_as", get(handle_save_as_modal))
-        .route("/welder-profile/fs/save_as/search", get(handle_save_as_search))
         .route("/welder-profile/fs/save_as/submit", post(handle_save_as_submit))
         .route("/welder-profile/fs/load", get(handle_load_modal))
         .route("/welder-profile/fs/load/preview", get(handle_load_preview))
         .route("/welder-profile/fs/load/apply", post(handle_load_apply))
-        .route("/welder-profile/fs/load/delete", get(handle_delete_profile_button))
         .route("/welder-profile/fs/load/delete_confirm", axum::routing::delete(handle_delete_profile_confirm))
 
         // --- Machine Config Routes ---

@@ -5,7 +5,7 @@
 
     <div class="relative bg-white rounded-lg shadow-2xl w-[90vw] h-[90vh] max-w-5xl border border-slate-300 z-10 flex flex-col">
 
-        <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-lg flex-shrink-0">
+        <div class="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-lg shrink-0">
             <h2 class="text-xl font-bold text-slate-800">Save Profile As</h2>
             <button
                 type="button"
@@ -16,10 +16,10 @@
         </div>
 
         <form hx-post="/welder-profile/fs/save_as/submit"
-              hx-target="#save-status"
+              hx-target="#profile-fs-op-status"
               class="flex flex-col flex-1 min-h-0">
 
-            <div class="px-6 pt-6 pb-4 border-b border-slate-200 flex-shrink-0 bg-white">
+            <div class="px-6 pt-6 pb-4 border-b border-slate-200 shrink-0 bg-white">
                 <div class="flex gap-4 items-end">
                     <div class="flex-1">
                         <label for="profile-name-input" class="text-xs font-semibold uppercase text-slate-600 tracking-wider block mb-2">
@@ -58,7 +58,7 @@
 
             <div class="flex-1 min-h-0 overflow-hidden px-6 py-4">
                 <div class="h-full border border-slate-300 rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
-                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex-shrink-0">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 shrink-0">
                         <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider">Existing Profiles</h3>
                     </div>
                     <div id="save-as-profile-list" class="flex-1 overflow-y-auto">

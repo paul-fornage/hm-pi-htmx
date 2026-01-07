@@ -2,17 +2,13 @@ use axum::extract::Query;
 use axum::response::IntoResponse;
 use axum::Form;
 use serde::Deserialize;
-use log::{error, info};
 
-use crate::{debug_targeted, warn_targeted, AppState};
+use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use super::file_operations;
 use super::weld_profile::WeldProfile;
 use super::raw_weld_profile::RawWeldProfile;
-use super::file_system_templates::{
-    SaveStatusTemplate, SaveAsModalTemplate, SaveAsProfileListTemplate,
-    LoadModalTemplate, LoadPreviewTemplate, DeleteButtonTemplate, LoadProfileListTemplate,
-};
-use super::file_system_response::{FileSystemResponse, render_template};
+use super::file_system_templates::{SaveAsModalTemplate, SaveAsProfileListTemplate, LoadModalTemplate, LoadPreviewTemplate, LoadProfileListTemplate, ProfileFsOpResult, LoadPreviewWindow};
+
 
 pub async fn handle_save(
     axum::extract::State(state): axum::extract::State<AppState>,
@@ -24,10 +20,7 @@ pub async fn handle_save(
         Some(name) => name.clone(),
         None => {
             warn_targeted!(HTTP, "Cannot save profile: no name set");
-            return render_template(SaveStatusTemplate {
-                success: false,
-                message: "No profile name set".to_string(),
-            });
+            return ProfileFsOpResult::new_err_str("No profile name set".to_string());
         }
     };
 
@@ -37,11 +30,8 @@ pub async fn handle_save(
     let raw_profile = match RawWeldProfile::capture_from_memory(&state.miller_registers).await {
         Ok(profile) => profile,
         Err(e) => {
-            error!("Failed to capture profile from memory: {}", e);
-            return render_template(SaveStatusTemplate {
-                success: false,
-                message: "Failed to read from welder".to_string(),
-            });
+            error_targeted!(HTTP, "Failed to capture profile from memory: {}", e);
+            return ProfileFsOpResult::new_err_str("Failed to read from welder!".to_string());
         }
     };
 
@@ -49,32 +39,31 @@ pub async fn handle_save(
 
     match file_operations::save_profile(&profile).await {
         Ok(_) => {
-            info!("Successfully saved profile: {}", profile_name);
-            render_template(SaveStatusTemplate {
-                success: true,
-                message: "Saved".to_string(),
-            })
+            info_targeted!(HTTP, "Successfully saved profile as: {}", profile_name);
+            ProfileFsOpResult::new_ok_str(format!("Saved as {}", profile_name))
         }
         Err(e) => {
-            error!("Failed to save profile {}: {}", profile_name, e);
-            render_template(SaveStatusTemplate {
-                success: false,
-                message: "Save failed".to_string(),
-            })
+            error_targeted!(HTTP, "Failed to save profile {}: {}", profile_name, e);
+            ProfileFsOpResult::new_err_str("Failed to save!".to_string())
         }
     }
 }
 
-pub async fn handle_save_as_modal(
+pub async fn handle_save_as_modal<T: IntoResponse>(
     axum::extract::State(state): axum::extract::State<AppState>,
-) -> impl IntoResponse {
+) -> Result<SaveAsModalTemplate, ProfileFsOpResult<String>> {
     debug_targeted!(HTTP, "Save As modal requested");
 
     let profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
         Err(e) => {
-            error!("Failed to list profiles: {}", e);
-            return FileSystemResponse::Error("Failed to load profile list".to_string());
+            error_targeted!(HTTP, "Failed to list profiles: {}", e);
+            return Err(ProfileFsOpResult{
+                result: Err("Failed to load profiles!".to_string()),
+                close_modal: false,
+                reload_metadata: false,
+                retarget: Some(ProfileFsOpResult::<String>::DEFAULT_TARGET)
+            })
         }
     };
 
@@ -82,7 +71,7 @@ pub async fn handle_save_as_modal(
     let current_name = metadata.name.clone();
     drop(metadata);
 
-    render_template(SaveAsModalTemplate {
+    Ok(SaveAsModalTemplate {
         current_name,
         profiles,
     })
@@ -101,10 +90,10 @@ pub async fn handle_save_as_search(
     let all_profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
         Err(e) => {
-            error!("Failed to list profiles: {}", e);
-            return render_template(SaveAsProfileListTemplate {
+            error_targeted!(HTTP, "Failed to get profiles: {}", e);
+            return SaveAsProfileListTemplate {
                 profiles: Vec::new(),
-            });
+            };
         }
     };
 
@@ -114,9 +103,9 @@ pub async fn handle_save_as_search(
         .filter(|p| p.name.to_lowercase().contains(&search_lower))
         .collect();
 
-    render_template(SaveAsProfileListTemplate {
+    SaveAsProfileListTemplate {
         profiles: filtered,
-    })
+    }
 }
 
 #[derive(Deserialize)]
@@ -134,7 +123,12 @@ pub async fn handle_save_as_submit(
 
     if name.is_empty() {
         warn_targeted!(HTTP, "Cannot save profile: empty name");
-        return FileSystemResponse::Error("Name cannot be empty".to_string());
+        return ProfileFsOpResult {
+            result: Err("Profile name cannot be empty".to_string()),
+            close_modal: true,
+            reload_metadata: false,
+            retarget: None,
+        }
     }
 
     let metadata = state.weld_profile_metadata.lock().await;
@@ -144,8 +138,13 @@ pub async fn handle_save_as_submit(
     let raw_profile = match RawWeldProfile::capture_from_memory(&state.miller_registers).await {
         Ok(profile) => profile,
         Err(e) => {
-            error!("Failed to capture profile from memory: {}", e);
-            return FileSystemResponse::Error("Failed to read from welder".to_string());
+            error_targeted!(HTTP, "Failed to capture profile from memory: {}", e);
+            return ProfileFsOpResult {
+                result: Err("Failed to read current profile!".to_string()),
+                close_modal: true,
+                reload_metadata: false,
+                retarget: None,
+            }
         }
     };
 
@@ -153,17 +152,27 @@ pub async fn handle_save_as_submit(
 
     match file_operations::save_profile(&profile).await {
         Ok(_) => {
-            info!("Successfully saved profile as: {}", name);
+            info_targeted!(HTTP, "Successfully saved profile as: {}", name);
 
             let mut metadata = state.weld_profile_metadata.lock().await;
             metadata.set_name(name.clone());
             drop(metadata);
 
-            FileSystemResponse::SuccessStatus(format!("Saved as {}", name))
+            ProfileFsOpResult {
+                result: Ok(format!("Saved as {}", name)),
+                close_modal: true,
+                reload_metadata: true,
+                retarget: None,
+            }
         }
         Err(e) => {
-            error!("Failed to save profile {}: {}", name, e);
-            FileSystemResponse::Error("Save failed".to_string())
+            error_targeted!(HTTP, "Failed to save profile {}: {}", name, e);
+            ProfileFsOpResult {
+                result: Ok(format!("Saved as {}", name)),
+                close_modal: true,
+                reload_metadata: true,
+                retarget: None,
+            }
         }
     }
 }
@@ -174,12 +183,17 @@ pub async fn handle_load_modal() -> impl IntoResponse {
     let profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
         Err(e) => {
-            error!("Failed to list profiles: {}", e);
-            return FileSystemResponse::Error("Failed to load profile list".to_string());
+            error_targeted!(HTTP, "Failed to list profiles: {}", e);
+            return Err(ProfileFsOpResult {
+                result: Err("Failed to load saved profiles"),
+                close_modal: false,
+                reload_metadata: false,
+                retarget: Some(ProfileFsOpResult::<String>::DEFAULT_TARGET),
+            })
         }
     };
 
-    render_template(LoadModalTemplate { profiles })
+    Ok(LoadModalTemplate { profiles })
 }
 
 #[derive(Deserialize)]
@@ -192,18 +206,19 @@ pub async fn handle_load_preview(
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Load preview requested: {}", query.name);
 
-    let profile = match file_operations::load_profile(&query.name).await {
-        Ok(p) => p,
+    match file_operations::load_profile(&query.name).await {
+        Ok(p) => {
+            LoadPreviewTemplate(Ok(LoadPreviewWindow {
+                name: p.name.clone(),
+                description: p.description.clone(),
+            }))
+        },
         Err(e) => {
-            error!("Failed to load profile {}: {}", query.name, e);
-            return FileSystemResponse::Error("Failed to load profile".to_string());
-        }
-    };
+            error_targeted!(HTTP, "Failed to load profile {}: {}", query.name, e);
+            LoadPreviewTemplate(Err("Failed to load profile".to_string()))
 
-    render_template(LoadPreviewTemplate {
-        name: profile.name,
-        description: profile.description,
-    })
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -245,17 +260,6 @@ pub async fn handle_load_apply(
 #[derive(Deserialize)]
 pub struct DeleteProfileQuery {
     name: String,
-}
-
-pub async fn handle_delete_profile_button(
-    Query(query): Query<DeleteProfileQuery>,
-) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Delete button clicked for: {}", query.name);
-
-    render_template(DeleteButtonTemplate {
-        profile_name: query.name,
-        confirm_mode: true,
-    })
 }
 
 pub async fn handle_delete_profile_confirm(

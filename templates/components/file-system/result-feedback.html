@@ -1,0 +1,4 @@
+<span class="{% match result %}{% when Ok(_) %}text-green-600{% when Err(_) %}text-red-600{% endmatch %} shared-styles">
+  {% match result %}
+    {% when Ok(message) %}{{ message }}{% when Err(error) %}{{ error }}{% endmatch %}
+</span>
