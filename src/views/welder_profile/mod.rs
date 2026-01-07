@@ -11,7 +11,6 @@ use askama_web::WebTemplate;
 use axum::extract::Path;
 use axum::response::{Html, IntoResponse};
 use axum::Form;
-use log::warn;
 use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress, RegisterMetadata};
