@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::AppState;
+use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions;
 
 /// Raw welding profile containing all register values as they are stored in modbus memory.
@@ -53,8 +54,7 @@ pub struct RawWeldProfile {
 impl RawWeldProfile {
     /// Captures the current welding profile from the Miller memory.
     /// Returns an error if any register cannot be read.
-    pub async fn capture_from_memory(state: &AppState) -> Result<Self, String> {
-        let miller_regs = &state.miller_registers;
+    pub async fn capture_from_memory(miller_regs: &MillerMemory) -> Result<Self, String> {
 
         macro_rules! pull_coil_from_mb {
                 ($reg:ident) => {
@@ -158,8 +158,7 @@ impl RawWeldProfile {
 
     /// Applies this welding profile to the Miller memory.
     /// Returns an error on first write failure.
-    pub async fn apply_to_memory(&self, state: &AppState) -> Result<(), String> {
-        let miller_regs = &state.miller_registers;
+    pub async fn apply_to_memory(&self, miller_regs: &MillerMemory) -> Result<(), String> {
 
         macro_rules! write_coil_to_mb {
             ($val:expr, $reg:ident) => {
@@ -182,16 +181,6 @@ impl RawWeldProfile {
                     })?
             };
         }
-
-        // Write all boolean registers
-        write_coil_to_mb!(self.use_dc_output, USE_DC_OUTPUT);
-        write_coil_to_mb!(self.use_ep_polarity, USE_EP_POLARITY);
-        write_coil_to_mb!(self.boost_en, BOOST_EN);
-        write_coil_to_mb!(self.droop_en, DROOP_EN);
-        write_coil_to_mb!(self.use_low_ocv, USE_LOW_OCV);
-        write_coil_to_mb!(self.pulser_en, PULSER_EN);
-        write_coil_to_mb!(self.use_low_ac_commutation_amp, USE_LOW_AC_COMMUTATION_AMP);
-        write_coil_to_mb!(self.ac_independant_en, AC_INDEPENDANT_EN);
 
         // Write enum registers
         write_hreg_to_mb!(self.tungsten_preset, TUNGSTEN_PRESET);
@@ -225,6 +214,16 @@ impl RawWeldProfile {
 
         // Write postflow time
         write_hreg_to_mb!(self.postflow_time, POSTFLOW_TIME);
+
+        // Write all boolean registers
+        write_coil_to_mb!(self.use_dc_output, USE_DC_OUTPUT);
+        write_coil_to_mb!(self.use_ep_polarity, USE_EP_POLARITY);
+        write_coil_to_mb!(self.boost_en, BOOST_EN);
+        write_coil_to_mb!(self.droop_en, DROOP_EN);
+        write_coil_to_mb!(self.use_low_ocv, USE_LOW_OCV);
+        write_coil_to_mb!(self.pulser_en, PULSER_EN);
+        write_coil_to_mb!(self.use_low_ac_commutation_amp, USE_LOW_AC_COMMUTATION_AMP);
+        write_coil_to_mb!(self.ac_independant_en, AC_INDEPENDANT_EN);
 
         Ok(())
     }
