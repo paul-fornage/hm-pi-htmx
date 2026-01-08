@@ -23,8 +23,7 @@
                 <div id="load-profile-list"
                      class="flex-1 overflow-y-auto"
                      hx-get="/welder-profile/fs/load/list"
-                     hx-trigger="reloadProfileList from:body">
-                    {% include "components/file-system/load-profile-list.html" %}
+                     hx-trigger="load, reload-profile-list">
                 </div>
             </div>
 

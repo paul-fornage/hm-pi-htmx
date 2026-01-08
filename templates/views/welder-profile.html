@@ -19,9 +19,8 @@
 
     <div id="profile-metadata"
          hx-get="/welder-profile/metadata"
-         hx-trigger="load"
-         hx-swap="innerHTML"
-         hx-on:reloadProfileMetadata="htmx.trigger(this, 'load')">
+         hx-trigger="load, reload-profile-metadata"
+         hx-swap="innerHTML">
     </div>
 
     <div hx-get="/welder-profile/grid"
@@ -32,5 +31,5 @@
     </div>
 </div>
 
-<div id="global-modal-layer" hx-on:closeModal="this.innerHTML = ''"></div>
+<div id="global-modal-layer" hx-on:close-modal="this.innerHTML = ''"></div>
 {% endblock %}

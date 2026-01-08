@@ -49,7 +49,7 @@ pub async fn handle_save(
     }
 }
 
-pub async fn handle_save_as_modal<T: IntoResponse>(
+pub async fn handle_save_as_modal(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Save As modal requested");
@@ -79,13 +79,13 @@ pub async fn handle_save_as_modal<T: IntoResponse>(
 
 #[derive(Deserialize)]
 pub struct SearchQuery {
-    q: String,
+    name: String,
 }
 
 pub async fn handle_save_as_search(
     Query(query): Query<SearchQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Save As search requested: {}", query.q);
+    debug_targeted!(HTTP, "Save As search requested: {}", query.name);
 
     let all_profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
@@ -97,7 +97,7 @@ pub async fn handle_save_as_search(
         }
     };
 
-    let search_lower = query.q.to_lowercase();
+    let search_lower = query.name.to_lowercase();
     let filtered: Vec<_> = all_profiles
         .into_iter()
         .filter(|p| p.name.to_lowercase().contains(&search_lower))
@@ -179,21 +179,7 @@ pub async fn handle_save_as_submit(
 
 pub async fn handle_load_modal() -> impl IntoResponse {
     debug_targeted!(HTTP, "Load modal requested");
-
-    let profiles = match file_operations::list_profiles().await {
-        Ok(list) => list,
-        Err(e) => {
-            error_targeted!(HTTP, "Failed to list profiles: {}", e);
-            return Err(ProfileFsOpResult {
-                result: Err("Failed to load saved profiles"),
-                close_modal: false,
-                reload_metadata: false,
-                retarget: Some(ProfileFsOpResult::<String>::DEFAULT_TARGET),
-            })
-        }
-    };
-
-    Ok(LoadModalTemplate { profiles })
+    LoadModalTemplate {}
 }
 
 #[derive(Deserialize)]

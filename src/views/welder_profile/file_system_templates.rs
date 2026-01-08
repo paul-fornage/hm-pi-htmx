@@ -30,15 +30,15 @@ impl HxTrigger {
 }
 
 pub const RELOAD_LIST_EVENT: HxTrigger = HxTrigger {
-    event: "reloadProfileList",
+    event: "reload-profile-list",
     target: "#load-profile-list",
 };
 pub const CLOSE_MODAL_EVENT: HxTrigger = HxTrigger {
-    event: "closeModal",
+    event: "close-modal",
     target: "#global-modal-layer"
 };
 pub const RELOAD_METADATA_EVENT: HxTrigger = HxTrigger {
-    event: "reloadProfileMetadata",
+    event: "reload-profile-metadata",
     target: "#profile-metadata"
 };
 
@@ -135,9 +135,7 @@ pub struct SaveAsProfileListTemplate {
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/file-system/load-modal.html")]
-pub struct LoadModalTemplate {
-    pub profiles: Vec<ProfileListEntry>,
-}
+pub struct LoadModalTemplate {}
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/file-system/load-profile-list.html")]
