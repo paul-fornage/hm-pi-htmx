@@ -28,7 +28,7 @@ impl AnalogRegisterInfo {
                                  self.precision as usize,
                                  self.convert_from_raw(val),
                                  self.unit),
-            None => String::from("---")
+            None => format!("--- {}", self.unit),
         }
     }
 

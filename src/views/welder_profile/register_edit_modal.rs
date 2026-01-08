@@ -38,6 +38,18 @@ impl AnalogEditModalTemplate {
     pub fn step(&self) -> f32 {
         1.0 / self.register_info.scale as f32
     }
+    
+    pub fn current_display_value(&self) -> String {
+        self.register_info.formatted_value(self.current_value)
+    }
+
+    pub fn display_min_value(&self) -> String {
+        self.register_info.formatted_value(Some(self.register_info.min_value))
+    }
+
+    pub fn display_max_value(&self) -> String {
+        self.register_info.formatted_value(Some(self.register_info.max_value))
+    }
 }
 
 #[derive(Template, WebTemplate)]

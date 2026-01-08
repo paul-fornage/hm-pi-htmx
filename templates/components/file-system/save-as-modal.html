@@ -72,9 +72,4 @@
 
 <script>
 window.saveAsNeedsConfirm = false;
-
-document.body.addEventListener('profileUpdated', function() {
-    document.getElementById('global-modal-layer').innerHTML = '';
-    document.getElementById('profile-metadata').dispatchEvent(new Event('load'));
-});
 </script>

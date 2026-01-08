@@ -33,11 +33,11 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Min</span>
-                    <div class="font-mono text-sm">{{ semantic_min() }} {{ register_info.unit }}</div>
+                    <div class="font-mono text-sm">{{ display_min_value() }}</div>
                 </div>
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Max</span>
-                    <div class="font-mono text-sm">{{ semantic_max() }} {{ register_info.unit }}</div>
+                    <div class="font-mono text-sm">{{ display_max_value() }}</div>
                 </div>
             </div>
 
@@ -45,7 +45,7 @@
                 <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
                 <div class="font-bold text-lg mt-1 text-slate-700">
                     {% if let Some(val) = current_semantic_value() %}
-                    {{ val }} {{ register_info.unit }}
+                    {{ current_display_value() }}
                     {% else %}
                     <span class="text-gray-400">---</span>
                     {% endif %}
