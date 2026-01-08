@@ -140,7 +140,7 @@ pub struct LoadModalTemplate {}
 #[derive(Template, WebTemplate)]
 #[template(path = "components/file-system/load-profile-list.html")]
 pub struct LoadProfileListTemplate {
-    pub profiles: Vec<ProfileListEntry>,
+    pub result: Result<Vec<ProfileListEntry>, String>,
 }
 
 #[derive(Template, WebTemplate)]

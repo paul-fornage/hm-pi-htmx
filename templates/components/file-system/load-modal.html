@@ -18,12 +18,23 @@
         <div class="flex gap-4 flex-1 min-h-0 p-6">
             <div class="flex-1 border border-slate-300 rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
                 <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 shrink-0">
-                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider">Saved Profiles</h3>
+                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-2">Saved Profiles</h3>
+                    <input
+                        type="text"
+                        id="load-search-input"
+                        name="search"
+                        placeholder="Search profiles..."
+                        class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        hx-get="/welder-profile/fs/load/list"
+                        hx-trigger="keyup changed delay:500ms, search"
+                        hx-target="#load-profile-list"
+                        hx-include="this"
+                    />
                 </div>
                 <div id="load-profile-list"
                      class="flex-1 overflow-y-auto"
                      hx-get="/welder-profile/fs/load/list"
-                     hx-trigger="load, reload-profile-list">
+                     hx-trigger="load">
                 </div>
             </div>
 
@@ -41,49 +52,15 @@
 
 <script>
 
-// Delete confirmation state management
-let deleteConfirmState = null;
+// Handle reload-profile-list event to preserve search
+document.addEventListener('reload-profile-list', function() {
+    const searchInput = document.getElementById('load-search-input');
+    const searchValue = searchInput ? searchInput.value : '';
+    const url = '/welder-profile/fs/load/list' + (searchValue ? '?search=' + encodeURIComponent(searchValue) : '');
 
-function handleDeleteClick(button) {
-    const profileName = button.dataset.profileName;
-
-    // If already in confirm state for this profile, execute deletion
-    if (deleteConfirmState === profileName) {
-        executeDelete(profileName);
-        return;
-    }
-
-    // Enter confirm state
-    deleteConfirmState = profileName;
-    button.textContent = 'Confirm Delete';
-    button.classList.remove('bg-red-600', 'hover:bg-red-700');
-    button.classList.add('bg-red-700', 'hover:bg-red-800');
-
-    // Reset after 3 seconds if not clicked
-    setTimeout(() => {
-        if (deleteConfirmState === profileName) {
-            resetDeleteButton(button);
-        }
-    }, 3000);
-}
-
-function resetDeleteButton(button) {
-    deleteConfirmState = null;
-    button.textContent = 'Delete';
-    button.classList.remove('bg-red-700', 'hover:bg-red-800');
-    button.classList.add('bg-red-600', 'hover:bg-red-700');
-}
-
-function executeDelete(profileName) {
-    // Execute the delete request
-    htmx.ajax('DELETE', '/welder-profile/fs/load/delete_confirm?name=' + encodeURIComponent(profileName), {
+    htmx.ajax('GET', url, {
         target: '#load-profile-list',
         swap: 'innerHTML'
-    }).then(() => {
-        // Clear preview pane after successful deletion
-        document.getElementById('load-preview').innerHTML =
-            '<div class="text-slate-500 text-sm text-center mt-12">Select a profile to preview</div>';
-        deleteConfirmState = null;
     });
-}
+});
 </script>

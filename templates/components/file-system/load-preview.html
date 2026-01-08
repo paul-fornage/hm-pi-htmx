@@ -15,21 +15,66 @@
         </button>
         <button
                 id="delete-profile-btn"
-                data-profile-name="{{ profile.name }}"
                 hx-delete="/welder-profile/fs/load/delete_confirm?name={{ profile.name }}"
                 hx-target="#load-preview"
                 hx-swap="innerHTML"
                 hx-disabled-elt="this"
-                hx-trigger="confirmedDelete"
-                onclick="handleDeleteClick(this)"
                 class="px-4 py-2.5 bg-red-600 text-white rounded-md font-medium hover:bg-red-700 shadow-sm hover:shadow transition-all">
             Delete
         </button>
     </div>
 </div>
+<script>
+    (function() {
+        const btn = document.getElementById('delete-profile-btn');
+        if (btn) {
+            btn.addEventListener('htmx:confirm', function(evt) {
+                // Ensure the event is for this button
+                if (evt.target !== btn) return;
+
+                // If we haven't confirmed yet, stop the request and show confirmation
+                if (!btn.dataset.confirmed) {
+                    evt.preventDefault();
+
+                    // Set state
+                    btn.dataset.confirmed = "true";
+                    btn.textContent = "Confirm Delete";
+
+                    // Update styles for warning state
+                    btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    btn.classList.add('bg-red-800', 'hover:bg-red-900');
+
+                    // Reset after 3 seconds
+                    setTimeout(() => {
+                        // Check .isConnected to ensure we don't error if the user
+                        // switched profiles (removing this button from DOM) in the meantime
+                        if (btn.isConnected) {
+                            delete btn.dataset.confirmed;
+                            btn.textContent = "Delete";
+                            btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                            btn.classList.remove('bg-red-800', 'hover:bg-red-900');
+                        }
+                    }, 3000);
+                }
+                // If btn.dataset.confirmed is true, we do nothing.
+                // HTMX proceeds to send the DELETE request naturally.
+            });
+        }
+    })();
+</script>
 {% when Err(error) %}
 <div class="flex flex-col h-full justify-center items-center text-center p-4">
     <div class="text-red-600 font-medium mb-1">Error loading profile</div>
-    <div class="text-sm text-slate-500">{{ error }}</div>
+    <div class="text-sm text-slate-500 mb-6">{{ error }}</div>
+
+    <button
+            type="button"
+            hx-get="/welder-profile/fs/load/list"
+            hx-target="#load-profile-list"
+            hx-include="#load-search-input"
+            hx-disabled-elt="this"
+            class="px-4 py-2 text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-wait shadow-sm">
+        Reload List
+    </button>
 </div>
 {% endmatch %}

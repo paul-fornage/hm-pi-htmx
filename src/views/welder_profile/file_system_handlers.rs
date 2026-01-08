@@ -82,6 +82,11 @@ pub struct SearchQuery {
     name: String,
 }
 
+#[derive(Deserialize)]
+pub struct LoadListQuery {
+    search: Option<String>,
+}
+
 pub async fn handle_save_as_search(
     Query(query): Query<SearchQuery>,
 ) -> impl IntoResponse {
@@ -260,16 +265,35 @@ pub async fn handle_load_apply(
 }
 
 
-pub async fn handle_get_profile_list() -> impl IntoResponse {
-    debug_targeted!(HTTP, "Reloading profile list partial");
+pub async fn handle_get_profile_list(
+    Query(query): Query<LoadListQuery>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Reloading profile list partial with search: {:?}", query.search);
 
-    let profiles = file_operations::list_profiles()
-        .await.unwrap_or_else(|e| {
-        error_targeted!(HTTP, "Failed to list profiles for partial update: {}", e);
-        vec![]
-    });
+    let result = match file_operations::list_profiles().await {
+        Ok(all_profiles) => {
+            let profiles = match &query.search {
+                Some(search_term) if !search_term.trim().is_empty() => {
+                    let search_lower = search_term.to_lowercase();
+                    all_profiles
+                        .into_iter()
+                        .filter(|p| {
+                            p.name.to_lowercase().contains(&search_lower) ||
+                            p.description.to_lowercase().contains(&search_lower)
+                        })
+                        .collect()
+                }
+                _ => all_profiles,
+            };
+            Ok(profiles)
+        }
+        Err(e) => {
+            error_targeted!(HTTP, "Failed to list profiles: {}", e);
+            Err(format!("Failed to load profiles: {}", e))
+        }
+    };
 
-    LoadProfileListTemplate { profiles }
+    LoadProfileListTemplate { result }
 }
 
 
