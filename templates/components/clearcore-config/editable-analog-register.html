@@ -1,0 +1,20 @@
+<div class="bg-white p-4 rounded shadow hover:shadow-md transition-shadow border-l-4 border-green-500">
+    <div class="flex justify-between items-start mb-2">
+        <div class="flex-1">
+            <h3 class="font-semibold text-gray-800">{{ register_info.meta.name }}</h3>
+            <p class="text-xs text-gray-600 mt-1">{{ register_info.meta.description }}</p>
+        </div>
+        <button 
+            hx-get="/clearcore-config/edit/{{ register_info.meta.name }}"
+            hx-target="#clearcore-modal-layer"
+            class="ml-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 flex-shrink-0">
+            Edit
+        </button>
+    </div>
+    <div class="mt-2 text-sm">
+        <span class="font-medium text-gray-700">Value:</span>
+        <span class="ml-2 {% if has_value() %}text-gray-900 font-mono{% else %}text-red-500{% endif %}">
+            {{ formatted_value() }}
+        </span>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-start mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Edit {{ register_name }}</h2>
+            <button 
+                hx-on:click="document.getElementById('clearcore-modal-layer').innerHTML = ''"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">
+                &times;
+            </button>
+        </div>
+
+        <div class="mb-4">
+            <p class="text-sm text-gray-600">{{ meta.description }}</p>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Current Value:</label>
+            <div class="text-lg font-semibold {% if current_value.is_some() %}{% if current_value.unwrap() %}text-green-600{% else %}text-gray-600{% endif %}{% else %}text-red-500{% endif %}">
+                {% match current_value %}
+                    {% when Some with (true) %}TRUE
+                    {% when Some with (false) %}FALSE
+                    {% when None %}--- (No Connection)
+                {% endmatch %}
+            </div>
+        </div>
+
+        <form 
+            hx-post="/clearcore-config/write/{{ register_name }}"
+            hx-target="#write-error-{{ register_name }}"
+            hx-on::after-request="if(event.detail.successful) { document.getElementById('clearcore-modal-layer').innerHTML = '' }">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">New Value:</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="value" value="false" class="mr-2" {% if current_value.is_some() && !current_value.unwrap() %}checked{% endif %}>
+                        <span>FALSE</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="value" value="true" class="mr-2" {% if current_value.is_some() && current_value.unwrap() %}checked{% endif %}>
+                        <span>TRUE</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="write-error-{{ register_name }}" class="mb-4"></div>
+
+            <div class="flex justify-end gap-2">
+                <button 
+                    type="button"
+                    hx-on:click="document.getElementById('clearcore-modal-layer').innerHTML = ''"
+                    class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button 
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Write Value
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

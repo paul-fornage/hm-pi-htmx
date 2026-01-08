@@ -3,13 +3,14 @@ mod operations;
 pub mod miller_info;
 pub mod machine_config;
 pub mod welder_profile;
-mod clearcore_static_config;
+pub mod clearcore_static_config;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
 pub use miller_info::MillerInfoTemplate;
 pub use machine_config::MachineConfigTemplate;
 pub use welder_profile::WelderProfileTemplate;
+pub use clearcore_static_config::ClearcoreConfigTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -19,6 +20,7 @@ pub enum AppView {
     Connections,
     MachineConfig,
     WelderProfile,
+    ClearcoreConfig,
 }
 
 impl AppView {
@@ -27,6 +29,7 @@ impl AppView {
         &[
             AppView::Operations,
             AppView::WelderProfile,
+            AppView::ClearcoreConfig,
             AppView::MillerInfo,
             AppView::Connections,
             AppView::MachineConfig,
@@ -41,6 +44,7 @@ impl AppView {
             AppView::Connections => "Connections",
             AppView::MachineConfig => "Config",
             AppView::WelderProfile => "Welder Profile",
+            AppView::ClearcoreConfig => "ClearCore Config",
         }
     }
 
@@ -52,6 +56,7 @@ impl AppView {
             AppView::Connections => "/connections",
             AppView::MachineConfig => "/machine-config",
             AppView::WelderProfile => "/welder-profile",
+            AppView::ClearcoreConfig => "/clearcore-config",
         }
     }
 }
