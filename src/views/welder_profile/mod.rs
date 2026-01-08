@@ -6,7 +6,6 @@ pub mod weld_profile;
 pub mod file_operations;
 pub mod file_system_handlers;
 pub mod file_system_templates;
-pub mod file_system_response;
 mod analog_details;
 mod special_case_registers;
 mod write_error_modal;

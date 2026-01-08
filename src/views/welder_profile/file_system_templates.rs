@@ -29,6 +29,19 @@ impl HxTrigger {
     }
 }
 
+pub const RELOAD_LIST_EVENT: HxTrigger = HxTrigger {
+    event: "reloadProfileList",
+    target: "#load-profile-list",
+};
+pub const CLOSE_MODAL_EVENT: HxTrigger = HxTrigger {
+    event: "closeModal",
+    target: "#global-modal-layer"
+};
+pub const RELOAD_METADATA_EVENT: HxTrigger = HxTrigger {
+    event: "reloadProfileMetadata",
+    target: "#profile-metadata"
+};
+
 #[derive(Template)]
 #[template(path = "components/file-system/result-feedback.html")]
 pub struct ProfileFsOpResult<E: Display> {
@@ -38,14 +51,6 @@ pub struct ProfileFsOpResult<E: Display> {
     pub retarget: Option<&'static str>,
 }
 impl<E: Display> ProfileFsOpResult<E> {
-    pub const CLOSE_MODAL_EVENT: HxTrigger = HxTrigger {
-        event: "closeFsModal",
-        target: "#global-modal-layer"
-    };
-    pub const RELOAD_METADATA_EVENT: HxTrigger = HxTrigger {
-        event: "reloadProfileMetadata",
-        target: "#profile-metadata"
-    };
     
     pub const DEFAULT_TARGET: &'static str = "#profile-fs-op-status";
     
@@ -77,10 +82,10 @@ impl<E: Display> IntoResponse for ProfileFsOpResult<E> {
         let mut targets = Vec::with_capacity(2);
 
         if self.close_modal {
-            targets.push(Self::CLOSE_MODAL_EVENT);
+            targets.push(CLOSE_MODAL_EVENT);
         }
         if self.reload_metadata {
-            targets.push(Self::RELOAD_METADATA_EVENT);
+            targets.push(RELOAD_METADATA_EVENT);
         }
 
         if !targets.is_empty() {
@@ -147,4 +152,40 @@ pub struct LoadPreviewTemplate(pub Result<LoadPreviewWindow, String>);
 pub struct LoadPreviewWindow {
     pub name: String,
     pub description: String,
+}
+
+
+#[derive(Template)]
+#[template(path = "components/file-system/delete-profile-feedback.html")]
+pub struct ProfileDeleteTemplate {
+    pub name: String,
+    pub result: Result<(), String>,
+}
+
+
+
+impl IntoResponse for ProfileDeleteTemplate {
+    fn into_response(self) -> axum::response::Response {
+        let mut headers = HeaderMap::new();
+
+        if self.result.is_ok() {
+            let json_trigger = HxTrigger::to_json(&RELOAD_LIST_EVENT);
+            if let Ok(header_value) = HeaderValue::from_str(&json_trigger.to_string()) {
+                headers.insert("HX-Trigger", header_value);
+            }
+        }
+
+        match self.render() {
+            Ok(html_string) => (headers, axum::response::Html(html_string)).into_response(),
+            Err(err) => {
+                error_targeted!(HTTP, "Failed to render delete template: {}", err);
+                (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    headers,
+                    "Template error",
+                )
+                    .into_response()
+            }
+        }
+    }
 }

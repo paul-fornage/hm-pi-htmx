@@ -7,7 +7,7 @@ use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppSta
 use super::file_operations;
 use super::weld_profile::WeldProfile;
 use super::raw_weld_profile::RawWeldProfile;
-use super::file_system_templates::{SaveAsModalTemplate, SaveAsProfileListTemplate, LoadModalTemplate, LoadPreviewTemplate, LoadProfileListTemplate, ProfileFsOpResult, LoadPreviewWindow};
+use super::file_system_templates::{SaveAsModalTemplate, SaveAsProfileListTemplate, LoadModalTemplate, LoadPreviewTemplate, LoadProfileListTemplate, ProfileFsOpResult, LoadPreviewWindow, ProfileDeleteTemplate};
 
 
 pub async fn handle_save(
@@ -51,7 +51,7 @@ pub async fn handle_save(
 
 pub async fn handle_save_as_modal<T: IntoResponse>(
     axum::extract::State(state): axum::extract::State<AppState>,
-) -> Result<SaveAsModalTemplate, ProfileFsOpResult<String>> {
+) -> impl IntoResponse {
     debug_targeted!(HTTP, "Save As modal requested");
 
     let profiles = match file_operations::list_profiles().await {
@@ -201,6 +201,7 @@ pub struct LoadPreviewQuery {
     name: String,
 }
 
+
 pub async fn handle_load_preview(
     Query(query): Query<LoadPreviewQuery>,
 ) -> impl IntoResponse {
@@ -235,14 +236,24 @@ pub async fn handle_load_apply(
     let profile = match file_operations::load_profile(&query.name).await {
         Ok(p) => p,
         Err(e) => {
-            error!("Failed to load profile {}: {}", query.name, e);
-            return FileSystemResponse::Error("Failed to load profile from disk".to_string());
+            error_targeted!(HTTP, "Failed to load profile {}: {}", query.name, e);
+            return ProfileFsOpResult {
+                result: Err("Failed to load profile from disk!".to_string()),
+                close_modal: true,
+                reload_metadata: true,
+                retarget: None,
+            };
         }
     };
 
     if let Err(e) = profile.raw_profile.apply_to_memory(&state.miller_registers).await {
-        error!("Failed to apply profile {} to memory: {}", query.name, e);
-        return FileSystemResponse::Error(format!("Failed to write to welder: {}", e));
+        error_targeted!(HTTP, "Failed to apply profile {} to memory: {}", query.name, e);
+        return ProfileFsOpResult {
+            result: Err("Failed to apply profile to welder!".to_string()),
+            close_modal: true,
+            reload_metadata: true,
+            retarget: None,
+        };
     }
 
     let profile_name = profile.name.clone();
@@ -252,10 +263,29 @@ pub async fn handle_load_apply(
     metadata.set_description(profile.description);
     drop(metadata);
 
-    info!("Successfully loaded profile: {}", profile_name);
+    info_targeted!(HTTP, "Successfully loaded profile: {}", profile_name);
 
-    FileSystemResponse::SuccessStatus(format!("Loaded {}", profile_name))
+    ProfileFsOpResult {
+        result: Ok(format!("Loaded {}", profile_name)),
+        close_modal: true,
+        reload_metadata: true,
+        retarget: None,
+    }
 }
+
+
+pub async fn handle_get_profile_list() -> impl IntoResponse {
+    debug_targeted!(HTTP, "Reloading profile list partial");
+
+    let profiles = file_operations::list_profiles()
+        .await.unwrap_or_else(|e| {
+        error_targeted!(HTTP, "Failed to list profiles for partial update: {}", e);
+        vec![]
+    });
+
+    LoadProfileListTemplate { profiles }
+}
+
 
 #[derive(Deserialize)]
 pub struct DeleteProfileQuery {
@@ -270,17 +300,19 @@ pub async fn handle_delete_profile_confirm(
     let result = file_operations::delete_profile(&query.name).await;
 
     match result {
-        Ok(()) => info!("Successfully deleted profile: {}", query.name),
-        Err(ref e) => error!("Failed to delete profile {}: {}", query.name, e),
-    }
-
-    let profiles = match file_operations::list_profiles().await {
-        Ok(list) => list,
-        Err(e) => {
-            error!("Failed to reload profile list: {}", e);
-            return FileSystemResponse::Error("Failed to reload profile list".to_string());
+        Ok(()) => {
+            info_targeted!(HTTP, "Successfully deleted profile: {}", query.name);
+            ProfileDeleteTemplate {
+                name: query.name,
+                result: Ok(()),
+            }
         }
-    };
-
-    render_template(LoadProfileListTemplate { profiles })
+        Err(e) => {
+            error_targeted!(HTTP, "Failed to delete profile {}: {}", query.name, e);
+            ProfileDeleteTemplate {
+                name: query.name,
+                result: Err(e.to_string()),
+            }
+        }
+    }
 }

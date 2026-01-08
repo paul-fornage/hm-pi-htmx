@@ -1,0 +1,17 @@
+{% match result %}
+{% when Ok(_) %}
+<div class="flex flex-col h-full justify-center items-center text-center p-4 animate-fade-in">
+    <div class="text-green-600 font-bold text-lg mb-2">Profile Deleted</div>
+    <div class="text-sm text-slate-600 mb-6">
+        <span class="font-semibold">{{ name }}</span> has been removed from disk.
+    </div>
+    <div class="text-xs text-slate-400">
+        Select another profile from the list to preview
+    </div>
+</div>
+{% when Err(e) %}
+<div class="flex flex-col h-full justify-center items-center text-center p-4">
+    <div class="text-red-600 font-bold mb-2">Deletion Failed</div>
+    <div class="text-sm text-slate-600">{{ e }}</div>
+</div>
+{% endmatch %}
