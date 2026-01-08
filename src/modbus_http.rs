@@ -50,7 +50,7 @@ pub async fn read_registers(
         count: form.count,
     };
 
-    match state.clearcore_modbus.read_holding_registers(request).await {
+    match state.clearcore_registers.manager.read_holding_registers(request).await {
         Ok(response) => {
             info_targeted!(MODBUS, "Successfully read {} registers", response.values.len());
             let registers = response.values
@@ -91,7 +91,7 @@ pub async fn write_register(
         value: form.value,
     };
 
-    match state.clearcore_modbus.write_single_register(request).await {
+    match state.clearcore_registers.manager.write_single_register(request).await {
         Ok(_) => {
             info_targeted!(MODBUS, "Successfully wrote {} to register {}", form.value, form.address);
             Html(format!(

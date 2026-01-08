@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 use crate::{debug_targeted, error_targeted};
 
 /// Defines a contiguous chunk of Modbus registers to be polled.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum ModbusChunk {
     Coils { address: u16, count: u16 },
     DiscreteInputs { address: u16, count: u16 },
@@ -199,11 +199,13 @@ impl ModbusUpdater {
     /// - Err(...) if the specific Modbus request failed.
     pub async fn update(&mut self) -> Result<()> {
         if self.target.manager.get_connection_state().await? != ModbusState::Connected {
+            error_targeted!(MODBUS, "Modbus connection lost, clearing cache");
             self.target.clear_cache().await;
             return Err(Error::NotConnected);
         }
 
         if self.chunks.is_empty() {
+            error_targeted!(MODBUS, "cahced modbus self.chunks.is_empty()!!!");
             return Ok(());
         }
 

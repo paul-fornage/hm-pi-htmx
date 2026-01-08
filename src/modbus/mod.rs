@@ -1,6 +1,6 @@
 mod modbus;
 
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 pub use modbus::*;
 pub mod modbus_transaction_types;
@@ -95,5 +95,11 @@ impl RegisterMetadata{
         name: &'static str, description: &'static str) -> Self
     {
         Self{ address: RegisterAddress::new(register_type, address), name, description}
+    }
+}
+
+impl Debug for RegisterMetadata{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.address, self.name)
     }
 }

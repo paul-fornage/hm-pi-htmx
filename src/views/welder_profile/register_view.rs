@@ -1,7 +1,7 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use crate::modbus::RegisterMetadata;
-use crate::miller::analog_register::AnalogRegisterInfo;
+use crate::analog_register::AnalogRegisterInfo;
 use super::special_case_registers::{TungstenPreset, ElectrodePolarity, WaveShape, PostFlowTime};
 use num_enum::TryFromPrimitive;
 

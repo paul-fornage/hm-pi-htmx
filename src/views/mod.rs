@@ -3,6 +3,7 @@ mod operations;
 pub mod miller_info;
 pub mod machine_config;
 pub mod welder_profile;
+mod clearcore_static_config;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;

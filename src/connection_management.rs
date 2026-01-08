@@ -179,7 +179,7 @@ async fn handle_disconnect(
 // GET /modbus/manager - Renders the initial connection box
 pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/manager - rendering connection manager");
-    let template = get_connection_template(&state.clearcore_modbus, "clearcore").await;
+    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore").await;
     Html(template.render().unwrap())
 }
 
@@ -187,7 +187,7 @@ pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoR
 pub async fn get_status(State(state): State<AppState>) -> impl IntoResponse {
     trace_targeted!(HTTP, "GET /modbus/status - checking connection status");
 
-    let clearcore_state = match state.clearcore_modbus.get_connection_state().await {
+    let clearcore_state = match state.clearcore_registers.manager.get_connection_state().await {
         Ok(state) => state.to_str(),
         Err(_) => "Error",
     };
@@ -211,7 +211,7 @@ pub async fn connect_clearcore(
     Form(form): Form<ConnectForm>,
 ) -> impl IntoResponse {
     let template = handle_connect(
-        &state.clearcore_modbus,
+        &state.clearcore_registers.manager,
         "clearcore",
         crate::modbus::CLEARCORE_CONFIG_PATH,
         form
@@ -221,14 +221,14 @@ pub async fn connect_clearcore(
 
 // POST /modbus/clearcore/disconnect
 pub async fn disconnect_clearcore(State(state): State<AppState>) -> impl IntoResponse {
-    let template = handle_disconnect(&state.clearcore_modbus, "clearcore").await;
+    let template = handle_disconnect(&state.clearcore_registers.manager, "clearcore").await;
     Html(template.render().unwrap())
 }
 
 // GET /modbus/clearcore/manager
 pub async fn get_clearcore_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/clearcore/manager - rendering clearcore connection manager");
-    let template = get_connection_template(&state.clearcore_modbus, "clearcore").await;
+    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore").await;
     Html(template.render().unwrap())
 }
 

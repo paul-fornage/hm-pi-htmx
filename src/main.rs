@@ -9,6 +9,8 @@ mod connection_management;
 mod views;
 mod machine_config;
 mod askama_components;
+mod plc;
+pub mod analog_register;
 
 use axum::{
     response::{IntoResponse, Response},
@@ -17,21 +19,23 @@ use axum::{
 };
 use tower_http::services::ServeDir;
 use crate::logging::LogTarget;
-use crate::miller::miller_register_definitions::MILLER_REGISTERS;
+use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS};
 use crate::modbus::cached_modbus::{CachedModbus, ModbusChunk};
 use crate::modbus::ModbusManager;
-use crate::views::{AppView, ConnectionsTemplate, MillerInfoTemplate, OperationsTemplate, MachineConfigTemplate, WelderProfileTemplate};
+use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
+use crate::views::{AppView, ConnectionsTemplate, MachineConfigTemplate, MillerInfoTemplate, OperationsTemplate, WelderProfileTemplate};
 use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
-use crate::views::machine_config::{show_machine_config, save_machine_config};
-use crate::views::welder_profile::{show_welder_profile, show_welder_profile_grid, show_edit_modal, submit_register_write, show_description_edit_modal, update_description, show_profile_metadata};
-use crate::views::welder_profile::file_system_handlers::{handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit, handle_load_modal, handle_load_preview, handle_load_apply, handle_delete_profile_confirm, handle_get_profile_list};
+use crate::views::machine_config::{save_machine_config, show_machine_config};
+use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
+use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
+pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
 
 #[derive(Clone)]
 pub struct AppState {
-    pub clearcore_modbus: ModbusManager,
+    pub clearcore_registers: CachedModbus,
     pub miller_registers: CachedModbus,
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
@@ -105,52 +109,46 @@ async fn main() {
         }
     });
 
-    const MILLER_CHUNKS: &'static[ModbusChunk] = &[
-        ModbusChunk::Coils{address: 0, count: 21},
-        ModbusChunk::DiscreteInputs{address: 2000, count: 19},
-        ModbusChunk::InputRegisters{address: 4016, count: 22},
-        ModbusChunk::InputRegisters{address: 4099, count: 5},
-        ModbusChunk::InputRegisters{address: 4200, count: 7},
-        ModbusChunk::InputRegisters{address: 4300, count: 8},
-        ModbusChunk::InputRegisters{address: 4400, count: 9},
-        ModbusChunk::HoldingRegisters{address: 6000, count: 4},
-        ModbusChunk::HoldingRegisters{address: 6100, count: 4},
-        ModbusChunk::HoldingRegisters{address: 6200, count: 18},
-        ModbusChunk::HoldingRegisters{address: 6300, count: 19},
-    ];
 
-    let (miller_registers, mut miller_updater) = CachedModbus::new_with_updater(
-        welder_modbus, MILLER_CHUNKS);
 
-    let miller_registers_update_thread_copy = miller_registers.clone();
+    let (miller_registers, mut miller_updater) =
+        CachedModbus::new_with_updater(welder_modbus, MILLER_CHUNKS);
+
 
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
         loop {
             interval.tick().await;
-            match miller_registers_update_thread_copy.get_connection_state().await {
-                Ok(connection_state) => {
-                    if connection_state == modbus::ModbusState::Connected {
-                        match miller_updater.update().await{
-                            Ok(_) => {
-                                trace_targeted!(MODBUS, "Updated Miller registers");
-                            },
-                            Err(e) => {
-                                warn_targeted!(MODBUS, "Error updating Miller registers: {:?}", e);
-                            },
-                        }
-                    } else {
-                        trace_targeted!(MODBUS, "Miller registers not connected. \
-                        connection state: {connection_state:?} Clearing cache");
-                        miller_registers_update_thread_copy.clear_cache().await;
-                    }
-                }
+            match miller_updater.update().await{
+                Ok(()) => {
+                    trace_targeted!(MODBUS, "Updated Miller registers");
+                },
                 Err(e) => {
-                    warn_targeted!(MODBUS, "Error checking Miller register connection status: {:?}", e);
-                }
+                    warn_targeted!(MODBUS, "Error updating Miller registers: {:?}", e);
+                },
             }
         }
     });
+
+    let (clearcore_registers, mut clearcore_updater) =
+        CachedModbus::new_with_updater(clearcore_modbus, CLEARCORE_CHUNKS);
+
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
+        loop {
+            interval.tick().await;
+            match clearcore_updater.update().await{
+                Ok(()) => {
+                    trace_targeted!(MODBUS, "Updated Clearcore registers");
+                },
+                Err(e) => {
+                    warn_targeted!(MODBUS, "Error updating Clearcore registers: {:?}", e);
+                },
+            }
+        }
+    });
+
 
     // Initialize machine config
     let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
@@ -164,7 +162,7 @@ async fn main() {
 
     // Initialize state with the managers
     let state = AppState {
-        clearcore_modbus,
+        clearcore_registers,
         miller_registers,
         machine_config,
         weld_profile_metadata,

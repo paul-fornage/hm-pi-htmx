@@ -1,5 +1,20 @@
 use crate::modbus::{ModbusAddressType, RegisterAddress, RegisterMetadata};
+use crate::modbus::cached_modbus::ModbusChunk;
 
+
+pub const MILLER_CHUNKS: &'static[ModbusChunk] = &[
+    ModbusChunk::Coils{address: 0, count: 21},
+    ModbusChunk::DiscreteInputs{address: 2000, count: 19},
+    ModbusChunk::InputRegisters{address: 4016, count: 22},
+    ModbusChunk::InputRegisters{address: 4099, count: 5},
+    ModbusChunk::InputRegisters{address: 4200, count: 7},
+    ModbusChunk::InputRegisters{address: 4300, count: 8},
+    ModbusChunk::InputRegisters{address: 4400, count: 9},
+    ModbusChunk::HoldingRegisters{address: 6000, count: 4},
+    ModbusChunk::HoldingRegisters{address: 6100, count: 4},
+    ModbusChunk::HoldingRegisters{address: 6200, count: 18},
+    ModbusChunk::HoldingRegisters{address: 6300, count: 19},
+];
 
 
 pub const PS_UI_DISABLE: RegisterMetadata = RegisterMetadata {
@@ -740,7 +755,7 @@ pub const HOT_WIRE_VOLTAGE: RegisterMetadata = RegisterMetadata {
     description: "*Hot Wire Voltage, 5-20, Res: 1V",
 };
 
-pub const MILLER_REGISTERS: &[RegisterMetadata] = &[
+pub const MILLER_REGISTERS: &'static[RegisterMetadata] = &[
     PS_UI_DISABLE,
     RMT_TRIGGER_DISABLE,
     CONTACTOR_TRIGGER,
