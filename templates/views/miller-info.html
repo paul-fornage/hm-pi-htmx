@@ -9,7 +9,8 @@
     <!-- The Grid Container - HTMX will populate this -->
     <div hx-get="/miller-info/grid"
          hx-trigger="load, every 1s"
-         hx-swap="innerHTML">
+         hx-ext="morph"
+         hx-swap="morph:innerHTML">
         Loading...
     </div>
 </div>

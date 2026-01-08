@@ -3,7 +3,8 @@ mod sub_types;
 use num_enum::FromPrimitive;
 use sub_types::*;
 use crate::error::Error;
-use crate::miller::miller_memory::MillerMemory;
+// use crate::miller::miller_memory::MillerMemory;
+use crate::modbus::cached_modbus::CachedModbus;
 use crate::miller::miller_register_definitions::*;
 use crate::modbus::RegisterAddress;
 
@@ -117,7 +118,7 @@ pub struct MillerWeldProfile {
 }
 
 async fn read_coil_result(
-    memory: &MillerMemory,
+    memory: &CachedModbus,
     address: RegisterAddress,
 ) -> Result<bool, Error> {
     memory
@@ -126,7 +127,7 @@ async fn read_coil_result(
         .ok_or(Error::ReadUnpopulatedRegister(address))
 }
 async fn read_hreg_result(
-    memory: &MillerMemory,
+    memory: &CachedModbus,
     address: RegisterAddress,
 ) -> Result<u16, Error> {
     memory
@@ -136,7 +137,7 @@ async fn read_hreg_result(
 }
 
 impl MillerWeldProfile {
-    pub async fn pull_from_mb(memory: &MillerMemory) -> Result<Self, Error> {
+    pub async fn pull_from_mb(memory: &CachedModbus) -> Result<Self, Error> {
         let use_dc_output = read_coil_result(memory, USE_DC_OUTPUT.address).await?;
         let use_ep_polarity = read_coil_result(memory, USE_EP_POLARITY.address).await?;
         let boost_en = read_coil_result(memory, BOOST_EN.address).await?;

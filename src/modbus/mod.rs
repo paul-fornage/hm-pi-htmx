@@ -4,9 +4,7 @@ use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 pub use modbus::*;
 pub mod modbus_transaction_types;
-
-
-
+pub mod cached_modbus;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModbusAddressType{

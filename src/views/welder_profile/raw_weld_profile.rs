@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use crate::AppState;
-use crate::miller::miller_memory::MillerMemory;
+// use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions;
+use crate::modbus::cached_modbus::CachedModbus;
 
 /// Raw welding profile containing all register values as they are stored in modbus memory.
 /// All values are u16 or bool - no interpretation or conversion.
@@ -54,7 +55,7 @@ pub struct RawWeldProfile {
 impl RawWeldProfile {
     /// Captures the current welding profile from the Miller memory.
     /// Returns an error if any register cannot be read.
-    pub async fn capture_from_memory(miller_regs: &MillerMemory) -> Result<Self, String> {
+    pub async fn capture_from_memory(miller_regs: &CachedModbus) -> Result<Self, String> {
 
         macro_rules! pull_coil_from_mb {
                 ($reg:ident) => {
@@ -158,7 +159,7 @@ impl RawWeldProfile {
 
     /// Applies this welding profile to the Miller memory.
     /// Returns an error on first write failure.
-    pub async fn apply_to_memory(&self, miller_regs: &MillerMemory) -> Result<(), String> {
+    pub async fn apply_to_memory(&self, miller_regs: &CachedModbus) -> Result<(), String> {
 
         macro_rules! write_coil_to_mb {
             ($val:expr, $reg:ident) => {
