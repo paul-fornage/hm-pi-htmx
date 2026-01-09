@@ -10,7 +10,6 @@ mod views;
 mod machine_config;
 mod askama_components;
 mod plc;
-pub mod analog_register;
 
 use axum::{
     response::{IntoResponse, Response},
@@ -23,13 +22,13 @@ use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS
 use crate::modbus::cached_modbus::{CachedModbus, ModbusChunk};
 use crate::modbus::ModbusManager;
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
-use crate::views::{AppView, ConnectionsTemplate, MachineConfigTemplate, MillerInfoTemplate, OperationsTemplate, WelderProfileTemplate, ClearcoreConfigTemplate};
+use crate::views::{AppView, ClearcoreConfigTemplate, ConnectionsTemplate, MachineConfigTemplate, MillerInfoTemplate, OperationsTemplate, WelderProfileTemplate};
 use crate::views::miller_info::register_view::BooleanRegisterTemplate;
 use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
 use crate::views::machine_config::{save_machine_config, show_machine_config};
 use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
 use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
-use crate::views::clearcore_static_config::{show_clearcore_config, show_clearcore_config_grid, handle_save_config};
+use crate::views::clearcore_static_config::{self, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);

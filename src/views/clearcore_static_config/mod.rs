@@ -1,5 +1,3 @@
-mod register_view;
-mod register_edit_modal;
 mod config_data;
 mod file_operations;
 
@@ -10,23 +8,23 @@ use axum::response::{Html, IntoResponse};
 use axum::Form;
 use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
+use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
-use crate::analog_register::AnalogRegisterInfo;
+use crate::views::shared::analog_register::AnalogRegisterInfo;
 use crate::{debug_targeted, warn_targeted, AppState};
 use crate::plc::plc_register_definitions::*;
-use register_view::{EditableBooleanRegister, EditableAnalogRegister};
-use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate};
 use config_data::ClearcoreConfig;
+use crate::views::shared::boolean_register::BooleanRegisterInfo;
 
-const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
+const BASE_URL: &str = "/clearcore-config";
 
-const CLEARCORE_STATIC_CONFIG_COILS: &[&'static RegisterMetadata] = &[
-    &AXIS_X_HOME_DIRECTION_POSITIVE,
-    &AXIS_Y_HOME_DIRECTION_POSITIVE,
-    &AXIS_Z_HOME_DIRECTION_POSITIVE,
-    &USES_Y_AXIS,
-    &USES_Z_AXIS,
-    &USES_W_AXIS,
+const CLEARCORE_STATIC_CONFIG_COILS: &[BooleanRegisterInfo] = &[
+    BooleanRegisterInfo::new_default(&USES_Y_AXIS),
+    BooleanRegisterInfo::new_default(&USES_Z_AXIS),
+    BooleanRegisterInfo::new_default(&USES_W_AXIS),
+    BooleanRegisterInfo::new_custom(&AXIS_X_HOME_DIRECTION_POSITIVE, "Positive", "Negative"),
+    BooleanRegisterInfo::new_custom(&AXIS_Y_HOME_DIRECTION_POSITIVE, "Positive", "Negative"),
+    BooleanRegisterInfo::new_custom(&AXIS_Z_HOME_DIRECTION_POSITIVE, "Positive", "Negative"),
 ];
 
 const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
@@ -52,27 +50,14 @@ const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
     AnalogRegisterInfo::new(&MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND, "in/min×s", 2, 0),
 ];
 
-fn find_boolean_register(name: &str) -> Option<&'static RegisterMetadata> {
-    CLEARCORE_STATIC_CONFIG_COILS.iter().find(|reg| reg.name == name).copied()
+fn find_boolean_register(name: &str) -> Option<&'static BooleanRegisterInfo> {
+    CLEARCORE_STATIC_CONFIG_COILS.iter().find(|reg| reg.meta.name == name)
 }
 
 fn find_analog_register(name: &str) -> Option<&'static AnalogRegisterInfo> {
     CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS.iter().find(|reg| reg.meta.name == name)
 }
 
-async fn mb_read_bool_helper(state: &AppState, address: &RegisterAddress) -> Option<bool> {
-    match tokio::time::timeout(READ_TIMEOUT_DURATION, state.clearcore_registers.read(address)).await {
-        Ok(Some(ModbusValue::Bool(val))) => Some(val),
-        _ => None,
-    }
-}
-
-async fn mb_read_word_helper(state: &AppState, address: &RegisterAddress) -> Option<u16> {
-    match tokio::time::timeout(READ_TIMEOUT_DURATION, state.clearcore_registers.read(address)).await {
-        Ok(Some(ModbusValue::U16(val))) => Some(val),
-        _ => None,
-    }
-}
 
 pub async fn show_clearcore_config() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering clearcore static config view");
@@ -83,20 +68,22 @@ pub async fn show_clearcore_config_grid(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
     let mut boolean_registers = Vec::new();
-    for meta in CLEARCORE_STATIC_CONFIG_COILS.iter() {
-        let value = mb_read_bool_helper(&state, &meta.address).await;
+    for info in CLEARCORE_STATIC_CONFIG_COILS.iter() {
+        let value = mb_read_bool_helper(&state.clearcore_registers, &info.meta.address).await;
         boolean_registers.push(EditableBooleanRegister {
-            meta,
+            register_info: info,
             value,
+            base_url: BASE_URL,
         });
     }
 
     let mut analog_registers = Vec::new();
     for info in CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS.iter() {
-        let value = mb_read_word_helper(&state, &info.meta.address).await;
+        let value = mb_read_word_helper(&state.clearcore_registers, &info.meta.address).await;
         analog_registers.push(EditableAnalogRegister {
             register_info: info,
             value,
+            base_url: BASE_URL,
         });
     }
 
@@ -112,22 +99,24 @@ pub async fn show_edit_modal(
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering edit modal for register: {}", register_name);
 
-    if let Some(meta) = find_boolean_register(&register_name) {
-        let current_value = mb_read_bool_helper(&state, &meta.address).await;
+    if let Some(info) = find_boolean_register(&register_name) {
+        let current_value = mb_read_bool_helper(&state.clearcore_registers, &info.meta.address).await;
         let template = BooleanEditModalTemplate {
-            meta,
+            register_info: info,
             current_value,
             register_name,
+            base_url: BASE_URL,
         };
         return Html(template.render().unwrap());
     }
 
     if let Some(info) = find_analog_register(&register_name) {
-        let current_value = mb_read_word_helper(&state, &info.meta.address).await;
+        let current_value = mb_read_word_helper(&state.clearcore_registers, &info.meta.address).await;
         let template = AnalogEditModalTemplate {
             register_info: info,
             current_value,
             register_name,
+            base_url: BASE_URL,
         };
         return Html(template.render().unwrap());
     }
@@ -149,14 +138,18 @@ pub async fn submit_register_write(
     debug_targeted!(HTTP, "Writing register: {}", register_name);
 
     let render_error = |msg: &str| -> Html<String> {
-        Html(format!("<div class='text-red-600 text-sm'>{}</div>", msg))
+        let t = WriteErrorModalTemplate {
+            title: "Write Failed".to_string(),
+            message: msg.to_string(),
+        };
+        Html(t.render().unwrap())
     };
 
-    if let Some(meta) = find_boolean_register(&register_name) {
+    if let Some(info) = find_boolean_register(&register_name) {
         let value = form.value == "true";
-        debug_targeted!(HTTP, "Writing boolean to address {}: {}", meta.address.address, value);
+        debug_targeted!(HTTP, "Writing boolean to address {}: {}", info.meta.address.address, value);
 
-        match state.clearcore_registers.write_coil(meta.address.address, value).await {
+        match state.clearcore_registers.write_coil(info.meta.address.address, value).await {
             Ok(_) => return Html("".to_string()).into_response(),
             Err(e) => return render_error(&e.to_string()).into_response(),
         }

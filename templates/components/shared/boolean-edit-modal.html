@@ -1,0 +1,31 @@
+{% extends "base-edit-modal.html" %}
+
+{% block content %}
+<div class="bg-blue-50 p-3 rounded border border-blue-200">
+    <span class="text-xs font-bold uppercase text-slate-600 tracking-wider">Current Value</span>
+    <div class="font-bold text-lg mt-1">
+        {% if let Some(true) = current_value %}
+        <span class="text-green-700">{{register_info.true_string}}</span>
+        {% else if let Some(false) = current_value %}
+        <span class="text-slate-400">{{register_info.false_string}}</span>
+        {% else %}
+        <span class="text-gray-400">---</span>
+        {% endif %}
+    </div>
+</div>
+
+<form hx-post="{{ base_url }}/write/{{ register_name }}"
+      hx-swap="none"
+      onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)">
+    <div class="flex gap-2">
+        <button type="submit" name="value" value="false"
+                class="flex-1 px-4 py-3 bg-slate-100 border border-slate-300 rounded text-lg font-bold hover:bg-slate-200 transition-colors">
+            {{register_info.false_string}}
+        </button>
+        <button type="submit" name="value" value="true"
+                class="flex-1 px-4 py-3 bg-green-100 border border-green-300 rounded text-lg font-bold hover:bg-green-200 transition-colors text-green-700">
+            {{register_info.true_string}}
+        </button>
+    </div>
+</form>
+{% endblock %}

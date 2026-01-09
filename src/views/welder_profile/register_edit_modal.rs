@@ -1,56 +1,9 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use crate::modbus::RegisterMetadata;
-use crate::analog_register::AnalogRegisterInfo;
 use super::special_case_registers::{TungstenPreset, ElectrodePolarity, WaveShape, PostFlowTime};
 use num_enum::TryFromPrimitive;
 use strum::VariantArray;
-
-#[derive(Template, WebTemplate)]
-#[template(path = "components/welder-profile/boolean-edit-modal.html")]
-pub struct BooleanEditModalTemplate {
-    pub meta: &'static RegisterMetadata,
-    pub current_value: Option<bool>,
-    pub register_name: String,
-}
-
-#[derive(Template, WebTemplate)]
-#[template(path = "components/welder-profile/analog-edit-modal.html")]
-pub struct AnalogEditModalTemplate {
-    pub register_info: &'static AnalogRegisterInfo,
-    pub current_value: Option<u16>,
-    pub register_name: String,
-}
-
-impl AnalogEditModalTemplate {
-    pub fn current_semantic_value(&self) -> Option<f32> {
-        self.current_value.map(|val| self.register_info.convert_from_raw(val))
-    }
-
-    pub fn semantic_min(&self) -> f32 {
-        self.register_info.convert_from_raw(self.register_info.min_value)
-    }
-
-    pub fn semantic_max(&self) -> f32 {
-        self.register_info.convert_from_raw(self.register_info.max_value)
-    }
-
-    pub fn step(&self) -> f32 {
-        1.0 / self.register_info.scale as f32
-    }
-    
-    pub fn current_display_value(&self) -> String {
-        self.register_info.formatted_value(self.current_value)
-    }
-
-    pub fn display_min_value(&self) -> String {
-        self.register_info.formatted_value(Some(self.register_info.min_value))
-    }
-
-    pub fn display_max_value(&self) -> String {
-        self.register_info.formatted_value(Some(self.register_info.max_value))
-    }
-}
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-profile/enum-edit-modal.html")]

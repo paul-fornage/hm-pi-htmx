@@ -24,12 +24,18 @@ impl AnalogRegisterInfo {
 
     pub fn formatted_value(&self, raw_value: Option<u16>) -> String {
         match raw_value{
-            Some(val) => format!("{:.*} {}",
+            Some(val) => format!("{:.*}",
                                  self.precision as usize,
-                                 self.convert_from_raw(val),
-                                 self.unit),
-            None => format!("--- {}", self.unit),
+                                 self.convert_from_raw(val)),
+            None => {
+                let tail = "-".repeat(self.precision as usize);
+                format!("-.{tail}")
+            },
         }
+    }
+    
+    pub fn unit_string(&self) -> &'static str {
+        self.unit
     }
 
     pub const fn convert_from_raw_helper(scale: u16, offset: i16, raw_value: u16) -> f32 {

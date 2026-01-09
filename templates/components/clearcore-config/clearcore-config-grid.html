@@ -1,8 +1,8 @@
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="flex flex-wrap gap-4 justify-center">
     {% for register in boolean_registers %}
-        {{ register|safe }}
+    {{ register|safe }}
     {% endfor %}
     {% for register in analog_registers %}
-        {{ register|safe }}
+    {{ register|safe }}
     {% endfor %}
 </div>

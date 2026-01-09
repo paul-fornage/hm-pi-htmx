@@ -6,8 +6,7 @@ pub mod weld_profile;
 pub mod file_operations;
 pub mod file_system_handlers;
 pub mod file_system_templates;
-mod special_case_registers;
-mod write_error_modal;
+pub mod special_case_registers;
 mod description_edit_modal;
 
 use askama::Template;
@@ -17,26 +16,27 @@ use axum::response::{Html, IntoResponse};
 use axum::Form;
 use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
+use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
-use crate::analog_register::AnalogRegisterInfo;
+use crate::views::shared::analog_register::AnalogRegisterInfo;
 use crate::{debug_targeted, warn_targeted, AppState};
-use register_view::{EditableBooleanRegister, EditableAnalogRegister, EditableEnumRegister, EditablePostflowRegister};
-use register_edit_modal::{BooleanEditModalTemplate, AnalogEditModalTemplate, EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
-use crate::views::welder_profile::write_error_modal::WriteErrorModalTemplate;
+use register_view::{EditableEnumRegister, EditablePostflowRegister};
+use register_edit_modal::{EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
+use crate::views::shared::boolean_register::BooleanRegisterInfo;
 use crate::views::welder_profile::description_edit_modal::DescriptionEditModalTemplate;
 
-const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
+const BASE_URL: &str = "/welder-profile";
 
-const WELD_PROFILE_BOOLEAN_REGISTERS: [&'static RegisterMetadata; 8] = [
-    &miller_register_definitions::USE_DC_OUTPUT,
-    &miller_register_definitions::USE_EP_POLARITY,
-    &miller_register_definitions::BOOST_EN,
-    &miller_register_definitions::DROOP_EN,
-    &miller_register_definitions::USE_LOW_OCV,
-    &miller_register_definitions::PULSER_EN,
-    &miller_register_definitions::USE_LOW_AC_COMMUTATION_AMP,
-    &miller_register_definitions::AC_INDEPENDANT_EN,
+const WELD_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 8] = [
+    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_DC_OUTPUT),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_EP_POLARITY),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::BOOST_EN),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::DROOP_EN),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_LOW_OCV),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::PULSER_EN),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_LOW_AC_COMMUTATION_AMP),
+    BooleanRegisterInfo::new_default(&miller_register_definitions::AC_INDEPENDANT_EN),
 ];
 
 const WELD_PROFILE_ENUM_REGISTERS: [&'static RegisterMetadata; 4] = [
@@ -95,8 +95,8 @@ const WELD_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 22] = [
     AnalogRegisterInfo::new_bounded(&miller_register_definitions::HOT_WIRE_VOLTAGE, "V", 0, 0, 20, 5),
 ];
 
-fn find_boolean_register(name: &str) -> Option<&'static RegisterMetadata> {
-    WELD_PROFILE_BOOLEAN_REGISTERS.iter().find(|reg| reg.name == name).copied()
+fn find_boolean_register(name: &str) -> Option<&'static BooleanRegisterInfo> {
+    WELD_PROFILE_BOOLEAN_REGISTERS.iter().find(|reg| reg.meta.name == name)
 }
 
 fn find_analog_register(name: &str) -> Option<&'static AnalogRegisterInfo> {
@@ -124,19 +124,6 @@ fn get_enum_register_type(name: &str) -> Option<EnumRegisterType> {
     }
 }
 
-async fn mb_read_bool_helper(state: &AppState, address: &RegisterAddress) -> Option<bool> {
-    match tokio::time::timeout(READ_TIMEOUT_DURATION, state.miller_registers.read(address)).await {
-        Ok(Some(ModbusValue::Bool(val))) => Some(val),
-        _ => None,
-    }
-}
-
-async fn mb_read_word_helper(state: &AppState, address: &RegisterAddress) -> Option<u16> {
-    match tokio::time::timeout(READ_TIMEOUT_DURATION, state.miller_registers.read(address)).await {
-        Ok(Some(ModbusValue::U16(val))) => Some(val),
-        _ => None,
-    }
-}
 
 pub async fn show_welder_profile() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering welder profile view");
@@ -149,26 +136,28 @@ pub async fn show_welder_profile_grid(
     // debug_targeted!(HTTP, "Rendering welder profile grid component");
 
     let mut boolean_registers = Vec::new();
-    for meta in WELD_PROFILE_BOOLEAN_REGISTERS.iter() {
-        let value = mb_read_bool_helper(&state, &meta.address).await;
+    for info in WELD_PROFILE_BOOLEAN_REGISTERS.iter() {
+        let value = mb_read_bool_helper(&state.miller_registers, &info.meta.address).await;
         boolean_registers.push(EditableBooleanRegister {
-            meta,
+            register_info: info,
             value,
+            base_url: BASE_URL,
         });
     }
 
     let mut analog_registers = Vec::new();
     for info in WELD_PROFILE_ANALOG_REGISTERS.iter() {
-        let value = mb_read_word_helper(&state, &info.meta.address).await;
+        let value = mb_read_word_helper(&state.miller_registers, &info.meta.address).await;
         analog_registers.push(EditableAnalogRegister {
             register_info: info,
             value,
+            base_url: BASE_URL,
         });
     }
 
     let mut enum_registers = Vec::new();
     for meta in WELD_PROFILE_ENUM_REGISTERS.iter() {
-        let value = mb_read_word_helper(&state, &meta.address).await;
+        let value = mb_read_word_helper(&state.miller_registers, &meta.address).await;
         let register = match get_enum_register_type(meta.name) {
             Some(EnumRegisterType::TungstenPreset) => EditableEnumRegister::new_tungsten(meta, value),
             Some(EnumRegisterType::Polarity) => EditableEnumRegister::new_polarity(meta, value),
@@ -180,7 +169,7 @@ pub async fn show_welder_profile_grid(
     }
 
     // Handle postflow time separately
-    let postflow_value = mb_read_word_helper(&state, &miller_register_definitions::POSTFLOW_TIME.address).await;
+    let postflow_value = mb_read_word_helper(&state.miller_registers, &miller_register_definitions::POSTFLOW_TIME.address).await;
     let postflow_register = EditablePostflowRegister {
         meta: &miller_register_definitions::POSTFLOW_TIME,
         value: postflow_value,
@@ -250,28 +239,30 @@ pub async fn show_edit_modal(
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering edit modal for register: {}", register_name);
 
-    if let Some(meta) = find_boolean_register(&register_name) {
-        let current_value = mb_read_bool_helper(&state, &meta.address).await;
+    if let Some(info) = find_boolean_register(&register_name) {
+        let current_value = mb_read_bool_helper(&state.miller_registers, &info.meta.address).await;
         let template = BooleanEditModalTemplate {
-            meta,
+            register_info: info,
             current_value,
             register_name,
+            base_url: BASE_URL,
         };
         return Html(template.render().unwrap());
     }
 
     if let Some(info) = find_analog_register(&register_name) {
-        let current_value = mb_read_word_helper(&state, &info.meta.address).await;
+        let current_value = mb_read_word_helper(&state.miller_registers, &info.meta.address).await;
         let template = AnalogEditModalTemplate {
             register_info: info,
             current_value,
             register_name,
+            base_url: BASE_URL,
         };
         return Html(template.render().unwrap());
     }
 
     if let Some(meta) = find_enum_register(&register_name) {
-        let current_value = mb_read_word_helper(&state, &meta.address).await;
+        let current_value = mb_read_word_helper(&state.miller_registers, &meta.address).await;
         let template = match get_enum_register_type(&register_name) {
             Some(EnumRegisterType::TungstenPreset) =>
                 EnumEditModalTemplate::new_tungsten(meta, current_value, register_name),
@@ -295,7 +286,7 @@ pub async fn show_edit_modal(
 
     // Handle postflow time specially
     if register_name == "POSTFLOW TIME" {
-        let current_value = mb_read_word_helper(&state, &miller_register_definitions::POSTFLOW_TIME.address).await;
+        let current_value = mb_read_word_helper(&state.miller_registers, &miller_register_definitions::POSTFLOW_TIME.address).await;
         let template = PostflowEditModalTemplate {
             meta: &miller_register_definitions::POSTFLOW_TIME,
             current_value,
@@ -328,11 +319,11 @@ pub async fn submit_register_write(
         Html(t.render().unwrap())
     };
 
-    if let Some(meta) = find_boolean_register(&register_name) {
+    if let Some(info) = find_boolean_register(&register_name) {
         let value = form.value == "true";
-        debug_targeted!(HTTP, "Writing boolean to address {}: {}", meta.address.address, value);
+        debug_targeted!(HTTP, "Writing boolean to address {}: {}", info.meta.address.address, value);
 
-        match state.miller_registers.write_coil(meta.address.address, value).await {
+        match state.miller_registers.write_coil(info.meta.address.address, value).await {
             Ok(_) => return Html("".to_string()).into_response(),
             Err(e) => return render_error(&e.to_string()).into_response(),
         }

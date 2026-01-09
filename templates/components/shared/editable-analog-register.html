@@ -1,4 +1,6 @@
-{% extends "components/welder-profile/base-editable-register-card.html" %}
+{% extends "components/shared/base-editable-register-card.html" %}
+
+{% block edit_url %}{{ base_url }}/edit/{{ register_info.meta.name }}{% endblock %}
 
 {% block display_value %}
 <div class="h-8 w-full flex items-center justify-center font-bold text-xl
@@ -8,8 +10,8 @@
     bg-gray-100 text-gray-400
 {% endif %}">
 {{ formatted_value() }}
+    <p class="text-sm">{{ register_info.unit_string() }}</p>
 </div>
 {% endblock %}
 
-{% block register_name_url %}{{ register_info.meta.name }}{% endblock %}
 {% block register_name_text %}{{ register_info.meta.name }}{% endblock %}

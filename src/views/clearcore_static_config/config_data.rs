@@ -12,12 +12,12 @@ pub struct ClearcoreConfig {
 impl ClearcoreConfig {
     pub async fn from_modbus(cached_modbus: &CachedModbus) -> Self {
         let mut coils = Vec::new();
-        for meta in CLEARCORE_STATIC_CONFIG_COILS.iter() {
-            let value = match cached_modbus.read(&meta.address).await {
+        for info in CLEARCORE_STATIC_CONFIG_COILS.iter() {
+            let value = match cached_modbus.read(&info.meta.address).await {
                 Some(ModbusValue::Bool(val)) => Some(val),
                 _ => None,
             };
-            coils.push((meta.name.to_string(), value));
+            coils.push((info.meta.name.to_string(), value));
         }
 
         let mut analog_registers = Vec::new();

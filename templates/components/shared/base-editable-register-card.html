@@ -1,0 +1,9 @@
+<button class="flex flex-col border border-slate-300 rounded shadow-sm bg-white overflow-hidden w-40 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
+        hx-get="{% block edit_url %}{% endblock %}"
+        hx-target="#global-modal-layer"
+        hx-swap="innerHTML">
+    {% block display_value %}{% endblock %}
+    <div class="text-sm h-12 font-mono py-1 px-2 text-center border-t border-slate-200 text-wrap flex items-center justify-center bg-slate-50 text-slate-700">
+        {% block register_name_text %}{% endblock %}
+    </div>
+</button>

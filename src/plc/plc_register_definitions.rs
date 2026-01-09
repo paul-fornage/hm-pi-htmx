@@ -159,19 +159,19 @@ pub const JOG_W_AXIS_NEGATIVE: RegisterMetadata = RegisterMetadata {
 
 pub const AXIS_X_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 50 },
-    name: "AXIS X HOME DIRECTION POSITIVE",
+    name: "AXIS X HOME DIRECTION",
     description: "Direction to home the X axis motor. True is positive",
 };
 
 pub const AXIS_Y_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 51 },
-    name: "AXIS Y HOME DIRECTION POSITIVE",
+    name: "AXIS Y HOME DIRECTION",
     description: "Direction to home the Y axis motor. True is positive",
 };
 
 pub const AXIS_Z_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 52 },
-    name: "AXIS Z HOME DIRECTION POSITIVE",
+    name: "AXIS Z HOME DIRECTION",
     description: "Direction to home the Z axis motor. True is positive",
 };
 
@@ -333,133 +333,133 @@ pub const CYCLE_PROGRESS: RegisterMetadata = RegisterMetadata {
 
 pub const HUNDREDTHS_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 64 },
-    name: "HUNDREDTHS PER STEP X AXIS LOWER",
+    name: "X AXIS LOWER",
     description: "Hundredths per step for X axis - lower word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_X_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 65 },
-    name: "HUNDREDTHS PER STEP X AXIS UPPER",
+    name: "X AXIS UPPER",
     description: "Hundredths per step for X axis - upper word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_Y_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 66 },
-    name: "HUNDREDTHS PER STEP Y AXIS LOWER",
+    name: "Y AXIS LOWER",
     description: "Hundredths per step for Y axis - lower word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_Y_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 67 },
-    name: "HUNDREDTHS PER STEP Y AXIS UPPER",
+    name: "Y AXIS UPPER",
     description: "Hundredths per step for Y axis - upper word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_Z_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 68 },
-    name: "HUNDREDTHS PER STEP Z AXIS LOWER",
+    name: "Z AXIS LOWER",
     description: "Hundredths per step for Z axis - lower word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_Z_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 69 },
-    name: "HUNDREDTHS PER STEP Z AXIS UPPER",
+    name: "Z AXIS UPPER",
     description: "Hundredths per step for Z axis - upper word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_W_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 70 },
-    name: "HUNDREDTHS PER STEP W AXIS LOWER",
+    name: "W AXIS LOWER",
     description: "Hundredths per step for W axis - lower word (fixed point u32 LE, value/2^32)",
 };
 
 pub const HUNDREDTHS_PER_STEP_W_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 71 },
-    name: "HUNDREDTHS PER STEP W AXIS UPPER",
+    name: "W AXIS UPPER",
     description: "Hundredths per step for W axis - upper word (fixed point u32 LE, value/2^32)",
 };
 
 pub const MIN_POS_X_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 72 },
-    name: "MIN POS X AXIS HUNDREDTHS",
+    name: "MIN POS X AXIS",
     description: "Minimum position for X axis (hundredths of an inch)",
 };
 
 pub const MAX_POS_X_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 73 },
-    name: "MAX POS X AXIS HUNDREDTHS",
+    name: "MAX POS X AXIS",
     description: "Maximum position for X axis (hundredths of an inch)",
 };
 
 pub const MAX_VEL_X_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 74 },
-    name: "MAX VEL X AXIS HUNDREDTHS PER MINUTE",
+    name: "MAX VEL X AXIS",
     description: "Maximum velocity for X axis (hundredths of an inch per minute)",
 };
 
 pub const MAX_ACCEL_X_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 75 },
-    name: "MAX ACCEL X AXIS HUNDREDTHS PER MINUTE PER SECOND",
+    name: "MAX ACCEL X AXIS",
     description: "Maximum acceleration for X axis (hundredths of an inch per minute per second)",
 };
 
 pub const MIN_POS_Y_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 76 },
-    name: "MIN POS Y AXIS HUNDREDTHS",
+    name: "MIN POS Y AXIS",
     description: "Minimum position for Y axis (hundredths of an inch)",
 };
 
 pub const MAX_POS_Y_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 77 },
-    name: "MAX POS Y AXIS HUNDREDTHS",
+    name: "MAX POS Y AXIS",
     description: "Maximum position for Y axis (hundredths of an inch)",
 };
 
 pub const MAX_VEL_Y_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 78 },
-    name: "MAX VEL Y AXIS HUNDREDTHS PER MINUTE",
+    name: "MAX VEL Y AXIS",
     description: "Maximum velocity for Y axis (hundredths of an inch per minute)",
 };
 
 pub const MAX_ACCEL_Y_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 79 },
-    name: "MAX ACCEL Y AXIS HUNDREDTHS PER MINUTE PER SECOND",
+    name: "MAX ACCEL Y AXIS",
     description: "Maximum acceleration for Y axis (hundredths of an inch per minute per second)",
 };
 
 pub const MIN_POS_Z_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 80 },
-    name: "MIN POS Z AXIS HUNDREDTHS",
+    name: "MIN POS Z AXIS",
     description: "Minimum position for Z axis (hundredths of an inch)",
 };
 
 pub const MAX_POS_Z_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 81 },
-    name: "MAX POS Z AXIS HUNDREDTHS",
+    name: "MAX POS Z AXIS",
     description: "Maximum position for Z axis (hundredths of an inch)",
 };
 
 pub const MAX_VEL_Z_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 82 },
-    name: "MAX VEL Z AXIS HUNDREDTHS PER MINUTE",
+    name: "MAX VEL Z AXIS",
     description: "Maximum velocity for Z axis (hundredths of an inch per minute)",
 };
 
 pub const MAX_ACCEL_Z_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 83 },
-    name: "MAX ACCEL Z AXIS HUNDREDTHS PER MINUTE PER SECOND",
+    name: "MAX ACCEL Z AXIS",
     description: "Maximum acceleration for Z axis (hundredths of an inch per minute per second)",
 };
 
 pub const MAX_VEL_W_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 84 },
-    name: "MAX VEL W AXIS HUNDREDTHS PER MINUTE",
+    name: "MAX VEL W AXIS",
     description: "Maximum velocity for W axis (hundredths of an inch per minute)",
 };
 
 pub const MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 85 },
-    name: "MAX ACCEL W AXIS HUNDREDTHS PER MINUTE PER SECOND",
+    name: "MAX ACCEL W AXIS",
     description: "Maximum acceleration for W axis (hundredths of an inch per minute per second)",
 };
 
