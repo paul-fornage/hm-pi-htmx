@@ -16,3 +16,10 @@ pub async fn mb_read_word_helper(cache: &CachedModbus, address: &RegisterAddress
         _ => None,
     }
 }
+
+pub async fn mb_read_dword_helper(cache: &CachedModbus, address: &RegisterAddress) -> Option<u32> {
+    match tokio::time::timeout(READ_TIMEOUT_DURATION, cache.read_u32(address)).await {
+        Ok(Some(val)) => Some(val),
+        _ => None,
+    }
+}

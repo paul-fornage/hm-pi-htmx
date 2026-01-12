@@ -6,7 +6,7 @@
     <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md border border-slate-300 z-10 animate-in fade-in zoom-in duration-200">
 
         <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
-            <h3 class="font-bold font-mono text-lg text-slate-800">{{ register_info.meta.name }}</h3>
+            <h3 class="font-bold font-mono text-lg text-slate-800">{{ get_meta().name }}</h3>
             <button onclick="document.getElementById('global-modal-layer').innerHTML = ''"
                     class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
         </div>
@@ -15,18 +15,18 @@
             <div>
                 <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Description</span>
                 <p class="text-sm text-slate-700 leading-relaxed mt-1">
-                    {{ register_info.meta.description }}
+                    {{ get_meta().description }}
                 </p>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Type</span>
-                    <div class="font-mono text-sm">{{ register_info.meta.address.register_type }}</div>
+                    <div class="font-mono text-sm">{{ get_meta().address.register_type }}</div>
                 </div>
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Address</span>
-                    <div class="font-mono text-sm">{{ register_info.meta.address.address }}</div>
+                    <div class="font-mono text-sm">{{ get_meta().address.address }}</div>
                 </div>
             </div>
             {% block content %}{% endblock %}

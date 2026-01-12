@@ -1,5 +1,7 @@
-mod config_data;
-mod file_operations;
+pub mod config_data;
+pub mod file_operations;
+pub mod json_serde;
+mod boot_procedure;
 
 use askama::Template;
 use askama_web::WebTemplate;
@@ -11,10 +13,15 @@ use crate::views::{AppView, ViewTemplate};
 use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::views::shared::analog_register::AnalogRegisterInfo;
-use crate::{debug_targeted, warn_targeted, AppState};
+use crate::{debug_targeted, error_targeted, warn_targeted, AppState};
 use crate::plc::plc_register_definitions::*;
 use config_data::ClearcoreConfig;
+use crate::views::shared::analog_dword_register::AnalogDwordRegisterInfo;
 use crate::views::shared::boolean_register::BooleanRegisterInfo;
+use crate::views::shared::modbus_helpers::mb_read_dword_helper;
+use crate::views::shared::register_edit_modal::AnalogDwordEditModalTemplate;
+use crate::views::shared::register_view::EditableDwordAnalogRegister;
+use crate::views::shared::result_feedback::FeedbackResult;
 
 const BASE_URL: &str = "/clearcore-config";
 
@@ -50,6 +57,13 @@ const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
     AnalogRegisterInfo::new(&MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND, "in/min×s", 2, 0),
 ];
 
+const CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS: &[AnalogDwordRegisterInfo] = &[
+    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_X_AXIS_LOWER, &HUNDREDTHS_PER_STEP_X_AXIS_UPPER, "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_Y_AXIS_LOWER, &HUNDREDTHS_PER_STEP_Y_AXIS_UPPER, "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_Z_AXIS_LOWER, &HUNDREDTHS_PER_STEP_Z_AXIS_UPPER, "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_W_AXIS_LOWER, &HUNDREDTHS_PER_STEP_W_AXIS_UPPER, "in/step", 9, 0),
+];
+
 fn find_boolean_register(name: &str) -> Option<&'static BooleanRegisterInfo> {
     CLEARCORE_STATIC_CONFIG_COILS.iter().find(|reg| reg.meta.name == name)
 }
@@ -58,6 +72,9 @@ fn find_analog_register(name: &str) -> Option<&'static AnalogRegisterInfo> {
     CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS.iter().find(|reg| reg.meta.name == name)
 }
 
+fn find_dword_analog_register(name: &str) -> Option<&'static AnalogDwordRegisterInfo> {
+    CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.iter().find(|reg| reg.get_meta().name == name)
+}
 
 pub async fn show_clearcore_config() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering clearcore static config view");
@@ -86,10 +103,21 @@ pub async fn show_clearcore_config_grid(
             base_url: BASE_URL,
         });
     }
+    
+    let mut analog_dword_registers = Vec::new();
+    for info in CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.iter() {
+        let value = mb_read_dword_helper(&state.clearcore_registers, &info.get_meta().address).await;
+        analog_dword_registers.push(EditableDwordAnalogRegister{
+            register_info: info,
+            value,
+            base_url: BASE_URL,
+        })
+    }
 
     ClearcoreConfigGridTemplate {
         boolean_registers,
         analog_registers,
+        analog_dword_registers,
     }
 }
 
@@ -113,6 +141,17 @@ pub async fn show_edit_modal(
     if let Some(info) = find_analog_register(&register_name) {
         let current_value = mb_read_word_helper(&state.clearcore_registers, &info.meta.address).await;
         let template = AnalogEditModalTemplate {
+            register_info: info,
+            current_value,
+            register_name,
+            base_url: BASE_URL,
+        };
+        return Html(template.render().unwrap());
+    }
+
+    if let Some(info) = find_dword_analog_register(&register_name) {
+        let current_value = mb_read_dword_helper(&state.clearcore_registers, &info.get_meta().address).await;
+        let template = AnalogDwordEditModalTemplate {
             register_info: info,
             current_value,
             register_name,
@@ -178,6 +217,29 @@ pub async fn submit_register_write(
         }
     }
 
+    if let Some(info) = find_dword_analog_register(&register_name) {
+        let val_f64 = match form.value.parse::<f64>() {
+            Ok(v) => v,
+            Err(_) => {
+                warn_targeted!(HTTP, "Invalid float format for {}: {}", register_name, form.value);
+                return render_error("Invalid number format provided.").into_response();
+            }
+        };
+        if let Err(msg) = info.validate_semantic_value(val_f64) {
+            warn_targeted!(HTTP, "Validation failed for {}: {}", register_name, msg);
+            return render_error(&msg).into_response();
+        }
+
+        let raw_value = info.convert_to_raw(val_f64);
+        debug_targeted!(HTTP, "Writing dword analog to address {}: {} (raw: {})", info.get_meta().address.address, val_f64, raw_value);
+
+        match state.clearcore_registers.write_u32(info.get_meta().address.address, raw_value).await {
+            Ok(_) => return Html("".to_string()).into_response(),
+            Err(e) => return render_error(&e.to_string()).into_response(),
+        }
+    }
+
+    // TODO: Need to know what dumbass agent tried to give user feedback like this
     warn_targeted!(HTTP, "Unknown register name: {}", register_name);
     axum::http::StatusCode::NOT_FOUND.into_response()
 }
@@ -187,13 +249,19 @@ pub async fn handle_save_config(
 ) -> impl IntoResponse {
     debug_targeted!(HTTP, "Saving clearcore config to disk");
 
-    let config = ClearcoreConfig::from_modbus(&state.clearcore_registers).await;
-
-    match file_operations::save_config(&config).await {
-        Ok(_) => Html("<div class='text-green-600 text-sm'>Configuration saved successfully</div>".to_string()),
+    match ClearcoreConfig::from_modbus(&state.clearcore_registers).await{
+        Ok(config) => {
+            match config.save_to_file().await {
+                Ok(_) => FeedbackResult::new_ok("Configuration saved successfully".to_string()),
+                Err(e) => {
+                    warn_targeted!(FS, "Failed to save config: {}", e);
+                    FeedbackResult::new_err(e)
+                }
+            }
+        },
         Err(e) => {
-            warn_targeted!(HTTP, "Failed to save config: {}", e);
-            Html(format!("<div class='text-red-600 text-sm'>Failed to save: {}</div>", e))
+            error_targeted!(FS, "Failed to generate config from modbus: {}", e);
+            FeedbackResult::new_err(e.to_string())
         }
     }
 }
@@ -210,4 +278,5 @@ impl ViewTemplate for ClearcoreConfigTemplate {
 pub struct ClearcoreConfigGridTemplate {
     pub boolean_registers: Vec<EditableBooleanRegister>,
     pub analog_registers: Vec<EditableAnalogRegister>,
+    pub analog_dword_registers: Vec<EditableDwordAnalogRegister>,
 }

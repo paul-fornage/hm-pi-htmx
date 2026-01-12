@@ -8,7 +8,7 @@ use axum::{
 };
 use std::fmt;
 use crate::{debug_targeted, info_targeted, trace_targeted, warn_targeted};
-use crate::miller::miller_register_definitions::{get_register_metadata, MILLER_REGISTERS};
+use crate::miller::miller_register_definitions::{get_miller_register_metadata, MILLER_REGISTERS};
 use crate::modbus::RegisterMetadata;
 
 
@@ -22,7 +22,7 @@ pub struct RegisterModalTemplate {
 pub async fn modal_handler(Path(name): Path<String>) -> impl IntoResponse {
     info_targeted!(HTTP, "Modal handler called for register: {}", name);
 
-    match get_register_metadata(&name) {
+    match get_miller_register_metadata(&name) {
         Some(meta) => {
             debug_targeted!(HTTP, "Found metadata for register: {}", name);
             let template = RegisterModalTemplate { meta };

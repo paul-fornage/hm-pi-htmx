@@ -1,6 +1,6 @@
 {% extends "components/shared/base-editable-register-card.html" %}
 
-{% block edit_url %}{{ base_url }}/edit/{{ register_info.meta.name }}{% endblock %}
+{% block edit_url %}{{ open_modal_url() }}{% endblock %}
 
 {% block display_value %}
 <div class="h-8 w-full flex items-center justify-center font-bold text-xl bg-slate-100

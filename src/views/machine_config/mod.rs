@@ -10,7 +10,7 @@ use crate::miller::miller_register_types::WelderModel;
 #[template(path = "views/machine-config.html")]
 pub struct MachineConfigTemplate {
     pub current_model: WelderModel,
-    pub save_status: Option<Result<(), crate::error::Error>>,
+    pub save_status: Option<Result<(), crate::error::HmPiError>>,
 }
 
 impl ViewTemplate for MachineConfigTemplate {
@@ -20,7 +20,7 @@ impl ViewTemplate for MachineConfigTemplate {
 #[derive(Template)]
 #[template(path = "components/machine_config/status-message.html")]
 pub struct StatusMessageTemplate {
-    pub save_status: Option<Result<(), crate::error::Error>>,
+    pub save_status: Option<Result<(), crate::error::HmPiError>>,
 }
 
 impl IntoResponse for StatusMessageTemplate {

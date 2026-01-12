@@ -8,9 +8,9 @@ mod miller;
 mod connection_management;
 mod views;
 mod machine_config;
-mod askama_components;
 mod plc;
 
+use std::sync::atomic::AtomicBool;
 use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -29,6 +29,7 @@ use crate::views::machine_config::{save_machine_config, show_machine_config};
 use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
 use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
 use crate::views::clearcore_static_config::{self, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
+use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
@@ -39,6 +40,7 @@ pub struct AppState {
     pub miller_registers: CachedModbus,
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
+    pub clearcore_configured: std::sync::Arc<AtomicBool>,
 }
 
 pub const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate{};
@@ -91,28 +93,8 @@ async fn main() {
     let welder_modbus = modbus::ModbusManager::new(welder_config.clone());
 
     // Attempt to connect on startup
-    tokio::spawn({
-        let clearcore = clearcore_modbus.clone();
-        async move {
-            if let Err(e) = clearcore.connect(clearcore_config).await {
-                info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
-            }
-        }
-    });
-
-    tokio::spawn({
-        let welder = welder_modbus.clone();
-        async move {
-            if let Err(e) = welder.connect(welder_config).await {
-                info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e);
-            }
-        }
-    });
-
-
-
     let (miller_registers, mut miller_updater) =
-        CachedModbus::new_with_updater(welder_modbus, MILLER_CHUNKS);
+        CachedModbus::new_with_updater(welder_modbus.clone(), MILLER_CHUNKS);
 
 
     tokio::spawn(async move {
@@ -131,11 +113,36 @@ async fn main() {
     });
 
     let (clearcore_registers, mut clearcore_updater) =
-        CachedModbus::new_with_updater(clearcore_modbus, CLEARCORE_CHUNKS);
+        CachedModbus::new_with_updater(clearcore_modbus.clone(), CLEARCORE_CHUNKS);
+    let clearcore_configured = std::sync::Arc::new(AtomicBool::new(false));
 
-
+    let clearcore = clearcore_modbus.clone();
+    let thread_copy_clearcore_registers = clearcore_registers.clone();
+    let thread_copy_clearcore_configured = clearcore_configured.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
+
+        match clearcore.connect(clearcore_config).await {
+            Ok(()) => {
+                match clearcore_updater.initialize_all().await{
+                    Ok(()) => {
+                        trace_targeted!(MODBUS, "Initialized Clearcore registers");
+                    },
+                    Err(e) => {
+                        warn_targeted!(MODBUS, "Error initializing Clearcore registers: {:?}", e);
+                    },
+                }
+                info_targeted!(MODBUS, "Clearcore auto-connected");
+                let configured = ClearcoreConfig::on_boot(&thread_copy_clearcore_registers).await.unwrap_or_else(|e| {
+                    warn_targeted!(MODBUS, "Error loading Clearcore config: {:?}", e);
+                    false
+                });
+                thread_copy_clearcore_configured.store(configured, std::sync::atomic::Ordering::Release);
+            },
+            Err(e) => {
+                info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
+            }
+        }
         loop {
             interval.tick().await;
             match clearcore_updater.update().await{
@@ -150,10 +157,24 @@ async fn main() {
     });
 
 
+
+
+    tokio::spawn({
+        let welder = welder_modbus;
+        async move {
+            match welder.connect(welder_config).await {
+                Ok(()) => info_targeted!(MODBUS, "Welder auto-connected"),
+                Err(e) => info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e)
+            }
+        }
+    });
+
+
     // Initialize machine config
     let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
         .unwrap_or_else(|_| machine_config::MachineConfig::default());
     let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
+
 
     // Initialize weld profile metadata
     let weld_profile_metadata = std::sync::Arc::new(tokio::sync::Mutex::new(
@@ -166,6 +187,7 @@ async fn main() {
         miller_registers,
         machine_config,
         weld_profile_metadata,
+        clearcore_configured,
     };
 
     debug_targeted!(HTTP, "Initialized application state");

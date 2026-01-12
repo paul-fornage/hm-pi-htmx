@@ -1,13 +1,15 @@
 pub enum LogTarget {
     HTTP,
-    MODBUS
+    MODBUS,
+    FS
 }
 
 impl Into<&'static str> for LogTarget {
     fn into(self) -> &'static str {
         match self {
             LogTarget::HTTP => "http",
-            LogTarget::MODBUS => "modbus"
+            LogTarget::MODBUS => "modbus",
+            LogTarget::FS => "fs"
         }
     }
 }

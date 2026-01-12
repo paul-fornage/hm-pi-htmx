@@ -2,7 +2,7 @@ mod sub_types;
 
 use num_enum::FromPrimitive;
 use sub_types::*;
-use crate::error::Error;
+use crate::error::HmPiError;
 // use crate::miller::miller_memory::MillerMemory;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::miller::miller_register_definitions::*;
@@ -120,24 +120,24 @@ pub struct MillerWeldProfile {
 async fn read_coil_result(
     memory: &CachedModbus,
     address: RegisterAddress,
-) -> Result<bool, Error> {
+) -> Result<bool, HmPiError> {
     memory
         .read_coil(address.address)
         .await
-        .ok_or(Error::ReadUnpopulatedRegister(address))
+        .ok_or(HmPiError::ReadUnpopulatedRegister(address))
 }
 async fn read_hreg_result(
     memory: &CachedModbus,
     address: RegisterAddress,
-) -> Result<u16, Error> {
+) -> Result<u16, HmPiError> {
     memory
         .read_hreg(address.address)
         .await
-        .ok_or(Error::ReadUnpopulatedRegister(address))
+        .ok_or(HmPiError::ReadUnpopulatedRegister(address))
 }
 
 impl MillerWeldProfile {
-    pub async fn pull_from_mb(memory: &CachedModbus) -> Result<Self, Error> {
+    pub async fn pull_from_mb(memory: &CachedModbus) -> Result<Self, HmPiError> {
         let use_dc_output = read_coil_result(memory, USE_DC_OUTPUT.address).await?;
         let use_ep_polarity = read_coil_result(memory, USE_EP_POLARITY.address).await?;
         let boost_en = read_coil_result(memory, BOOST_EN.address).await?;
@@ -154,27 +154,27 @@ impl MillerWeldProfile {
         let preset_min_amperage = ClampedInclusiveU16::try_from_u16(
             read_hreg_result(memory, PRESET_MIN_AMPERAGE.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(PRESET_MIN_AMPERAGE.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(PRESET_MIN_AMPERAGE.address))?;
 
         let arc_start_amperage = ClampedInclusiveU16::try_from_u16(
             read_hreg_result(memory, ARC_START_AMPERAGE.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(ARC_START_AMPERAGE.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(ARC_START_AMPERAGE.address))?;
 
         let arc_start_time = ArcStartTiming::try_from_u16(
             read_hreg_result(memory, ARC_START_TIME.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(ARC_START_TIME.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(ARC_START_TIME.address))?;
 
         let arc_start_slope_time = ArcStartTiming::try_from_u16(
             read_hreg_result(memory, ARC_START_SLOPE_TIME.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(ARC_START_SLOPE_TIME.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(ARC_START_SLOPE_TIME.address))?;
 
         let arc_start_ac_time = ArcStartTiming::try_from_u16(
             read_hreg_result(memory, ARC_START_AC_TIME.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(ARC_START_AC_TIME.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(ARC_START_AC_TIME.address))?;
 
         let arc_start_polarity_phase = ElectrodePolarity::from_primitive(
             read_hreg_result(memory, ARC_START_POLARITY_PHASE.address).await?,
@@ -183,17 +183,17 @@ impl MillerWeldProfile {
         let ac_en_wave_shape = WaveShape::try_from(
             read_hreg_result(memory, AC_EN_WAVE_SHAPE.address).await?,
         )
-            .map_err(|_| Error::ReadUnpopulatedRegister(AC_EN_WAVE_SHAPE.address))?;
+            .map_err(|_| HmPiError::ReadUnpopulatedRegister(AC_EN_WAVE_SHAPE.address))?;
 
         let ac_ep_wave_shape = WaveShape::try_from(
             read_hreg_result(memory, AC_EP_WAVE_SHAPE.address).await?,
         )
-            .map_err(|_| Error::ReadUnpopulatedRegister(AC_EP_WAVE_SHAPE.address))?;
+            .map_err(|_| HmPiError::ReadUnpopulatedRegister(AC_EP_WAVE_SHAPE.address))?;
 
         let hot_start_time = HotStartProfile::try_from_u16(
             read_hreg_result(memory, HOT_START_TIME.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(HOT_START_TIME.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(HOT_START_TIME.address))?;
 
         let ac_en_amperage = AcAmperageProfile(
             read_hreg_result(memory, AC_EN_AMPERAGE.address).await?,
@@ -204,11 +204,11 @@ impl MillerWeldProfile {
 
         let ac_balance = AcBalance::try_from_u16(
                 read_hreg_result(memory, AC_BALANCE.address).await?,
-            ).ok_or(Error::ReadUnpopulatedRegister(AC_BALANCE.address))?;
+            ).ok_or(HmPiError::ReadUnpopulatedRegister(AC_BALANCE.address))?;
 
         let ac_frequency = AcFrequency::try_from_u16(
                 read_hreg_result(memory, AC_FREQUENCY.address).await?,
-            ).ok_or(Error::ReadUnpopulatedRegister(AC_FREQUENCY.address))?;
+            ).ok_or(HmPiError::ReadUnpopulatedRegister(AC_FREQUENCY.address))?;
 
         let weld_amperage = AcAmperageProfile(
             read_hreg_result(memory, WELD_AMPERAGE.address).await?,
@@ -217,15 +217,15 @@ impl MillerWeldProfile {
         let pulser_pps = PulseFrequency::try_from_u16(
             read_hreg_result(memory, PULSER_PPS.address).await?,
         )
-            .ok_or(Error::ReadUnpopulatedRegister(PULSER_PPS.address))?;
+            .ok_or(HmPiError::ReadUnpopulatedRegister(PULSER_PPS.address))?;
 
         let pulser_peak_time = PulserPeakTime::try_from_u16(
                 read_hreg_result(memory, PULSER_PEAK_TIME.address).await?,
-            ).ok_or(Error::ReadUnpopulatedRegister(PULSER_PEAK_TIME.address))?;
+            ).ok_or(HmPiError::ReadUnpopulatedRegister(PULSER_PEAK_TIME.address))?;
 
         let preflow_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, PREFLOW_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(PREFLOW_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(PREFLOW_TIME.address))?;
 
         let initial_amperage = AcAmperageProfile(
             read_hreg_result(memory, INITIAL_AMPERAGE.address).await?,
@@ -233,19 +233,19 @@ impl MillerWeldProfile {
 
         let initial_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, INITIAL_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(INITIAL_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(INITIAL_TIME.address))?;
 
         let initial_slope_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, INITIAL_SLOPE_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(INITIAL_SLOPE_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(INITIAL_SLOPE_TIME.address))?;
 
         let main_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, MAIN_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(MAIN_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(MAIN_TIME.address))?;
 
         let final_slope_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, FINAL_SLOPE_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(FINAL_SLOPE_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(FINAL_SLOPE_TIME.address))?;
 
         let final_amperage = AcAmperageProfile(
             read_hreg_result(memory, FINAL_AMPERAGE.address).await?,
@@ -253,7 +253,7 @@ impl MillerWeldProfile {
 
         let final_time = WavePhaseDuration::try_from_u16(
             read_hreg_result(memory, FINAL_TIME.address).await?,
-        ).ok_or(Error::ReadUnpopulatedRegister(FINAL_TIME.address))?;
+        ).ok_or(HmPiError::ReadUnpopulatedRegister(FINAL_TIME.address))?;
 
         let postflow_time = match read_hreg_result(memory, POSTFLOW_TIME.address).await?
         {
@@ -264,7 +264,7 @@ impl MillerWeldProfile {
 
         let hot_wire_voltage = HotWireVoltage::try_from_u16(
                 read_hreg_result(memory, HOT_WIRE_VOLTAGE.address).await?,
-            ).ok_or(Error::ReadUnpopulatedRegister(HOT_WIRE_VOLTAGE.address))?;
+            ).ok_or(HmPiError::ReadUnpopulatedRegister(HOT_WIRE_VOLTAGE.address))?;
 
         Ok(Self {
             use_dc_output,

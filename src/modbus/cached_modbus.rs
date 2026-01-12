@@ -5,7 +5,7 @@ use tokio::sync::RwLock;
 // Using the same imports as the original file
 use crate::modbus::modbus_transaction_types::*;
 use crate::modbus::{ModbusAddressType, ModbusManager, ModbusState, ModbusValue, RegisterAddress};
-use crate::error::{Error, Result};
+use crate::error::{HmPiError, Result};
 use crate::{debug_targeted, error_targeted};
 
 /// Defines a contiguous chunk of Modbus registers to be polled.
@@ -167,6 +167,33 @@ impl CachedModbus {
     pub async fn write_hreg(&self, address: u16, value: u16) -> Result<()> {
         self.manager.write_single_register(WriteSingleRegisterRequest { address, value }).await
     }
+    pub async fn write_u32(&self, address: u16, value: u32) -> Result<()> {
+        let lower = (value & 0xFFFF) as u16;
+        let upper = ((value >> 16) & 0xFFFF) as u16;
+        self.manager.write_multiple_registers(WriteMultipleRegistersRequest { 
+            address, values: vec![lower, upper] 
+        }).await
+    }
+
+    /// Does not perform the write unless the local copy is different
+    pub async fn diff_write_coil(&self, address: u16, value: bool) -> Result<()> {
+        match self.read_coil(address).await {
+            Some(cur_val) => {
+                if cur_val != value { self.write_coil(address, value).await } else { Ok(()) }
+            },
+            None => { self.write_coil(address, value).await }
+        }
+    }
+
+    /// Does not perform the write unless the local copy is different
+    pub async fn diff_write_hreg(&self, address: u16, value: u16) -> Result<()> {
+        match self.read_hreg(address).await {
+            Some(cur_val) => {
+                if cur_val != value { self.write_hreg(address, value).await } else { Ok(()) }
+            },
+            None => { self.write_hreg(address, value).await }
+        }
+    }
 
     /// Writes a value to the device.
     /// DOES NOT update the cache speculatively.
@@ -181,11 +208,11 @@ impl CachedModbus {
             }
             // Error on type mismatch or read-only types
             (ModbusAddressType::DiscreteInput, value) | (ModbusAddressType::InputRegister, value) => {
-                Err(Error::LocalRegisterTriedWriteReadOnly(value, address.clone()))
+                Err(HmPiError::LocalRegisterTriedWriteReadOnly(value, address.clone()))
             }
             (_, value) => {
                 // Mismatch between metadata type and provided value type
-                Err(Error::LocalRegisterTypeMismatch(value, address.clone()))
+                Err(HmPiError::LocalRegisterTypeMismatch(value, address.clone()))
             }
         }
     }
@@ -201,7 +228,7 @@ impl ModbusUpdater {
         if self.target.manager.get_connection_state().await? != ModbusState::Connected {
             error_targeted!(MODBUS, "Modbus connection lost, clearing cache");
             self.target.clear_cache().await;
-            return Err(Error::NotConnected);
+            return Err(HmPiError::NotConnected);
         }
 
         if self.chunks.is_empty() {
@@ -214,6 +241,41 @@ impl ModbusUpdater {
         let chunk = &self.chunks[self.cursor];
 
         // Execute the update on the target cache
+        self.update_chunk(chunk).await?;
+
+        // Advance cursor, wrapping around safely
+        self.cursor = (self.cursor + 1) % self.chunks.len();
+
+        Ok(())
+    }
+
+    /// Performs a single update cycle.
+    /// Returns:
+    /// - Ok(()) if successful or if no chunks exist.
+    /// - Err(Error::NotConnected) if manager is disconnected (cache is cleared).
+    /// - Err(...) if the specific Modbus request failed.
+    pub async fn initialize_all(&self) -> Result<()> {
+        if self.target.manager.get_connection_state().await? != ModbusState::Connected {
+            error_targeted!(MODBUS, "Modbus connection lost, clearing cache");
+            self.target.clear_cache().await;
+            return Err(HmPiError::NotConnected);
+        }
+
+        if self.chunks.is_empty() {
+            error_targeted!(MODBUS, "cahced modbus self.chunks.is_empty()!!!");
+            return Ok(());
+        }
+
+
+        for chunk in self.chunks.iter() {
+            self.update_chunk(chunk).await?;
+        }
+
+        Ok(())
+    }
+
+
+    async fn update_chunk(&self, chunk: &ModbusChunk) -> Result<()> {
         match chunk {
             ModbusChunk::Coils { address, count } => {
                 self.target.update_coils(*address, *count).await?;
@@ -227,11 +289,7 @@ impl ModbusUpdater {
             ModbusChunk::HoldingRegisters { address, count } => {
                 self.target.update_hreg_chunk(*address, *count).await?;
             }
-        }
-
-        // Advance cursor, wrapping around safely
-        self.cursor = (self.cursor + 1) % self.chunks.len();
-
+        };
         Ok(())
     }
 }

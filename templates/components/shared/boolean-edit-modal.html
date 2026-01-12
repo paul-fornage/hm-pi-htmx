@@ -14,15 +14,16 @@
     </div>
 </div>
 
-<form hx-post="{{ base_url }}/write/{{ register_name }}"
-      hx-swap="none"
-      onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)">
+<form hx-post="{{ write_value_url() }}"
+      hx-swap="innerHTML"
+      hx-target="#global-modal-layer"
+      hx-disabled-elt="#set-false-button, #set-true-button">
     <div class="flex gap-2">
-        <button type="submit" name="value" value="false"
+        <button type="submit" name="value" value="false" id="set-false-button"
                 class="flex-1 px-4 py-3 bg-slate-100 border border-slate-300 rounded text-lg font-bold hover:bg-slate-200 transition-colors">
             {{register_info.false_string}}
         </button>
-        <button type="submit" name="value" value="true"
+        <button type="submit" name="value" value="true" id="set-true-button"
                 class="flex-1 px-4 py-3 bg-green-100 border border-green-300 rounded text-lg font-bold hover:bg-green-200 transition-colors text-green-700">
             {{register_info.true_string}}
         </button>

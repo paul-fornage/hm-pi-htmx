@@ -1,9 +1,10 @@
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress};
+use crate::views::clearcore_static_config::json_serde::CcConfigParseError;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, HmPiError>;
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum HmPiError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error("Tried to perform modbus operation when not connected.")]
@@ -45,6 +46,18 @@ pub enum Error {
     ConfigVersionMismatch,
     #[error("Invalid welder model")]
     InvalidWelderModel,
+    #[error("Could not find a cached register \"{1}\" with address {0:?}.")]
+    MissingExpectedRegister(RegisterAddress, String),
+    #[error("failed to read file at {0}")]
+    FailToReadFile(String),
+    #[error("failed to write file at {0}")]
+    FailToWriteFile(String),
+    #[error("failed to parse file at {0}")]
+    FailToParseFile(String),
+    #[error("Clearcore static config error: {0}")]
+    CcConfigError(#[from] CcConfigParseError),
+    #[error("Clearcore static config contained register {0} that was not defined")]
+    CcConfigBadRegisterKey(String),
 }
 
 

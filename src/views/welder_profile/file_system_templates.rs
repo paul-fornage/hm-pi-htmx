@@ -43,7 +43,7 @@ pub const RELOAD_METADATA_EVENT: HxTrigger = HxTrigger {
 };
 
 #[derive(Template)]
-#[template(path = "components/file-system/result-feedback.html")]
+#[template(path = "components/shared/result-feedback.html")]
 pub struct ProfileFsOpResult<E: Display> {
     pub result: Result<String, E>,
     pub close_modal: bool,

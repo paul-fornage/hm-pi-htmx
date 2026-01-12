@@ -1,5 +1,5 @@
 use crate::miller::miller_register_types::WelderModel;
-use crate::error::{Result, Error};
+use crate::error::{Result, HmPiError};
 
 use std::path::Path;
 use std::fs;
@@ -32,9 +32,9 @@ impl MachineConfig {
             .map_err(|e| {
                 // Check if it's a missing field error, which indicates version mismatch
                 if e.classify() == serde_json::error::Category::Data {
-                    Error::ConfigVersionMismatch
+                    HmPiError::ConfigVersionMismatch
                 } else {
-                    Error::JsonError(e)
+                    HmPiError::JsonError(e)
                 }
             })?;
         Ok(config)

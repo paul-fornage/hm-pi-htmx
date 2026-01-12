@@ -96,4 +96,8 @@ impl AnalogRegisterInfo {
             min_value: raw_min_value,
         }
     }
+
+    pub fn get_meta(&self) -> &'static RegisterMetadata {
+        self.meta
+    }
 }

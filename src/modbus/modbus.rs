@@ -8,7 +8,7 @@ use tokio::time::timeout;
 use tokio_modbus::client::{Client, Context, Reader, Writer};
 use serde::{Deserialize, Serialize};
 use tokio_modbus::prelude::SlaveContext;
-use crate::error::{Error, Result};
+use crate::error::{HmPiError, Result};
 use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted};
 use crate::modbus::modbus_transaction_types::*;
 
@@ -41,7 +41,7 @@ macro_rules! execute_modbus {
         // 3. Check connection
         if !matches!(config.state, ModbusState::Connected) {
              warn_targeted!(MODBUS, "Modbus Op '{}' failed: Not Connected", op_name);
-             Err(Error::NotConnected)
+             Err(HmPiError::NotConnected)
         } else {
              // 4. Unwrap context
              match ctx_guard.as_mut() {
@@ -61,13 +61,13 @@ macro_rules! execute_modbus {
                         Err(e) => {
                             let msg = e.to_string();
                             warn_targeted!(MODBUS, "Modbus Op '{}' timed out: {}", op_name, msg);
-                            Err(Error::ModbusTimedOut(msg))
+                            Err(HmPiError::ModbusTimedOut(msg))
                         }
                     }
                 }
                 None => {
                     error_targeted!(MODBUS, "Modbus Op '{}' failed: Invariant Broken (Context is None)", op_name);
-                    Err(Error::ModbusInvariantBroken)
+                    Err(HmPiError::ModbusInvariantBroken)
                 },
             }
         }
@@ -186,8 +186,8 @@ impl ModbusState {
 fn squash_error<T>(mb_err: std::result::Result<std::result::Result<T, tokio_modbus::ExceptionCode>, tokio_modbus::Error>) -> Result<T> {
     match mb_err {
         Ok(Ok(res)) => Ok(res),
-        Ok(Err(e)) => Err(Error::ModbusException(e)),
-        Err(e) => Err(Error::ModbusProtocolError(e)),
+        Ok(Err(e)) => Err(HmPiError::ModbusException(e)),
+        Err(e) => Err(HmPiError::ModbusProtocolError(e)),
     }
 }
 
@@ -202,12 +202,12 @@ impl ModbusManager{
 
     pub async fn cloned_config(&self) -> Result<ConnectionConfig> {
         Ok(timeout(LOCK_TIMEOUT, self.info.read())
-            .await.map_err(|e| Error::LockTimedOut(e.to_string()))?.clone())
+            .await.map_err(|e| HmPiError::LockTimedOut(e.to_string()))?.clone())
     }
 
     pub async fn get_connection_state(&self) -> Result<ModbusState> {
         Ok(timeout(LOCK_TIMEOUT, self.info.read())
-            .await.map_err(|e| Error::LockTimedOut(e.to_string()))?.state.clone())
+            .await.map_err(|e| HmPiError::LockTimedOut(e.to_string()))?.state.clone())
     }
 
     pub async fn set_connection_state(&self, new_state: ModbusState) -> Result<()> {
@@ -218,18 +218,18 @@ impl ModbusManager{
 
     pub async fn write_config(&self) -> Result<RwLockWriteGuard<'_, ConnectionConfig>> {
         Ok(timeout(LOCK_TIMEOUT, self.info.write())
-            .await.map_err(|e| Error::LockTimedOut(e.to_string()))?)
+            .await.map_err(|e| HmPiError::LockTimedOut(e.to_string()))?)
     }
 
     pub async fn ctx_acquisition(&self) -> Result<MutexGuard<'_, Option<Context>>> {
         Ok(timeout(LOCK_TIMEOUT, self.shared_ctx.as_ref().lock()).await
-            .map_err(|e| Error::LockTimedOut(e.to_string()))?)
+            .map_err(|e| HmPiError::LockTimedOut(e.to_string()))?)
     }
 
     pub async fn connect_ctx(connection_config: &ConnectionConfig) -> Result<Context> {
         let ctx_res = tcp::connect(connection_config.socket_addr);
         let mut ctx = timeout(connection_config.timeout_duration, ctx_res).await.map_err(|e| {
-            Error::ModbusTimedOut(e.to_string())
+            HmPiError::ModbusTimedOut(e.to_string())
         })??;
         ctx.set_slave(connection_config.unit_id.into());
         Ok(ctx)
@@ -250,7 +250,7 @@ impl ModbusManager{
         //  Other functions need to leave alone while connecting to avoid race conditions.
         let mut config_write_guard = self.write_config().await?;
         if matches!(config_write_guard.state, ModbusState::Connecting | ModbusState::Connected) {
-            return Err(Error::ModbusAlreadyConnected);
+            return Err(HmPiError::ModbusAlreadyConnected);
         }
         config_write_guard.state = ModbusState::Connecting;
         let old_config = config_write_guard.clone();
@@ -263,7 +263,7 @@ impl ModbusManager{
                 warn_targeted!(MODBUS, "Failed to acquire ctx lock: {e:?}");
                 self.set_connection_state(ModbusState::Disconnected).await.map_err(|e|{
                     error_targeted!(MODBUS, "Failed to set state to disconnected: {e:?}");
-                    return Error::FailedToUnwindConnectAttempt();
+                    return HmPiError::FailedToUnwindConnectAttempt();
                 })?;
                 return Err(e);
             }
@@ -290,7 +290,7 @@ impl ModbusManager{
                 warn_targeted!(MODBUS, "Failed to connect!: {e:?}");
                 self.set_connection_state(ModbusState::Disconnected).await.map_err(|e|{
                     error_targeted!(MODBUS, "Failed to set state to disconnected: {e:?}");
-                    return Error::FailedToUnwindConnectAttempt();
+                    return HmPiError::FailedToUnwindConnectAttempt();
                 })?;
                 return Err(e);
             }
@@ -314,7 +314,7 @@ impl ModbusManager{
                 warn_targeted!(MODBUS, "Failed to write config after connect: {e:?}");
                 // not exactly an unwinding error, but it conveys that connect failed and
                 //  left the state tag mismatching
-                return Err(Error::FailedToUnwindConnectAttempt());
+                return Err(HmPiError::FailedToUnwindConnectAttempt());
             }
         }
         Ok(())
@@ -363,16 +363,16 @@ impl ModbusManager{
     {
         let config = self.cloned_config().await?;
         if !matches!(config.state, ModbusState::Connected) {
-            return Err(Error::NotConnected);
+            return Err(HmPiError::NotConnected);
         }
         let mut ctx_guard = self.ctx_acquisition().await?;
         match ctx_guard.as_mut() {
             Some(ctx) => {
                 let fut = timeout(config.timeout_duration, op(ctx));
-                let resolved = fut.await.map_err(|e| Error::ModbusTimedOut(e.to_string()))?;
+                let resolved = fut.await.map_err(|e| HmPiError::ModbusTimedOut(e.to_string()))?;
                 squash_error(resolved)
             }
-            None => Err(Error::ModbusInvariantBroken),
+            None => Err(HmPiError::ModbusInvariantBroken),
         }
     }
 

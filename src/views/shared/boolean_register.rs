@@ -22,4 +22,8 @@ impl BooleanRegisterInfo {
             None => "---",
         }
     }
+    
+    pub fn get_meta(&self) -> &'static RegisterMetadata {
+        self.meta
+    }
 }

@@ -6,14 +6,14 @@
 <div id="view-clearcore-config" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
     <div class="flex justify-between mb-6">
         <h2 class="text-2xl font-bold text-slate-700 align-middle my-auto">ClearCore Static Configuration</h2>
-        <div class="flex flex-col gap-1 h-min">
-            <button 
+        <div class="flex flex-col gap-1 w-96">
+            <button
                 hx-get="/clearcore-config/save" 
                 hx-target="#clearcore-save-status" 
-                class="px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">
+                class="mx-auto px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">
                 Save to Disk
             </button>
-            <div id="clearcore-save-status" class="h-5"></div>
+            <div id="clearcore-save-status" class="h-5 justify-center mx-auto"></div>
         </div>
     </div>
 
