@@ -5,6 +5,7 @@ pub mod machine_config;
 pub mod welder_profile;
 pub mod clearcore_static_config;
 pub mod shared;
+mod clearcore_manual_control;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
@@ -22,13 +23,14 @@ pub enum AppView {
     MachineConfig,
     WelderProfile,
     ClearcoreConfig,
+    ClearcoreManualControl,
 }
 
 impl AppView {
     // Returns a slice of all views to iterate over in the template
     pub fn all() -> &'static [AppView] {
         &[
-            AppView::Operations,
+            AppView::ClearcoreManualControl,
             AppView::WelderProfile,
             AppView::ClearcoreConfig,
             AppView::MillerInfo,
@@ -46,6 +48,7 @@ impl AppView {
             AppView::MachineConfig => "Config",
             AppView::WelderProfile => "Welder Profile",
             AppView::ClearcoreConfig => "ClearCore Config",
+            AppView::ClearcoreManualControl => "Manual Control",
         }
     }
 
@@ -58,6 +61,7 @@ impl AppView {
             AppView::MachineConfig => "/machine-config",
             AppView::WelderProfile => "/welder-profile",
             AppView::ClearcoreConfig => "/clearcore-config",
+            AppView::ClearcoreManualControl => "/clearcore-manual-control",
         }
     }
 }

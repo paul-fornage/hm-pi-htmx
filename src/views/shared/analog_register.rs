@@ -22,16 +22,25 @@ impl AnalogRegisterInfo {
         Ok(())
     }
 
-    pub fn formatted_value(&self, raw_value: Option<u16>) -> String {
+    fn format_helper(&self, raw_value: Option<u16>, precision: usize) -> String {
         match raw_value{
-            Some(val) => format!("{:.*}",
-                                 self.precision as usize,
-                                 self.convert_from_raw(val)),
+            Some(val) => format!("{:.*}", precision, self.convert_from_raw(val)),
             None => {
-                let tail = "-".repeat(self.precision as usize);
+                let tail = "-".repeat(precision);
                 format!("-.{tail}")
             },
         }
+    }
+
+    pub fn formatted_value(&self, raw_value: Option<u16>) -> String {
+        self.format_helper(raw_value, self.precision as usize)
+    }
+
+    pub fn preview_formatted_value(&self, raw_value: Option<u16>) -> String {
+        let precision = self.precision as usize;
+        const MAX_PREVIEW_PRECISION: usize = 4;
+        let clamped_precision = precision.min(MAX_PREVIEW_PRECISION);
+        self.format_helper(raw_value, clamped_precision)
     }
     
     pub fn unit_string(&self) -> &'static str {

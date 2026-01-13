@@ -58,10 +58,18 @@ const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
 ];
 
 const CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS: &[AnalogDwordRegisterInfo] = &[
-    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_X_AXIS_LOWER, &HUNDREDTHS_PER_STEP_X_AXIS_UPPER, "in/step", 9, 0),
-    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_Y_AXIS_LOWER, &HUNDREDTHS_PER_STEP_Y_AXIS_UPPER, "in/step", 9, 0),
-    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_Z_AXIS_LOWER, &HUNDREDTHS_PER_STEP_Z_AXIS_UPPER, "in/step", 9, 0),
-    AnalogDwordRegisterInfo::new(&HUNDREDTHS_PER_STEP_W_AXIS_LOWER, &HUNDREDTHS_PER_STEP_W_AXIS_UPPER, "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(
+        &INCHES_PER_STEP_X_AXIS_LOWER, &INCHES_PER_STEP_X_AXIS_UPPER,
+        "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(
+        &INCHES_PER_STEP_Y_AXIS_LOWER, &INCHES_PER_STEP_Y_AXIS_UPPER,
+        "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(
+        &INCHES_PER_STEP_Z_AXIS_LOWER, &INCHES_PER_STEP_Z_AXIS_UPPER,
+        "in/step", 9, 0),
+    AnalogDwordRegisterInfo::new(
+        &INCHES_PER_STEP_W_AXIS_LOWER, &INCHES_PER_STEP_W_AXIS_UPPER,
+        "in/step", 9, 0),
 ];
 
 fn find_boolean_register(name: &str) -> Option<&'static BooleanRegisterInfo> {
@@ -262,6 +270,40 @@ pub async fn handle_save_config(
         Err(e) => {
             error_targeted!(FS, "Failed to generate config from modbus: {}", e);
             FeedbackResult::new_err(e.to_string())
+        }
+    }
+}
+
+pub async fn handle_apply_config(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Saving clearcore config to disk");
+
+    let config_applied_already = state.clearcore_configured.load(std::sync::atomic::Ordering::Acquire);
+    if config_applied_already {
+        return FeedbackResult::new_err("Clearcore configuration can only be applied once per boot. \
+        Last save applied by default at startup.".to_string());
+    }
+    match state.clearcore_registers.read_coil(CONFIG_READY.address.address).await {
+        None => {
+            error_targeted!(MODBUS, "Failed to read config ready status from modbus");
+            FeedbackResult::new_err("Failed to read config ready status from modbus".to_string())
+        }
+        Some(true) => {
+            error_targeted!(MODBUS, "Local state.clearcore_configured reads not configured, but mb says it is.");
+            FeedbackResult::new_err("Internal state invariant; see logs".to_string())
+        },
+        Some(false) => {
+            match state.clearcore_registers.write_coil(CONFIG_READY.address.address, true).await{
+                Err(e) => {
+                    error_targeted!(MODBUS, "Failed to write config ready status to modbus: {}", e);
+                    FeedbackResult::new_err(format!("Failed to write config ready status to modbus: {e:?}"))
+                }
+                Ok(_) => {
+                    state.clearcore_configured.store(true, std::sync::atomic::Ordering::Release);
+                    FeedbackResult::new_ok("Config applied successfully")
+                }
+            }
         }
     }
 }

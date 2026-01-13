@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::error_targeted;
-use crate::views::clearcore_static_config::{CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS, CLEARCORE_STATIC_CONFIG_COILS};
+use crate::views::clearcore_static_config::{CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS, CLEARCORE_STATIC_CONFIG_COILS, CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS};
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
 
@@ -105,10 +105,44 @@ impl ClearcoreConfig {
             
             analog_registers.insert(key, reg_value);
         }
+        let dword_regs_map = get_map(&root, Self::ANALOG_DWORD_REGISTERS_KEY.to_string())?;
+
+        if dword_regs_map.len() != CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.len() {
+            return Err(CcConfigParseError::WrongNumberOfKeys(
+                Self::ANALOG_DWORD_REGISTERS_KEY.to_string(),
+                CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.len(),
+                dword_regs_map.len()
+            ));
+        }
+
+        let mut analog_dword_registers = HashMap::with_capacity(dword_regs_map.len());
+        for info in CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.iter() {
+            let key = info.get_meta().name;
+            let value_ref = dword_regs_map.get(key).ok_or_else(|| {
+                error_targeted!(FS, "Failed to parse clearcore config: missing dwrod hreg {}", key);
+                CcConfigParseError::MissingField(key.to_string())
+            })?;
+
+            let dword_reg_value = match value_ref.as_u64() {
+                Some(val) if val <= u32::MAX as u64 => val as u32,
+                Some(too_high) => {
+                    error_targeted!(FS, "Failed to parse clearcore config: \
+                        invalid dword hreg value {key} (too large: {too_high})");
+                    return Err(CcConfigParseError::InvalidHregValue(key.to_string(), value_ref.clone()));
+                },
+                None => {
+                    error_targeted!(FS, "Failed to parse clearcore config: invalid dword hreg value {key}");
+                    return Err(CcConfigParseError::InvalidHregValue(key.to_string(), value_ref.clone()));
+                }
+            };
+
+            analog_dword_registers.insert(key, dword_reg_value);
+        }
 
         Ok(Self {
             coils,
             analog_registers,
+            analog_dword_registers,
         })
     }
 }

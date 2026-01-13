@@ -51,13 +51,13 @@ impl ClearcoreConfig {
         let cap = CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.len();
         let mut analog_dword_registers = HashMap::<&'static str, u32>::with_capacity(cap);
         for info in CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.iter() {
-            match cached_modbus.read(&info.get_.address).await {
-                Some(ModbusValue::U16(val)) => {
-                    analog_registers.insert(info.meta.name, val);
+            match cached_modbus.read_u32(&info.get_meta().address).await {
+                Some(val) => {
+                    analog_dword_registers.insert(info.get_meta().name, val);
                 },
                 _ => {
-                    error_targeted!(MODBUS, "Failed to read hreg {} from modbus for static config", info.meta.name);
-                    return Err(HmPiError::MissingExpectedRegister(info.meta.address.clone(), info.meta.name.to_string()));
+                    error_targeted!(MODBUS, "Failed to read hreg {} from modbus for static config", info.get_meta().name);
+                    return Err(HmPiError::MissingExpectedRegister(info.get_meta().address.clone(), info.get_meta().name.to_string()));
                 },
             };
         }
@@ -66,6 +66,7 @@ impl ClearcoreConfig {
         Ok(Self {
             coils,
             analog_registers,
+            analog_dword_registers,
         })
     }
 
@@ -103,6 +104,22 @@ impl ClearcoreConfig {
                 }
             }
         }
+        for (name, value) in self.analog_dword_registers.iter() {
+            let metadata = get_clearcore_register_metadata(name).ok_or(
+                HmPiError::CcConfigBadRegisterKey(name.to_string()))?;
+
+            match cached_modbus.read_u32(&metadata.address).await{
+                Some(val) => {
+                    if val != *value {
+                        diff.push(metadata)
+                    }
+                },
+                None => {
+                    warn_targeted!(MODBUS, "Failed to read coil register: {}", metadata.name);
+                    diff.push(metadata)
+                }
+            }
+        }
         Ok(diff)
     }
 
@@ -117,6 +134,11 @@ impl ClearcoreConfig {
                 HmPiError::CcConfigBadRegisterKey(name.to_string()))?.address.address;
             cached_modbus.diff_write_hreg(address, value).await?;
         }
+        for (&name, &value) in self.analog_dword_registers.iter() {
+            let address = get_clearcore_register_metadata(name).ok_or(
+                HmPiError::CcConfigBadRegisterKey(name.to_string()))?.address.address;
+            cached_modbus.write_u32(address, value).await?;
+        }
         Ok(())
     }
 
@@ -130,6 +152,11 @@ impl ClearcoreConfig {
             let address = get_clearcore_register_metadata(name).ok_or(
                 HmPiError::CcConfigBadRegisterKey(name.to_string()))?.address.address;
             cached_modbus.write_hreg(address, value).await?;
+        }
+        for (&name, &value) in self.analog_dword_registers.iter() {
+            let address = get_clearcore_register_metadata(name).ok_or(
+                HmPiError::CcConfigBadRegisterKey(name.to_string()))?.address.address;
+            cached_modbus.write_u32(address, value).await?;
         }
         Ok(())
     }

@@ -5,4 +5,7 @@
     {% for register in analog_registers %}
     {{ register|safe }}
     {% endfor %}
+    {% for dword_register in analog_dword_registers %}
+    {{ dword_register|safe }}
+    {% endfor %}
 </div>

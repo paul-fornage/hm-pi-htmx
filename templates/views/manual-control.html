@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/header.html" %}
+
+<div id="clearcore-manual-control" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+  <div class="flex justify-between mb-6 gap-2">
+    <h2 class="flex-1 text-2xl font-bold text-slate-700 align-middle my-auto">ClearCore Manual Control</h2>
+  </div>
+  <div class="mb-1  px-auto flex justify-center" id="clearcore-manual-control-status-bar"></div>
+  <div>the content</div>
+</div>
+
+<div id="global-modal-layer"></div>
+{% endblock %}

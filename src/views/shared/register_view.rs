@@ -21,6 +21,9 @@ impl EditableAnalogRegister {
     pub fn formatted_value(&self) -> String {
         self.register_info.formatted_value(self.value)
     }
+    pub fn preview_formatted_value(&self) -> String {
+        self.register_info.preview_formatted_value(self.value)
+    }
     pub fn open_modal_url(&self) -> String { format!("{}/edit/{}", self.base_url, self.register_info.meta.name) }
 }
 
@@ -39,6 +42,9 @@ impl EditableDwordAnalogRegister {
 
     pub fn formatted_value(&self) -> String {
         self.register_info.formatted_value(self.value)
+    }
+    pub fn preview_formatted_value(&self) -> String {
+        self.register_info.preview_formatted_value(self.value)
     }
     pub fn open_modal_url(&self) -> String { format!("{}/edit/{}", self.base_url, self.register_info.get_meta().name) }
 }

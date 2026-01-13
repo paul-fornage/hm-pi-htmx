@@ -129,7 +129,7 @@ impl AnalogDwordEditModalTemplate {
     }
 
     pub fn write_value_url(&self) -> String {
-        format!("{}/write_dword/{}", self.base_url, self.register_name)
+        format!("{}/write/{}", self.base_url, self.register_name)
     }
     
     pub fn get_meta(&self) -> &'static RegisterMetadata {

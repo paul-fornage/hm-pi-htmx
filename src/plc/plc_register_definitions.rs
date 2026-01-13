@@ -331,52 +331,52 @@ pub const CYCLE_PROGRESS: RegisterMetadata = RegisterMetadata {
     description: "Progress on current job (hundredths of percent, 0..10000)",
 };
 
-pub const HUNDREDTHS_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 64 },
-    name: "HUNDREDTHS PER STEP X AXIS",
-    description: "Hundredths per step for X axis - lower word (fixed point u32 LE, value/2^32)",
+    name: "X AXIS SCALING",
+    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
 };
 
-pub const HUNDREDTHS_PER_STEP_X_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_X_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 65 },
-    name: "HUNDREDTHS PER STEP X AXIS UPPER",
-    description: "Hundredths per step for X axis - upper word (fixed point u32 LE, value/2^32)",
+    name: "X AXIS SCALING UPPER",
+    description: "See HUNDREDTHS_PER_STEP_X_AXIS_LOWER",
 };
 
-pub const HUNDREDTHS_PER_STEP_Y_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_Y_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 66 },
-    name: "HUNDREDTHS PER STEP Y AXIS",
-    description: "Hundredths per step for Y axis - lower word (fixed point u32 LE, value/2^32)",
+    name: "Y AXIS SCALING",
+    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
 };
 
-pub const HUNDREDTHS_PER_STEP_Y_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_Y_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 67 },
-    name: "HUNDREDTHS PER STEP Y AXIS UPPER",
-    description: "Hundredths per step for Y axis - upper word (fixed point u32 LE, value/2^32)",
+    name: "Y AXIS SCALING UPPER",
+    description: "See HUNDREDTHS_PER_STEP_Y_AXIS_LOWER",
 };
 
-pub const HUNDREDTHS_PER_STEP_Z_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_Z_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 68 },
-    name: "HUNDREDTHS PER STEP Z AXIS",
-    description: "Hundredths per step for Z axis - lower word (fixed point u32 LE, value/2^32)",
+    name: "Z AXIS SCALING",
+    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
 };
 
-pub const HUNDREDTHS_PER_STEP_Z_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_Z_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 69 },
-    name: "HUNDREDTHS PER STEP Z AXIS UPPER",
-    description: "Hundredths per step for Z axis - upper word (fixed point u32 LE, value/2^32)",
+    name: "Z AXIS SCALING UPPER",
+    description: "See HUNDREDTHS_PER_STEP_Z_AXIS_LOWER",
 };
 
-pub const HUNDREDTHS_PER_STEP_W_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_W_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 70 },
-    name: "HUNDREDTHS PER STEP W AXIS",
-    description: "Hundredths per step for W axis - lower word (fixed point u32 LE, value/2^32)",
+    name: "W AXIS SCALING",
+    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
 };
 
-pub const HUNDREDTHS_PER_STEP_W_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
+pub const INCHES_PER_STEP_W_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 71 },
-    name: "HUNDREDTHS PER STEP W AXIS UPPER",
-    description: "Hundredths per step for W axis - upper word (fixed point u32 LE, value/2^32)",
+    name: "W AXIS SCALING UPPER",
+    description: "See HUNDREDTHS_PER_STEP_W_AXIS_LOWER",
 };
 
 pub const MIN_POS_X_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
@@ -517,14 +517,14 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     AXIS_Y_HOMING_OFFSET,
     AXIS_Z_HOMING_OFFSET,
     CYCLE_PROGRESS,
-    HUNDREDTHS_PER_STEP_X_AXIS_LOWER,
-    HUNDREDTHS_PER_STEP_X_AXIS_UPPER,
-    HUNDREDTHS_PER_STEP_Y_AXIS_LOWER,
-    HUNDREDTHS_PER_STEP_Y_AXIS_UPPER,
-    HUNDREDTHS_PER_STEP_Z_AXIS_LOWER,
-    HUNDREDTHS_PER_STEP_Z_AXIS_UPPER,
-    HUNDREDTHS_PER_STEP_W_AXIS_LOWER,
-    HUNDREDTHS_PER_STEP_W_AXIS_UPPER,
+    INCHES_PER_STEP_X_AXIS_LOWER,
+    INCHES_PER_STEP_X_AXIS_UPPER,
+    INCHES_PER_STEP_Y_AXIS_LOWER,
+    INCHES_PER_STEP_Y_AXIS_UPPER,
+    INCHES_PER_STEP_Z_AXIS_LOWER,
+    INCHES_PER_STEP_Z_AXIS_UPPER,
+    INCHES_PER_STEP_W_AXIS_LOWER,
+    INCHES_PER_STEP_W_AXIS_UPPER,
     MIN_POS_X_AXIS_HUNDREDTHS,
     MAX_POS_X_AXIS_HUNDREDTHS,
     MAX_VEL_X_AXIS_HUNDREDTHS_PER_MINUTE,

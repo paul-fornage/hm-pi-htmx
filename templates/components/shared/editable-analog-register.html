@@ -3,14 +3,14 @@
 {% block edit_url %}{{ open_modal_url() }}{% endblock %}
 
 {% block display_value %}
-<div class="h-8 w-full flex items-center justify-center font-bold text-xl
+<div class="h-8 flex items-center justify-center font-bold text-xl gap-1
 {% if has_value() %}
-    bg-slate-100 text-slate-400
+    bg-slate-100 text-slate-800
 {% else %}
     bg-gray-100 text-gray-400
 {% endif %}">
-{{ formatted_value() }}
-    <p class="text-sm">{{ register_info.unit_string() }}</p>
+    {{ preview_formatted_value() }}
+    <p class="text-sm align-bottom mt-auto mb-1 text-slate-600">{{ register_info.unit_string() }}</p>
 </div>
 {% endblock %}
 

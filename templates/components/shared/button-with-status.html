@@ -1,0 +1,11 @@
+<div class="flex flex-col gap-1">
+  <button id="{% block key %}{% endblock %}-button"
+          hx-get="{% block url %}{% endblock %}"
+          hx-target="#{% block status_id %}{% endblock %}"
+          hx-indicator="this"
+          hx-disabled-elt="this"
+          class="group w-full h-full px-4 py-2 bg-{% block color %}blue-600{% endblock %} text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold">
+    <span class="group-[.htmx-request]:hidden">{% block label %}{% endblock %}</span>
+    <span class="hidden group-[.htmx-request]:inline">{% block loading_text %}loading...{% endblock %}</span>
+  </button>
+</div>
