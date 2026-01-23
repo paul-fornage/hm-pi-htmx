@@ -18,4 +18,9 @@ impl<T: Display, E: Display> FeedbackResult<T, E> {
         Self::new(Err(error))
     }
 }
+impl<T: Display, E: Display> From<Result<T, E>> for FeedbackResult<T, E> {
+    fn from(value: Result<T, E>) -> Self {
+        Self::new(value)
+    }
+}
 

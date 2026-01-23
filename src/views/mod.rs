@@ -5,7 +5,7 @@ pub mod machine_config;
 pub mod welder_profile;
 pub mod clearcore_static_config;
 pub mod shared;
-mod clearcore_manual_control;
+pub mod clearcore_manual_control;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
@@ -13,6 +13,7 @@ pub use miller_info::MillerInfoTemplate;
 pub use machine_config::MachineConfigTemplate;
 pub use welder_profile::WelderProfileTemplate;
 pub use clearcore_static_config::ClearcoreConfigTemplate;
+pub use clearcore_manual_control::ManualControlTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]

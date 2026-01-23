@@ -7,8 +7,37 @@
   <div class="flex justify-between mb-6 gap-2">
     <h2 class="flex-1 text-2xl font-bold text-slate-700 align-middle my-auto">ClearCore Manual Control</h2>
   </div>
-  <div class="mb-1  px-auto flex justify-center" id="clearcore-manual-control-status-bar"></div>
-  <div>the content</div>
+  <div class="mb-1 px-auto flex justify-center" id="clearcore-manual-control-status-bar"></div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <!-- Home X Axis Button -->
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Home Axes</h3>
+      <button
+        hx-post="/clearcore-manual-control/home-axes"
+        hx-target="#home-axes-status"
+        hx-indicator="this"
+        hx-disabled-elt="this"
+        class="group w-full px-4 py-3 bg-blue-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold hover:bg-blue-700">
+        <span class="group-[.htmx-request]:hidden">Home all axes</span>
+        <span class="hidden group-[.htmx-request]:inline">Homing...</span>
+      </button>
+      <div id="home-axes-status" class="mt-2"></div>
+    </div>
+
+    <!-- X Position Display -->
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Position</h3>
+      <div
+        hx-get="/clearcore-manual-control/x-position"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
+        <span class="text-gray-400">Loading...</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="global-modal-layer"></div>

@@ -37,74 +37,80 @@ pub const HOME_LATCH: RegisterMetadata = RegisterMetadata {
     description: "Home latch",
 };
 
-pub const IS_HOMED: RegisterMetadata = RegisterMetadata {
+pub const IS_HOMING: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 12 },
+    name: "IS HOMING",
+    description: "Is currently homing",
+};
+
+pub const IS_HOMED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 13 },
     name: "IS HOMED",
     description: "Is homed",
 };
 
 pub const AT_START: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 13 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 14 },
     name: "AT START",
     description: "At start position",
 };
 
 pub const GO_TO_START_LATCH: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 14 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 15 },
     name: "GO TO START LATCH",
     description: "Go to start latch",
 };
 
 pub const JOB_ACTIVE: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 15 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 16 },
     name: "JOB ACTIVE",
     description: "Job is active",
 };
 
 pub const CANCEL_OPERATION_LATCH: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 16 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 17 },
     name: "CANCEL OPERATION LATCH",
     description: "Cancel operation latch",
 };
 
 pub const FORCE_ESTOP: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 17 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 18 },
     name: "FORCE ESTOP",
     description: "HMI commands estop",
 };
 
 pub const WELD_ENABLE: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 18 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 19 },
     name: "WELD ENABLE",
     description: "If false, it will be in sim mode",
 };
 
 pub const WELD_SIGNAL: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 19 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 20 },
     name: "WELD SIGNAL",
     description: "Weld signal",
 };
 
 pub const IN_ESTOP: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 20 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 21 },
     name: "IN ESTOP",
     description: "Currently in emergency stop",
 };
 
 pub const ERROR: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 21 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 22 },
     name: "ERROR",
     description: "Error state",
 };
 
 pub const COMMANDED_FF_LATCH: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 32 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 33 },
     name: "COMMANDED FF LATCH",
     description: "Commanded fast forward latch",
 };
 
 pub const COMMANDED_RF_LATCH: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 33 },
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 34 },
     name: "COMMANDED RF LATCH",
     description: "Commanded rewind/reverse latch",
 };

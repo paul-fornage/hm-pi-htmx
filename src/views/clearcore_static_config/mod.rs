@@ -280,9 +280,14 @@ pub async fn handle_apply_config(
     debug_targeted!(HTTP, "Saving clearcore config to disk");
 
     let config_applied_already = state.clearcore_configured.load(std::sync::atomic::Ordering::Acquire);
+    let cc_says_cfg_ready = state.clearcore_registers.read_coil(CONFIG_READY.address.address).await;
     if config_applied_already {
-        return FeedbackResult::new_err("Clearcore configuration can only be applied once per boot. \
-        Last save applied by default at startup.".to_string());
+        if matches!(cc_says_cfg_ready, Some(false)) {
+            log::warn!("Clearcore configuration already applied, but mb says it is not.");
+        } else {
+            return FeedbackResult::new_err("Clearcore configuration can only be applied once per boot. \
+                                            Last save applied by default at startup.".to_string());
+        }
     }
     match state.clearcore_registers.read_coil(CONFIG_READY.address.address).await {
         None => {

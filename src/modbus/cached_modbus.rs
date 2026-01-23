@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use crate::modbus::modbus_transaction_types::*;
 use crate::modbus::{ModbusAddressType, ModbusManager, ModbusState, ModbusValue, RegisterAddress};
 use crate::error::{HmPiError, Result};
-use crate::{debug_targeted, error_targeted};
+use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted};
 
 /// Defines a contiguous chunk of Modbus registers to be polled.
 #[derive(Debug)]
@@ -225,11 +225,6 @@ impl ModbusUpdater {
     /// - Err(Error::NotConnected) if manager is disconnected (cache is cleared).
     /// - Err(...) if the specific Modbus request failed.
     pub async fn update(&mut self) -> Result<()> {
-        if self.target.manager.get_connection_state().await? != ModbusState::Connected {
-            error_targeted!(MODBUS, "Modbus connection lost, clearing cache");
-            self.target.clear_cache().await;
-            return Err(HmPiError::NotConnected);
-        }
 
         if self.chunks.is_empty() {
             error_targeted!(MODBUS, "cahced modbus self.chunks.is_empty()!!!");
@@ -247,6 +242,51 @@ impl ModbusUpdater {
         self.cursor = (self.cursor + 1) % self.chunks.len();
 
         Ok(())
+    }
+
+    /// Spawn a background polling task that owns `updater`.
+    /// This does NOT track whether another polling task is already running.
+    pub fn into_polling_task(
+        mut self,
+        interval: std::time::Duration,
+        cache_clear_backoff: std::time::Duration,
+        name: &'static str,
+    ) -> tokio::task::JoinHandle<()> {
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(interval);
+
+            loop {
+                tick.tick().await;
+
+                let current_state = self
+                    .get_connection_state()
+                    .await
+                    .unwrap_or(ModbusState::Disconnected);
+
+                if current_state != ModbusState::Connected {
+                    self.clear_cache().await;
+                    tokio::time::sleep(cache_clear_backoff).await;
+                    continue;
+                }
+
+                match self.update().await {
+                    Ok(()) => {
+                        trace_targeted!(MODBUS, "Updated {name} registers");
+                    }
+                    Err(e) => {
+                        warn_targeted!(MODBUS, "Error updating {name} registers: {e:?}");
+                    }
+                }
+            }
+        })
+    }
+
+    pub async fn get_connection_state(&self) -> Result<ModbusState> {
+        self.target.manager.get_connection_state().await
+    }
+
+    pub async fn clear_cache(&self) {
+        self.target.clear_cache().await
     }
 
     /// Performs a single update cycle.
