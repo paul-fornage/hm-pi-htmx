@@ -37,15 +37,61 @@ impl ViewTemplate for ManualControlTemplate {
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreManualControl;
 }
 
+#[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-manual-control/homing-status.html")]
+pub struct HomingStatusTemplate {
+    is_homing: bool,
+    is_homed: bool,
+    error: Option<String>,
+}
+
 pub async fn show_manual_control() -> impl IntoResponse {
     ManualControlTemplate {}
 }
 
-pub async fn home_all_axes_handler(State(state): State<AppState>) -> FeedbackResult<String, String> {
-    home_all_axes(&state.clearcore_registers).await.into()
+pub async fn homing_status_handler(State(state): State<AppState>) -> impl IntoResponse {
+    match get_homing_status(&state.clearcore_registers).await {
+        Ok((is_homing, is_homed)) => HomingStatusTemplate {
+            is_homing,
+            is_homed,
+            error: None,
+        },
+        Err(error) => HomingStatusTemplate {
+            is_homing: false,
+            is_homed: false,
+            error: Some(error),
+        },
+    }
 }
 
-pub async fn home_all_axes(clearcore_registers: &CachedModbus) -> Result<String, String> {
+pub async fn home_all_axes_handler(State(state): State<AppState>) -> impl IntoResponse {
+    let action_result = home_all_axes(&state.clearcore_registers).await;
+    let status_result = get_homing_status(&state.clearcore_registers).await;
+    match (action_result, status_result) {
+        (Ok(()), Ok((_is_homing, is_homed))) => HomingStatusTemplate {
+            is_homing: true,
+            is_homed,
+            error: None,
+        },
+        (Ok(()), Err(_)) => HomingStatusTemplate {
+            is_homing: true,
+            is_homed: false,
+            error: None,
+        },
+        (Err(action_error), Ok((is_homing, is_homed))) => HomingStatusTemplate {
+            is_homing,
+            is_homed,
+            error: Some(action_error),
+        },
+        (Err(action_error), Err(_)) => HomingStatusTemplate {
+            is_homing: false,
+            is_homed: false,
+            error: Some(action_error),
+        },
+    }
+}
+
+pub async fn home_all_axes(clearcore_registers: &CachedModbus) -> Result<(), String> {
     let is_homing = clearcore_registers.read_coil(cc_regs::IS_HOMING.address.address).await;
     match is_homing {
         Some(false) => {},
@@ -60,7 +106,7 @@ pub async fn home_all_axes(clearcore_registers: &CachedModbus) -> Result<String,
     }
     clearcore_registers.write_coil(cc_regs::HOME_LATCH.address.address, true).await.map_err(|e| e.to_string())?;
 
-    Ok("Homing requested".into())
+    Ok(())
 }
 
 pub async fn get_x_position_handler(State(state): State<AppState>) -> FeedbackResult<String, String> {
@@ -76,6 +122,18 @@ pub async fn get_x_position(registers: &CachedModbus) -> Result<String, String> 
     } else {
         Err("Clearcore is not homed".into())
     }
+}
+
+async fn get_homing_status(registers: &CachedModbus) -> Result<(bool, bool), String> {
+    let is_homing = registers
+        .read_coil(cc_regs::IS_HOMING.address.address)
+        .await
+        .ok_or_else(|| "Error reading homing status".to_string())?;
+    let is_homed = registers
+        .read_coil(cc_regs::IS_HOMED.address.address)
+        .await
+        .ok_or_else(|| "Error reading homed status".to_string())?;
+    Ok((is_homing, is_homed))
 }
 
 

@@ -30,7 +30,7 @@ use crate::views::machine_config::{save_machine_config, show_machine_config};
 use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
 use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
 use crate::views::clearcore_static_config::{self, handle_apply_config, handle_load_config, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
-use crate::views::clearcore_manual_control::{show_manual_control, get_x_position_handler, home_all_axes_handler};
+use crate::views::clearcore_manual_control::{show_manual_control, get_x_position_handler, home_all_axes_handler, homing_status_handler};
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
@@ -304,6 +304,7 @@ async fn main() {
 
         // --- ClearCore Manual Control Component Routes ---
         .route("/clearcore-manual-control/home-axes", post(home_all_axes_handler))
+        .route("/clearcore-manual-control/homing-status", get(homing_status_handler))
         .route("/clearcore-manual-control/x-position", get(get_x_position_handler))
 
         // --- Machine Config Routes ---
