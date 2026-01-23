@@ -229,12 +229,21 @@ pub const SERIAL_NUMBER_HIGH: RegisterMetadata = RegisterMetadata {
 // HOLDING REGISTERS
 // ============================================================================
 
-pub const CURRENT_POSITION: RegisterMetadata = RegisterMetadata {
+pub const X_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 8 },
-    name: "CURRENT POSITION",
+    name: "X AXIS POSITION",
     description: "Current position of carriage (hundredths of an inch)",
 };
-
+pub const Y_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 9 },
+    name: "Y AXIS POSITION",
+    description: "Current position of carriage (hundredths of an inch)",
+};
+pub const Z_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 10 },
+    name: "Z AXIS POSITION",
+    description: "Current position of carriage (hundredths of an inch)",
+};
 pub const CYCLE_START_POS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 13 },
     name: "CYCLE START POS",
@@ -505,7 +514,9 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     FORGOR,
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
-    CURRENT_POSITION,
+    X_AXIS_POSITION,
+    Y_AXIS_POSITION,
+    Z_AXIS_POSITION,
     CYCLE_START_POS,
     CYCLE_END_POS,
     CYCLE_PARK_POS,

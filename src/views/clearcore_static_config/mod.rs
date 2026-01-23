@@ -274,6 +274,40 @@ pub async fn handle_save_config(
     }
 }
 
+pub async fn handle_load_config(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    debug_targeted!(HTTP, "Loading clearcore config from disk");
+
+    let config = match ClearcoreConfig::load_config().await {
+        Ok(Some(config)) => config,
+        Ok(None) => {
+            return FeedbackResult::new_err("No clearcore configuration found on disk".to_string());
+        }
+        Err(e) => {
+            error_targeted!(FS, "Failed to load clearcore config from disk: {}", e);
+            return FeedbackResult::new_err(e.to_string());
+        }
+    };
+
+    match state.clearcore_registers.read_coil(CONFIG_READY.address.address).await {
+        None => {
+            error_targeted!(MODBUS, "Failed to read config ready status from modbus");
+            FeedbackResult::new_err("Failed to read config ready status from modbus".to_string())
+        }
+        Some(true) => {
+            FeedbackResult::new_err("Clearcore reports configuration already loaded".to_string())
+        }
+        Some(false) => match config.write_to_modbus(&state.clearcore_registers).await {
+            Ok(_) => FeedbackResult::new_ok("Config loaded from disk".to_string()),
+            Err(e) => {
+                error_targeted!(MODBUS, "Failed to load config to modbus: {}", e);
+                FeedbackResult::new_err(e.to_string())
+            }
+        },
+    }
+}
+
 pub async fn handle_apply_config(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {

@@ -29,7 +29,7 @@ use crate::views::miller_info::{register_details_modal, show_miller_info, show_m
 use crate::views::machine_config::{save_machine_config, show_machine_config};
 use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
 use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
-use crate::views::clearcore_static_config::{self, handle_apply_config, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
+use crate::views::clearcore_static_config::{self, handle_apply_config, handle_load_config, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
 use crate::views::clearcore_manual_control::{show_manual_control, get_x_position_handler, home_all_axes_handler};
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
@@ -299,6 +299,7 @@ async fn main() {
         .route("/clearcore-config/edit/{register_name}", get(clearcore_static_config::show_edit_modal))
         .route("/clearcore-config/write/{register_name}", post(clearcore_static_config::submit_register_write))
         .route("/clearcore-config/save", get(handle_save_config))
+        .route("/clearcore-config/load", get(handle_load_config))
         .route("/clearcore-config/apply", get(handle_apply_config))
 
         // --- ClearCore Manual Control Component Routes ---

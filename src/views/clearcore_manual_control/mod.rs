@@ -70,7 +70,7 @@ pub async fn get_x_position_handler(State(state): State<AppState>) -> FeedbackRe
 pub async fn get_x_position(registers: &CachedModbus) -> Result<String, String> {
     let is_homed = read_bool(registers, &cc_regs::IS_HOMED.address).await?;
     if is_homed {
-        let position_hundredths = read_u16(registers, &cc_regs::CURRENT_POSITION.address).await?;
+        let position_hundredths = read_u16(registers, &cc_regs::X_AXIS_POSITION.address).await?;
         let position_inches = position_hundredths as f64 / 100.0;
         Ok(format!("{:.2} in", position_inches))
     } else {
