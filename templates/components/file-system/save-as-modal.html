@@ -15,7 +15,7 @@
             </button>
         </div>
 
-        <form hx-post="/welder-profile/fs/save_as/submit"
+        <form hx-post="{{ base_url }}/fs/save_as/submit"
               hx-target="#profile-fs-op-status"
               class="flex flex-col flex-1 min-h-0">
 
@@ -31,7 +31,7 @@
                             name="name"
                             value="{% if let Some(name) = current_name %}{{ name }}{% endif %}"
                             required
-                            hx-get="/welder-profile/fs/save_as/search"
+                            hx-get="{{ base_url }}/fs/save_as/search"
                             hx-trigger="keyup changed delay:200ms"
                             hx-target="#save-as-profile-list"
                             hx-include="this"

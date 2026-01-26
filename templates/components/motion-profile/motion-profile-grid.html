@@ -1,0 +1,8 @@
+<div class="flex flex-wrap gap-4 justify-center">
+    {% for reg in boolean_registers %}
+    {{ reg|safe }}
+    {% endfor %}
+    {% for reg in analog_registers %}
+    {{ reg|safe }}
+    {% endfor %}
+</div>

@@ -5,21 +5,30 @@ use serde::Deserialize;
 
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use super::file_operations;
-use super::weld_profile::WeldProfile;
-use super::raw_weld_profile::RawWeldProfile;
-use super::file_system_templates::{SaveAsModalTemplate, SaveAsProfileListTemplate, LoadModalTemplate, LoadPreviewTemplate, LoadProfileListTemplate, ProfileFsOpResult, LoadPreviewWindow, ProfileDeleteTemplate};
-
+use super::motion_profile::MotionProfile;
+use super::raw_motion_profile::RawMotionProfile;
+use super::file_system_templates::{
+    SaveAsModalTemplate,
+    SaveAsProfileListTemplate,
+    LoadModalTemplate,
+    LoadPreviewTemplate,
+    LoadProfileListTemplate,
+    ProfileFsOpResult,
+    LoadPreviewWindow,
+    ProfileDeleteTemplate,
+};
+use super::BASE_URL;
 
 pub async fn handle_save(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Save profile requested");
+    debug_targeted!(HTTP, "Save motion profile requested");
 
-    let metadata = state.weld_profile_metadata.lock().await;
+    let metadata = state.motion_profile_metadata.lock().await;
     let profile_name = match &metadata.name {
         Some(name) => name.clone(),
         None => {
-            warn_targeted!(HTTP, "Cannot save profile: no name set");
+            warn_targeted!(HTTP, "Cannot save motion profile: no name set");
             return ProfileFsOpResult::new_err_str("No profile name set".to_string());
         }
     };
@@ -27,23 +36,23 @@ pub async fn handle_save(
     let description = metadata.description.clone().unwrap_or_default();
     drop(metadata);
 
-    let raw_profile = match RawWeldProfile::capture_from_memory(&state.miller_registers).await {
+    let raw_profile = match RawMotionProfile::capture_from_memory(&state.clearcore_registers).await {
         Ok(profile) => profile,
         Err(e) => {
             error_targeted!(HTTP, "Failed to capture profile from memory: {}", e);
-            return ProfileFsOpResult::new_err_str("Failed to read from welder!".to_string());
+            return ProfileFsOpResult::new_err_str("Failed to read from controller!".to_string());
         }
     };
 
-    let profile = WeldProfile::new(profile_name.clone(), description, raw_profile);
+    let profile = MotionProfile::new(profile_name.clone(), description, raw_profile);
 
     match file_operations::save_profile(&profile).await {
         Ok(_) => {
-            info_targeted!(HTTP, "Successfully saved profile as: {}", profile_name);
+            info_targeted!(HTTP, "Successfully saved motion profile as: {}", profile_name);
             ProfileFsOpResult::new_ok_str(format!("Saved as {}", profile_name))
         }
         Err(e) => {
-            error_targeted!(HTTP, "Failed to save profile {}: {}", profile_name, e);
+            error_targeted!(HTTP, "Failed to save motion profile {}: {}", profile_name, e);
             ProfileFsOpResult::new_err_str("Failed to save!".to_string())
         }
     }
@@ -52,7 +61,7 @@ pub async fn handle_save(
 pub async fn handle_save_as_modal(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Save As modal requested");
+    debug_targeted!(HTTP, "Motion profile save-as modal requested");
 
     let profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
@@ -67,15 +76,15 @@ pub async fn handle_save_as_modal(
         }
     };
 
-    let metadata = state.weld_profile_metadata.lock().await;
+    let metadata = state.motion_profile_metadata.lock().await;
     let current_name = metadata.name.clone();
     drop(metadata);
 
-            Ok(SaveAsModalTemplate {
-                base_url: super::BASE_URL,
-                current_name,
-                profiles,
-            })
+    Ok(SaveAsModalTemplate {
+        base_url: BASE_URL,
+        current_name,
+        profiles,
+    })
 }
 
 #[derive(Deserialize)]
@@ -91,7 +100,7 @@ pub struct LoadListQuery {
 pub async fn handle_save_as_search(
     Query(query): Query<SearchQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Save As search requested: {}", query.name);
+    debug_targeted!(HTTP, "Motion profile save-as search requested: {}", query.name);
 
     let all_profiles = match file_operations::list_profiles().await {
         Ok(list) => list,
@@ -123,12 +132,12 @@ pub async fn handle_save_as_submit(
     axum::extract::State(state): axum::extract::State<AppState>,
     Form(form): Form<SaveAsForm>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Save As submit requested: {}", form.name);
+    debug_targeted!(HTTP, "Motion profile save-as submit requested: {}", form.name);
 
     let name = form.name.trim().to_string();
 
     if name.is_empty() {
-        warn_targeted!(HTTP, "Cannot save profile: empty name");
+        warn_targeted!(HTTP, "Cannot save motion profile: empty name");
         return ProfileFsOpResult {
             result: Err("Profile name cannot be empty".to_string()),
             close_modal: true,
@@ -137,11 +146,11 @@ pub async fn handle_save_as_submit(
         }
     }
 
-    let metadata = state.weld_profile_metadata.lock().await;
+    let metadata = state.motion_profile_metadata.lock().await;
     let description = metadata.description.clone().unwrap_or_default();
     drop(metadata);
 
-    let raw_profile = match RawWeldProfile::capture_from_memory(&state.miller_registers).await {
+    let raw_profile = match RawMotionProfile::capture_from_memory(&state.clearcore_registers).await {
         Ok(profile) => profile,
         Err(e) => {
             error_targeted!(HTTP, "Failed to capture profile from memory: {}", e);
@@ -154,13 +163,13 @@ pub async fn handle_save_as_submit(
         }
     };
 
-    let profile = WeldProfile::new(name.clone(), description, raw_profile);
+    let profile = MotionProfile::new(name.clone(), description, raw_profile);
 
     match file_operations::save_profile(&profile).await {
         Ok(_) => {
-            info_targeted!(HTTP, "Successfully saved profile as: {}", name);
+            info_targeted!(HTTP, "Successfully saved motion profile as: {}", name);
 
-            let mut metadata = state.weld_profile_metadata.lock().await;
+            let mut metadata = state.motion_profile_metadata.lock().await;
             metadata.set_name(name.clone());
             drop(metadata);
 
@@ -172,7 +181,7 @@ pub async fn handle_save_as_submit(
             }
         }
         Err(e) => {
-            error_targeted!(HTTP, "Failed to save profile {}: {}", name, e);
+            error_targeted!(HTTP, "Failed to save motion profile {}: {}", name, e);
             ProfileFsOpResult {
                 result: Ok(format!("Saved as {}", name)),
                 close_modal: true,
@@ -184,8 +193,8 @@ pub async fn handle_save_as_submit(
 }
 
 pub async fn handle_load_modal() -> impl IntoResponse {
-    debug_targeted!(HTTP, "Load modal requested");
-    LoadModalTemplate { base_url: super::BASE_URL }
+    debug_targeted!(HTTP, "Motion profile load modal requested");
+    LoadModalTemplate { base_url: BASE_URL }
 }
 
 #[derive(Deserialize)]
@@ -193,16 +202,15 @@ pub struct LoadPreviewQuery {
     name: String,
 }
 
-
 pub async fn handle_load_preview(
     Query(query): Query<LoadPreviewQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Load preview requested: {}", query.name);
+    debug_targeted!(HTTP, "Motion profile load preview requested: {}", query.name);
 
     match file_operations::load_profile(&query.name).await {
         Ok(p) => {
             LoadPreviewTemplate {
-                base_url: super::BASE_URL,
+                base_url: BASE_URL,
                 result: Ok(LoadPreviewWindow {
                     name: p.name.clone(),
                     description: p.description.clone(),
@@ -212,7 +220,7 @@ pub async fn handle_load_preview(
         Err(e) => {
             error_targeted!(HTTP, "Failed to load profile {}: {}", query.name, e);
             LoadPreviewTemplate {
-                base_url: super::BASE_URL,
+                base_url: BASE_URL,
                 result: Err("Failed to load profile".to_string()),
             }
 
@@ -229,7 +237,7 @@ pub async fn handle_load_apply(
     axum::extract::State(state): axum::extract::State<AppState>,
     Query(query): Query<LoadApplyQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Load apply requested: {}", query.name);
+    debug_targeted!(HTTP, "Motion profile load apply requested: {}", query.name);
 
     let profile = match file_operations::load_profile(&query.name).await {
         Ok(p) => p,
@@ -244,10 +252,10 @@ pub async fn handle_load_apply(
         }
     };
 
-    if let Err(e) = profile.raw_profile.apply_to_memory(&state.miller_registers).await {
+    if let Err(e) = profile.raw_profile.apply_to_memory(&state.clearcore_registers).await {
         error_targeted!(HTTP, "Failed to apply profile {} to memory: {}", query.name, e);
         return ProfileFsOpResult {
-            result: Err("Failed to apply profile to welder!".to_string()),
+            result: Err("Failed to apply profile to controller!".to_string()),
             close_modal: true,
             reload_metadata: true,
             retarget: None,
@@ -256,12 +264,12 @@ pub async fn handle_load_apply(
 
     let profile_name = profile.name.clone();
 
-    let mut metadata = state.weld_profile_metadata.lock().await;
+    let mut metadata = state.motion_profile_metadata.lock().await;
     metadata.set_name(profile.name);
     metadata.set_description(profile.description);
     drop(metadata);
 
-    info_targeted!(HTTP, "Successfully loaded profile: {}", profile_name);
+    info_targeted!(HTTP, "Successfully loaded motion profile: {}", profile_name);
 
     ProfileFsOpResult {
         result: Ok(format!("Loaded {}", profile_name)),
@@ -271,11 +279,10 @@ pub async fn handle_load_apply(
     }
 }
 
-
 pub async fn handle_get_profile_list(
     Query(query): Query<LoadListQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Reloading profile list partial with search: {:?}", query.search);
+    debug_targeted!(HTTP, "Reloading motion profile list with search: {:?}", query.search);
 
     let result = match file_operations::list_profiles().await {
         Ok(all_profiles) => {
@@ -300,9 +307,8 @@ pub async fn handle_get_profile_list(
         }
     };
 
-    LoadProfileListTemplate { base_url: super::BASE_URL, result }
+    LoadProfileListTemplate { base_url: BASE_URL, result }
 }
-
 
 #[derive(Deserialize)]
 pub struct DeleteProfileQuery {
@@ -312,20 +318,20 @@ pub struct DeleteProfileQuery {
 pub async fn handle_delete_profile_confirm(
     Query(query): Query<DeleteProfileQuery>,
 ) -> impl IntoResponse {
-    debug_targeted!(HTTP, "Delete confirmed for: {}", query.name);
+    debug_targeted!(HTTP, "Delete confirmed for motion profile: {}", query.name);
 
     let result = file_operations::delete_profile(&query.name).await;
 
     match result {
         Ok(()) => {
-            info_targeted!(HTTP, "Successfully deleted profile: {}", query.name);
+            info_targeted!(HTTP, "Successfully deleted motion profile: {}", query.name);
             ProfileDeleteTemplate {
                 name: query.name,
                 result: Ok(()),
             }
         }
         Err(e) => {
-            error_targeted!(HTTP, "Failed to delete profile {}: {}", query.name, e);
+            error_targeted!(HTTP, "Failed to delete motion profile {}: {}", query.name, e);
             ProfileDeleteTemplate {
                 name: query.name,
                 result: Err(e.to_string()),

@@ -33,6 +33,7 @@ pub struct AppState {
     pub miller_registers: CachedModbus,
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
+    pub motion_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::motion_profile::profile_metadata::MotionProfileMetadata>>,
     /// Not really an atomic sync flag or something, just cheaper than a mutex
     pub clearcore_configured: std::sync::Arc<AtomicBool>,
 }
@@ -223,6 +224,9 @@ async fn main() {
     let weld_profile_metadata = std::sync::Arc::new(tokio::sync::Mutex::new(
         views::welder_profile::profile_metadata::WeldProfileMetadata::new()
     ));
+    let motion_profile_metadata = std::sync::Arc::new(tokio::sync::Mutex::new(
+        views::motion_profile::profile_metadata::MotionProfileMetadata::new()
+    ));
 
     // Initialize state with the managers
     let state = AppState {
@@ -230,6 +234,7 @@ async fn main() {
         miller_registers,
         machine_config,
         weld_profile_metadata,
+        motion_profile_metadata,
         clearcore_configured,
     };
 

@@ -7,7 +7,7 @@ pub mod file_operations;
 pub mod file_system_handlers;
 pub mod file_system_templates;
 pub mod special_case_registers;
-mod description_edit_modal;
+pub mod description_edit_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
@@ -211,6 +211,7 @@ pub async fn show_profile_metadata(
 ) -> impl IntoResponse {
     let metadata_lock = state.weld_profile_metadata.lock().await;
     ProfileMetadataDisplayTemplate {
+        base_url: BASE_URL,
         name: metadata_lock.name.clone(),
         description: metadata_lock.description.clone(),
     }
@@ -225,6 +226,7 @@ pub async fn show_description_edit_modal(
     let current_description = metadata_lock.description.clone();
 
     DescriptionEditModalTemplate {
+        base_url: BASE_URL,
         current_description,
     }
 }
@@ -244,6 +246,7 @@ pub async fn update_description(
     }
 
     let response = ProfileMetadataDisplayTemplate {
+        base_url: BASE_URL,
         name: metadata_lock.name.clone(),
         description: metadata_lock.description.clone(),
     };
@@ -468,6 +471,7 @@ pub struct WelderProfileGridTemplate {
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-profile/profile-metadata-display.html")]
 pub struct ProfileMetadataDisplayTemplate {
+    pub base_url: &'static str,
     pub name: Option<String>,
     pub description: Option<String>,
 }

@@ -3,9 +3,10 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::response::IntoResponse;
 use serde_json::json;
-use super::weld_profile::ProfileListEntry;
 use axum::http::{HeaderMap, HeaderValue};
+
 use crate::error_targeted;
+use super::motion_profile::ProfileListEntry;
 
 pub struct HxTrigger {
     pub event: &'static str,
@@ -51,9 +52,9 @@ pub struct ProfileFsOpResult<E: Display> {
     pub retarget: Option<&'static str>,
 }
 impl<E: Display> ProfileFsOpResult<E> {
-    
+
     pub const DEFAULT_TARGET: &'static str = "#profile-fs-op-status";
-    
+
     pub fn new_ok_str(ok_string: String) -> Self {
         Self {
             result: Ok(ok_string),
@@ -62,7 +63,7 @@ impl<E: Display> ProfileFsOpResult<E> {
             retarget: None,
         }
     }
-    
+
 }
 impl ProfileFsOpResult<String>{
     pub fn new_err_str(err_string: String) -> Self {
@@ -77,7 +78,6 @@ impl ProfileFsOpResult<String>{
 
 impl<E: Display> IntoResponse for ProfileFsOpResult<E> {
     fn into_response(self) -> axum::response::Response {
-        // 1. Prepare Headers
         let mut headers = HeaderMap::new();
         let mut targets = Vec::with_capacity(2);
 
@@ -97,11 +97,10 @@ impl<E: Display> IntoResponse for ProfileFsOpResult<E> {
                 }
             }
         }
-        
+
         if let Some(target) = self.retarget {
             headers.insert("HX-Retarget", HeaderValue::from_static(target));
         }
-
 
         match self.render() {
             Ok(html_string) => {
@@ -118,7 +117,6 @@ impl<E: Display> IntoResponse for ProfileFsOpResult<E> {
         }
     }
 }
-
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/file-system/save-as-modal.html")]
@@ -159,15 +157,12 @@ pub struct LoadPreviewWindow {
     pub description: String,
 }
 
-
 #[derive(Template)]
 #[template(path = "components/file-system/delete-profile-feedback.html")]
 pub struct ProfileDeleteTemplate {
     pub name: String,
     pub result: Result<(), String>,
 }
-
-
 
 impl IntoResponse for ProfileDeleteTemplate {
     fn into_response(self) -> axum::response::Response {

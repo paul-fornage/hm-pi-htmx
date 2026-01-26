@@ -12,7 +12,7 @@
                     class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
         </div>
 
-        <form hx-post="/welder-profile/update-description"
+        <form hx-post="{{ base_url }}/update-description"
               hx-target="#profile-metadata"
               hx-swap="innerHTML"
               onsubmit="setTimeout(() => document.getElementById('global-modal-layer').innerHTML = '', 100)">

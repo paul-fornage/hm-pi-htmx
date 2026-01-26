@@ -25,7 +25,7 @@
                         name="search"
                         placeholder="Search profiles..."
                         class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        hx-get="/welder-profile/fs/load/list"
+                        hx-get="{{ base_url }}/fs/load/list"
                         hx-trigger="keyup changed delay:500ms, search"
                         hx-target="#load-profile-list"
                         hx-include="this"
@@ -33,7 +33,7 @@
                 </div>
                 <div id="load-profile-list"
                      class="flex-1 overflow-y-auto"
-                     hx-get="/welder-profile/fs/load/list"
+                     hx-get="{{ base_url }}/fs/load/list"
                      hx-trigger="load">
                 </div>
             </div>
@@ -56,7 +56,7 @@
 document.addEventListener('reload-profile-list', function() {
     const searchInput = document.getElementById('load-search-input');
     const searchValue = searchInput ? searchInput.value : '';
-    const url = '/welder-profile/fs/load/list' + (searchValue ? '?search=' + encodeURIComponent(searchValue) : '');
+    const url = '{{ base_url }}/fs/load/list' + (searchValue ? '?search=' + encodeURIComponent(searchValue) : '');
 
     htmx.ajax('GET', url, {
         target: '#load-profile-list',
