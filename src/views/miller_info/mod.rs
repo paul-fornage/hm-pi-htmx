@@ -28,7 +28,7 @@ pub fn routes() -> Router<AppState> {
     let page = AppView::MillerInfo;
     Router::new()
         .route(page.url(), get(show_miller_info))
-        .route(&page.url_with_path("/miller-info/grid"), get(show_miller_info_grid))
+        .route(&page.url_with_path("/grid"), get(show_miller_info_grid))
         .route(&page.url_with_path("/ui/modal/{register_name}"), get(register_details_modal::modal_handler))
 }
 

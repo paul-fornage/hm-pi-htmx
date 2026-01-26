@@ -3,10 +3,11 @@ use crate::modbus::{ModbusAddressType, RegisterAddress, RegisterMetadata};
 use crate::modbus::cached_modbus::ModbusChunk;
 
 pub const CLEARCORE_CHUNKS: &'static[ModbusChunk] = &[
-    ModbusChunk::Coils{address: 0, count: 68},
-    ModbusChunk::DiscreteInputs{address: 0, count: 1},
-    ModbusChunk::InputRegisters{address: 0, count: 2},
-    ModbusChunk::HoldingRegisters{address: 0, count: 86},
+    ModbusChunk::Coils{address: 0, count: 128},
+    ModbusChunk::DiscreteInputs{address: 0, count: 8},
+    ModbusChunk::InputRegisters{address: 0, count: 8},
+    ModbusChunk::HoldingRegisters{address: 0, count: 64},
+    ModbusChunk::HoldingRegisters{address: 64, count: 64},
 ];
 
 // ============================================================================
@@ -197,6 +198,42 @@ pub const USES_W_AXIS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 67 },
     name: "USES W AXIS",
     description: "Machine uses W axis",
+};
+
+pub const X_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 68 },
+    name: "X AXIS GO TO POSITION LATCH",
+    description: "Latch to command X axis go to position",
+};
+
+pub const Y_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 69 },
+    name: "Y AXIS GO TO POSITION LATCH",
+    description: "Latch to command Y axis go to position",
+};
+
+pub const Z_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 70 },
+    name: "Z AXIS GO TO POSITION LATCH",
+    description: "Latch to command Z axis go to position",
+};
+
+pub const X_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 71 },
+    name: "X AXIS IS HOMED",
+    description: "True when X axis is homed",
+};
+
+pub const Y_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 72 },
+    name: "Y AXIS IS HOMED",
+    description: "True when Y axis is homed",
+};
+
+pub const Z_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 73 },
+    name: "Z AXIS IS HOMED",
+    description: "True when Z axis is homed",
 };
 
 // ============================================================================
@@ -478,6 +515,23 @@ pub const MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = 
     description: "Maximum acceleration for W axis (hundredths of an inch per minute per second)",
 };
 
+pub const X_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 96 },
+    name: "X AXIS GO TO POSITION",
+    description: "Target position for X axis go-to command (hundredths of an inch)",
+};
+
+pub const Y_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 97 },
+    name: "Y AXIS GO TO POSITION",
+    description: "Target position for Y axis go-to command (hundredths of an inch)",
+};
+
+pub const Z_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 98 },
+    name: "Z AXIS GO TO POSITION",
+    description: "Target position for Z axis go-to command (hundredths of an inch)",
+};
 
 
 pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
@@ -511,6 +565,12 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     USES_Y_AXIS,
     USES_Z_AXIS,
     USES_W_AXIS,
+    X_AXIS_GO_TO_POSITION_LATCH,
+    Y_AXIS_GO_TO_POSITION_LATCH,
+    Z_AXIS_GO_TO_POSITION_LATCH,
+    X_AXIS_IS_HOMED,
+    Y_AXIS_IS_HOMED,
+    Z_AXIS_IS_HOMED,
     FORGOR,
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
@@ -556,6 +616,9 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     MAX_ACCEL_Z_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND,
     MAX_VEL_W_AXIS_HUNDREDTHS_PER_MINUTE,
     MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND,
+    X_AXIS_GO_TO_POSITION,
+    Y_AXIS_GO_TO_POSITION,
+    Z_AXIS_GO_TO_POSITION,
 ];
 
 

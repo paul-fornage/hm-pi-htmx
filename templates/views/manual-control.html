@@ -9,7 +9,7 @@
   </div>
   <div class="mb-1 px-auto flex justify-center" id="clearcore-manual-control-status-bar"></div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
     <!-- Home X Axis Button -->
     <div class="bg-white p-4 rounded-lg shadow">
       <div
@@ -34,6 +34,244 @@
         class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
         <span class="text-gray-400">Loading...</span>
       </div>
+    </div>
+
+    <!-- Y Position Display -->
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Position</h3>
+      <div
+        hx-get="/clearcore-manual-control/y-position"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
+        <span class="text-gray-400">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Z Position Display -->
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Position</h3>
+      <div
+        hx-get="/clearcore-manual-control/z-position"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
+        <span class="text-gray-400">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Axis Jog</h3>
+      <div
+        hx-get="/clearcore-manual-control/jog-speed-display/x"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="mb-3">
+        <span class="text-gray-400 text-sm">Loading...</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/x/negative"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-x"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Left
+        </button>
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/x/positive"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-x"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Right
+        </button>
+      </div>
+      <div id="jog-feedback-x" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Axis Jog</h3>
+      <div
+        hx-get="/clearcore-manual-control/jog-speed-display/y"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="mb-3">
+        <span class="text-gray-400 text-sm">Loading...</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/y/negative"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-y"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Left
+        </button>
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/y/positive"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-y"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Right
+        </button>
+      </div>
+      <div id="jog-feedback-y" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Axis Jog</h3>
+      <div
+        hx-get="/clearcore-manual-control/jog-speed-display/z"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="mb-3">
+        <span class="text-gray-400 text-sm">Loading...</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/z/negative"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-z"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Left
+        </button>
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/z/positive"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-z"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Right
+        </button>
+      </div>
+      <div id="jog-feedback-z" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">W Axis Jog</h3>
+      <div
+        hx-get="/clearcore-manual-control/jog-speed-display/w"
+        hx-trigger="load, every 1s"
+        hx-target="this"
+        hx-swap="innerHTML"
+        class="mb-3">
+        <span class="text-gray-400 text-sm">Loading...</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/w/negative"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-w"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Left
+        </button>
+        <button
+          type="button"
+          hx-post="/clearcore-manual-control/jog/w/positive"
+          hx-trigger="mousedown touchstart"
+          hx-vals='{"active": true}'
+          hx-target="#jog-feedback-w"
+          hx-swap="innerHTML"
+          hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
+          hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
+          class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
+          Right
+        </button>
+      </div>
+      <div id="jog-feedback-w" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Axis</h3>
+      <button
+        hx-get="/clearcore-manual-control/go-to-position/x"
+        hx-target="#global-modal-layer"
+        hx-swap="innerHTML"
+        class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
+        Jog to exact position
+      </button>
+      <div id="go-to-position-feedback-x" class="mt-2 text-sm font-semibold"></div>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Axis</h3>
+      <button
+        hx-get="/clearcore-manual-control/go-to-position/y"
+        hx-target="#global-modal-layer"
+        hx-swap="innerHTML"
+        class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
+        Jog to exact position
+      </button>
+      <div id="go-to-position-feedback-y" class="mt-2 text-sm font-semibold"></div>
+    </div>
+
+    <div class="bg-white p-4 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Axis</h3>
+      <button
+        hx-get="/clearcore-manual-control/go-to-position/z"
+        hx-target="#global-modal-layer"
+        hx-swap="innerHTML"
+        class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
+        Jog to exact position
+      </button>
+      <div id="go-to-position-feedback-z" class="mt-2 text-sm font-semibold"></div>
     </div>
   </div>
 </div>
