@@ -10,6 +10,8 @@ pub mod version_info;
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::response::IntoResponse;
+use axum::routing::{delete, get, post};
+use axum::{Form, Router};
 use log::{error, warn};
 use crate::views::{AppView, ViewTemplate};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
@@ -21,6 +23,14 @@ use futures::future::join_all;
 use num_enum::FromPrimitive;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
+
+pub fn routes() -> Router<AppState> {
+    let page = AppView::MillerInfo;
+    Router::new()
+        .route(page.url(), get(show_miller_info))
+        .route(&page.url_with_path("/miller-info/grid"), get(show_miller_info_grid))
+        .route(&page.url_with_path("/ui/modal/{register_name}"), get(register_details_modal::modal_handler))
+}
 
 async fn mb_read_helper(state: &AppState,address: &RegisterAddress) -> Option<ModbusValue>{
     match tokio::time::timeout(READ_TIMEOUT_DURATION,
@@ -275,5 +285,4 @@ pub struct MillerInfoGridTemplate {
     pub error_list: error_list::ErrorListTemplate,
     pub version_info: version_info::VersionInfoTemplate,
 }
-
 

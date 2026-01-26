@@ -1,6 +1,6 @@
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::{extract::State, response::{IntoResponse, Response}, Form};
+use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
 use crate::views::{AppView, ViewTemplate};
 use crate::{AppState, info_targeted, error_targeted};
 use crate::logging::LogTarget;
@@ -15,6 +15,12 @@ pub struct MachineConfigTemplate {
 
 impl ViewTemplate for MachineConfigTemplate {
     const APP_VIEW_VARIANT: AppView = AppView::MachineConfig;
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route(AppView::MachineConfig.url(), get(show_machine_config))
+        .route("/machine-config/save", post(save_machine_config))
 }
 
 #[derive(Template)]

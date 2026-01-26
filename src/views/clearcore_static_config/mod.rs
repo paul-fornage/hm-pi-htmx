@@ -7,7 +7,8 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::Path;
 use axum::response::{Html, IntoResponse};
-use axum::Form;
+use axum::routing::{get, post};
+use axum::{Form, Router};
 use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
 use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
@@ -24,6 +25,17 @@ use crate::views::shared::register_view::EditableDwordAnalogRegister;
 use crate::views::shared::result_feedback::FeedbackResult;
 
 const BASE_URL: &str = "/clearcore-config";
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route(AppView::ClearcoreConfig.url(), get(show_clearcore_config))
+        .route("/clearcore-config/grid", get(show_clearcore_config_grid))
+        .route("/clearcore-config/edit/{register_name}", get(show_edit_modal))
+        .route("/clearcore-config/write/{register_name}", post(submit_register_write))
+        .route("/clearcore-config/save", get(handle_save_config))
+        .route("/clearcore-config/load", get(handle_load_config))
+        .route("/clearcore-config/apply", get(handle_apply_config))
+}
 
 const CLEARCORE_STATIC_CONFIG_COILS: &[BooleanRegisterInfo] = &[
     BooleanRegisterInfo::new_default(&USES_Y_AXIS),

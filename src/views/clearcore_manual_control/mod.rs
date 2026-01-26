@@ -2,6 +2,8 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
 use axum::response::IntoResponse;
+use axum::routing::{get, post};
+use axum::Router;
 use crate::AppState;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
@@ -35,6 +37,14 @@ macro_rules! read_or_bail {
 pub struct ManualControlTemplate {}
 impl ViewTemplate for ManualControlTemplate {
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreManualControl;
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .route(AppView::ClearcoreManualControl.url(), get(show_manual_control))
+        .route("/clearcore-manual-control/home-axes", post(home_all_axes_handler))
+        .route("/clearcore-manual-control/homing-status", get(homing_status_handler))
+        .route("/clearcore-manual-control/x-position", get(get_x_position_handler))
 }
 
 #[derive(Template, WebTemplate)]

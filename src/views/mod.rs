@@ -3,15 +3,20 @@ mod operations;
 pub mod miller_info;
 pub mod machine_config;
 pub mod welder_profile;
+pub mod motion_profile;
 pub mod clearcore_static_config;
 pub mod shared;
 pub mod clearcore_manual_control;
+
+use axum::Router;
+use crate::AppState;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
 pub use miller_info::MillerInfoTemplate;
 pub use machine_config::MachineConfigTemplate;
 pub use welder_profile::WelderProfileTemplate;
+pub use motion_profile::MotionProfileTemplate;
 pub use clearcore_static_config::ClearcoreConfigTemplate;
 pub use clearcore_manual_control::ManualControlTemplate;
 
@@ -23,6 +28,7 @@ pub enum AppView {
     Connections,
     MachineConfig,
     WelderProfile,
+    MotionProfile,
     ClearcoreConfig,
     ClearcoreManualControl,
 }
@@ -33,6 +39,7 @@ impl AppView {
         &[
             AppView::ClearcoreManualControl,
             AppView::WelderProfile,
+            AppView::MotionProfile,
             AppView::ClearcoreConfig,
             AppView::MillerInfo,
             AppView::Connections,
@@ -48,6 +55,7 @@ impl AppView {
             AppView::Connections => "Connections",
             AppView::MachineConfig => "Config",
             AppView::WelderProfile => "Welder Profile",
+            AppView::MotionProfile => "Motion Profile",
             AppView::ClearcoreConfig => "ClearCore Config",
             AppView::ClearcoreManualControl => "Manual Control",
         }
@@ -61,9 +69,14 @@ impl AppView {
             AppView::Connections => "/connections",
             AppView::MachineConfig => "/machine-config",
             AppView::WelderProfile => "/welder-profile",
+            AppView::MotionProfile => "/motion-profile",
             AppView::ClearcoreConfig => "/clearcore-config",
             AppView::ClearcoreManualControl => "/clearcore-manual-control",
         }
+    }
+
+    pub fn url_with_path(&self, path: &'static str) -> String {
+        format!("{}{}", self.url(), path)
     }
 }
 
@@ -87,4 +100,16 @@ pub trait ViewTemplate{
     fn get_view() -> &'static AppView { &Self::APP_VIEW_VARIANT }
     fn all_views() -> &'static [AppView] { AppView::all() }
     const APP_VIEW_VARIANT: AppView;
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new()
+        .merge(operations::routes())
+        .merge(connections::routes())
+        .merge(miller_info::routes())
+        .merge(machine_config::routes())
+        .merge(welder_profile::routes())
+        .merge(motion_profile::routes())
+        .merge(clearcore_static_config::routes())
+        .merge(clearcore_manual_control::routes())
 }

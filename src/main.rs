@@ -12,7 +12,6 @@ mod plc;
 
 use std::sync::atomic::AtomicBool;
 use axum::{
-    response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
@@ -20,17 +19,9 @@ use tower_http::services::ServeDir;
 use crate::error::HmPiError;
 use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS};
-use crate::modbus::cached_modbus::{CachedModbus, ModbusChunk};
+use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusManager, ModbusState};
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
-use crate::views::{AppView, ClearcoreConfigTemplate, ConnectionsTemplate, MachineConfigTemplate, ManualControlTemplate, MillerInfoTemplate, OperationsTemplate, WelderProfileTemplate};
-use crate::views::miller_info::register_view::BooleanRegisterTemplate;
-use crate::views::miller_info::{register_details_modal, show_miller_info, show_miller_info_grid};
-use crate::views::machine_config::{save_machine_config, show_machine_config};
-use crate::views::welder_profile::{show_description_edit_modal, show_edit_modal, show_profile_metadata, show_welder_profile, show_welder_profile_grid, submit_register_write, update_description};
-use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
-use crate::views::clearcore_static_config::{self, handle_apply_config, handle_load_config, handle_save_config, show_clearcore_config, show_clearcore_config_grid};
-use crate::views::clearcore_manual_control::{show_manual_control, get_x_position_handler, home_all_axes_handler, homing_status_handler};
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
@@ -45,24 +36,6 @@ pub struct AppState {
     /// Not really an atomic sync flag or something, just cheaper than a mutex
     pub clearcore_configured: std::sync::Arc<AtomicBool>,
 }
-
-pub const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate{};
-pub const CONNECTIONS_TEMPLATE: ConnectionsTemplate = ConnectionsTemplate{};
-
-
-
-async fn show_operations() -> impl IntoResponse {
-    debug_targeted!(HTTP, "Rendering operations view");
-    OPERATIONS_TEMPLATE
-}
-
-async fn show_connections() -> impl IntoResponse {
-    debug_targeted!(HTTP, "Rendering connections view");
-    CONNECTIONS_TEMPLATE
-}
-
-
-
 
 #[tokio::main]
 async fn main() {
@@ -264,55 +237,7 @@ async fn main() {
 
     let app = Router::new()
         // --- View Routes ---
-        .route(AppView::Operations.url(), get(show_operations))
-        .route(AppView::Connections.url(), get(show_connections))
-        .route(AppView::MillerInfo.url(), get(show_miller_info))
-        .route(AppView::MachineConfig.url(), get(show_machine_config))
-        .route(AppView::WelderProfile.url(), get(show_welder_profile))
-        .route(AppView::ClearcoreConfig.url(), get(show_clearcore_config))
-        .route(AppView::ClearcoreManualControl.url(), get(show_manual_control))
-
-        // --- Miller Info Component Routes ---
-        .route("/miller-info/grid", get(show_miller_info_grid))
-
-        // --- Welder Profile Component Routes ---
-        .route("/welder-profile/grid", get(show_welder_profile_grid))
-        .route("/welder-profile/metadata", get(show_profile_metadata))
-        .route("/welder-profile/edit/{register_name}", get(show_edit_modal))
-        .route("/welder-profile/write/{register_name}", post(submit_register_write))
-        .route("/welder-profile/edit-description", get(show_description_edit_modal))
-        .route("/welder-profile/update-description", post(update_description))
-
-        // --- Welder Profile File System Routes ---
-        .route("/welder-profile/fs/save", get(handle_save))
-        .route("/welder-profile/fs/save_as", get(handle_save_as_modal))
-        .route("/welder-profile/fs/save_as/search", post(handle_save_as_search))
-        .route("/welder-profile/fs/load/list", get(handle_get_profile_list))
-        .route("/welder-profile/fs/save_as/submit", post(handle_save_as_submit))
-        .route("/welder-profile/fs/load", get(handle_load_modal))
-        .route("/welder-profile/fs/load/preview", get(handle_load_preview))
-        .route("/welder-profile/fs/load/apply", post(handle_load_apply))
-        .route("/welder-profile/fs/load/delete_confirm", axum::routing::delete(handle_delete_profile_confirm))
-
-        // --- ClearCore Config Component Routes ---
-        .route("/clearcore-config/grid", get(show_clearcore_config_grid))
-        .route("/clearcore-config/edit/{register_name}", get(clearcore_static_config::show_edit_modal))
-        .route("/clearcore-config/write/{register_name}", post(clearcore_static_config::submit_register_write))
-        .route("/clearcore-config/save", get(handle_save_config))
-        .route("/clearcore-config/load", get(handle_load_config))
-        .route("/clearcore-config/apply", get(handle_apply_config))
-
-        // --- ClearCore Manual Control Component Routes ---
-        .route("/clearcore-manual-control/home-axes", post(home_all_axes_handler))
-        .route("/clearcore-manual-control/homing-status", get(homing_status_handler))
-        .route("/clearcore-manual-control/x-position", get(get_x_position_handler))
-
-        // --- Machine Config Routes ---
-        .route("/machine-config/save", post(save_machine_config))
-
-        // --- UI Component Routes ---
-        .route("/ui/modal/{register_name}", get(register_details_modal::modal_handler))
-
+        .merge(views::routes())
         // --- Modbus Management Routes - ClearCore ---
         .route("/modbus/clearcore/manager", get(connection_management::get_clearcore_manager))
         .route("/modbus/clearcore/connect", post(connection_management::connect_clearcore))

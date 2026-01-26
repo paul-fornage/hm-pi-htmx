@@ -3,8 +3,6 @@ use askama::Template;
 use axum::{
     extract::Path,
     response::{Html, IntoResponse},
-    routing::get,
-    Router,
 };
 use std::fmt;
 use crate::{debug_targeted, info_targeted, trace_targeted, warn_targeted};

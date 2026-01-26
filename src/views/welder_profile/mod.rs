@@ -13,7 +13,8 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::Path;
 use axum::response::{Html, IntoResponse};
-use axum::Form;
+use axum::routing::{delete, get, post};
+use axum::{Form, Router};
 use serde::Deserialize;
 use crate::views::{AppView, ViewTemplate};
 use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
@@ -25,8 +26,30 @@ use register_view::{EditableEnumRegister, EditablePostflowRegister};
 use register_edit_modal::{EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
 use crate::views::shared::boolean_register::BooleanRegisterInfo;
 use crate::views::welder_profile::description_edit_modal::DescriptionEditModalTemplate;
+use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
 
 const BASE_URL: &str = "/welder-profile";
+
+pub fn routes() -> Router<AppState> {
+    let page = AppView::WelderProfile;
+    Router::new()
+        .route(page.url(), get(show_welder_profile))
+        .route(&page.url_with_path("/grid"), get(show_welder_profile_grid))
+        .route(&page.url_with_path("/metadata"), get(show_profile_metadata))
+        .route(&page.url_with_path("/edit/{register_name}"), get(show_edit_modal))
+        .route(&page.url_with_path("/write/{register_name}"), post(submit_register_write))
+        .route(&page.url_with_path("/edit-description"), get(show_description_edit_modal))
+        .route(&page.url_with_path("/update-description"), post(update_description))
+        .route(&page.url_with_path("/fs/save"), get(handle_save))
+        .route(&page.url_with_path("/fs/save_as"), get(handle_save_as_modal))
+        .route(&page.url_with_path("/fs/save_as/search"), post(handle_save_as_search))
+        .route(&page.url_with_path("/fs/load/list"), get(handle_get_profile_list))
+        .route(&page.url_with_path("/fs/save_as/submit"), post(handle_save_as_submit))
+        .route(&page.url_with_path("/fs/load"), get(handle_load_modal))
+        .route(&page.url_with_path("/fs/load/preview"), get(handle_load_preview))
+        .route(&page.url_with_path("/fs/load/apply"), post(handle_load_apply))
+        .route(&page.url_with_path("/fs/load/delete_confirm"), delete(handle_delete_profile_confirm))
+}
 
 const WELD_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 8] = [
     BooleanRegisterInfo::new_default(&miller_register_definitions::USE_DC_OUTPUT),
