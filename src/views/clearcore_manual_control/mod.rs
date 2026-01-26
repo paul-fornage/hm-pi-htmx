@@ -255,14 +255,14 @@ pub async fn get_axis_position(registers: &CachedModbus, axis: AxisPosition) -> 
         AxisPosition::Y => (&cc_regs::Y_AXIS_IS_HOMED.address, "Y axis"),
         AxisPosition::Z => (&cc_regs::Z_AXIS_IS_HOMED.address, "Z axis"),
     };
-    let is_homed = read_bool(registers, is_homed_register).await.inspect_err(|err| log::error!("Error reading {} homed status: {}", axis_label, err))?;
+    let is_homed = read_bool(registers, is_homed_register).await?;
     if is_homed {
         let register = match axis {
             AxisPosition::X => &cc_regs::X_AXIS_POSITION.address,
             AxisPosition::Y => &cc_regs::Y_AXIS_POSITION.address,
             AxisPosition::Z => &cc_regs::Z_AXIS_POSITION.address,
         };
-        let position_hundredths = read_u16(registers, register).await.inspect_err(|err| log::error!("Error reading {} position: {}", axis_label, err))?;
+        let position_hundredths = read_u16(registers, register).await?;
         let position_inches = position_hundredths as f64 / 100.0;
         Ok(format!("{:.2} in", position_inches))
     } else {
