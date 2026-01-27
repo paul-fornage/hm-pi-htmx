@@ -67,6 +67,10 @@ const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
     AnalogRegisterInfo::new(&MAX_ACCEL_Z_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND, "in/min×s", 2, 0),
     AnalogRegisterInfo::new(&MAX_VEL_W_AXIS_HUNDREDTHS_PER_MINUTE, "in/min", 2, 0),
     AnalogRegisterInfo::new(&MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND, "in/min×s", 2, 0),
+    AnalogRegisterInfo::new(&AXIS_X_DEFAULT_JOG_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&AXIS_Y_DEFAULT_JOG_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&AXIS_Z_DEFAULT_JOG_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&AXIS_W_DEFAULT_JOG_SPEED, "in/min", 2, 0),
 ];
 
 const CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS: &[AnalogDwordRegisterInfo] = &[

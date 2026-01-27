@@ -3,10 +3,11 @@ use crate::AppState;
 // use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions;
 use crate::modbus::cached_modbus::CachedModbus;
+use crate::modbus::RegisterMetadata;
 
 /// Raw welding profile containing all register values as they are stored in modbus memory.
 /// All values are u16 or bool - no interpretation or conversion.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RawWeldProfile {
     // Boolean registers
     pub use_dc_output: bool,
@@ -157,6 +158,83 @@ impl RawWeldProfile {
         })
     }
 
+    /// Returns register metadata entries for values that differ from the cached Modbus data.
+    pub async fn modbus_diff(&self, miller_regs: &CachedModbus) -> Vec<&'static RegisterMetadata> {
+        let mut diff = Vec::new();
+
+        macro_rules! diff_coil {
+            ($field:ident, $reg:ident) => {
+                match miller_regs
+                    .read_coil(miller_register_definitions::$reg.address.address)
+                    .await
+                {
+                    Some(val) => {
+                        if val != self.$field {
+                            diff.push(&miller_register_definitions::$reg);
+                        }
+                    }
+                    None => diff.push(&miller_register_definitions::$reg),
+                }
+            };
+        }
+
+        macro_rules! diff_hreg {
+            ($field:ident, $reg:ident) => {
+                match miller_regs
+                    .read_hreg(miller_register_definitions::$reg.address.address)
+                    .await
+                {
+                    Some(val) => {
+                        if val != self.$field {
+                            diff.push(&miller_register_definitions::$reg);
+                        }
+                    }
+                    None => diff.push(&miller_register_definitions::$reg),
+                }
+            };
+        }
+
+        diff_coil!(use_dc_output, USE_DC_OUTPUT);
+        diff_coil!(use_ep_polarity, USE_EP_POLARITY);
+        diff_coil!(boost_en, BOOST_EN);
+        diff_coil!(droop_en, DROOP_EN);
+        diff_coil!(use_low_ocv, USE_LOW_OCV);
+        diff_coil!(pulser_en, PULSER_EN);
+        diff_coil!(use_low_ac_commutation_amp, USE_LOW_AC_COMMUTATION_AMP);
+        diff_coil!(ac_independant_en, AC_INDEPENDANT_EN);
+
+        diff_hreg!(tungsten_preset, TUNGSTEN_PRESET);
+        diff_hreg!(arc_start_polarity_phase, ARC_START_POLARITY_PHASE);
+        diff_hreg!(ac_en_wave_shape, AC_EN_WAVE_SHAPE);
+        diff_hreg!(ac_ep_wave_shape, AC_EP_WAVE_SHAPE);
+
+        diff_hreg!(preset_min_amperage, PRESET_MIN_AMPERAGE);
+        diff_hreg!(arc_start_amperage, ARC_START_AMPERAGE);
+        diff_hreg!(arc_start_time, ARC_START_TIME);
+        diff_hreg!(arc_start_slope_time, ARC_START_SLOPE_TIME);
+        diff_hreg!(arc_start_ac_time, ARC_START_AC_TIME);
+        diff_hreg!(hot_start_time, HOT_START_TIME);
+        diff_hreg!(ac_en_amperage, AC_EN_AMPERAGE);
+        diff_hreg!(ac_ep_amperage, AC_EP_AMPERAGE);
+        diff_hreg!(ac_balance, AC_BALANCE);
+        diff_hreg!(ac_frequency, AC_FREQUENCY);
+        diff_hreg!(weld_amperage, WELD_AMPERAGE);
+        diff_hreg!(pulser_pps, PULSER_PPS);
+        diff_hreg!(pulser_peak_time, PULSER_PEAK_TIME);
+        diff_hreg!(preflow_time, PREFLOW_TIME);
+        diff_hreg!(initial_amperage, INITIAL_AMPERAGE);
+        diff_hreg!(initial_time, INITIAL_TIME);
+        diff_hreg!(initial_slope_time, INITIAL_SLOPE_TIME);
+        diff_hreg!(main_time, MAIN_TIME);
+        diff_hreg!(final_slope_time, FINAL_SLOPE_TIME);
+        diff_hreg!(final_amperage, FINAL_AMPERAGE);
+        diff_hreg!(final_time, FINAL_TIME);
+        diff_hreg!(hot_wire_voltage, HOT_WIRE_VOLTAGE);
+        diff_hreg!(postflow_time, POSTFLOW_TIME);
+
+        diff
+    }
+
     /// Applies this welding profile to the Miller memory.
     /// Returns an error on first write failure.
     pub async fn apply_to_memory(&self, miller_regs: &CachedModbus) -> Result<(), String> {
@@ -176,6 +254,77 @@ impl RawWeldProfile {
             ($val:expr, $reg:ident) => {
                 miller_regs
                     .write_hreg(miller_register_definitions::$reg.address.address, $val)
+                    .await
+                    .map_err(|e| {
+                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
+                    })?
+            };
+        }
+
+        // Write enum registers
+        write_hreg_to_mb!(self.tungsten_preset, TUNGSTEN_PRESET);
+        write_hreg_to_mb!(self.arc_start_polarity_phase, ARC_START_POLARITY_PHASE);
+        write_hreg_to_mb!(self.ac_en_wave_shape, AC_EN_WAVE_SHAPE);
+        write_hreg_to_mb!(self.ac_ep_wave_shape, AC_EP_WAVE_SHAPE);
+
+        // Write analog registers
+        write_hreg_to_mb!(self.preset_min_amperage, PRESET_MIN_AMPERAGE);
+        write_hreg_to_mb!(self.arc_start_amperage, ARC_START_AMPERAGE);
+        write_hreg_to_mb!(self.arc_start_time, ARC_START_TIME);
+        write_hreg_to_mb!(self.arc_start_slope_time, ARC_START_SLOPE_TIME);
+        write_hreg_to_mb!(self.arc_start_ac_time, ARC_START_AC_TIME);
+        write_hreg_to_mb!(self.hot_start_time, HOT_START_TIME);
+        write_hreg_to_mb!(self.ac_en_amperage, AC_EN_AMPERAGE);
+        write_hreg_to_mb!(self.ac_ep_amperage, AC_EP_AMPERAGE);
+        write_hreg_to_mb!(self.ac_balance, AC_BALANCE);
+        write_hreg_to_mb!(self.ac_frequency, AC_FREQUENCY);
+        write_hreg_to_mb!(self.weld_amperage, WELD_AMPERAGE);
+        write_hreg_to_mb!(self.pulser_pps, PULSER_PPS);
+        write_hreg_to_mb!(self.pulser_peak_time, PULSER_PEAK_TIME);
+        write_hreg_to_mb!(self.preflow_time, PREFLOW_TIME);
+        write_hreg_to_mb!(self.initial_amperage, INITIAL_AMPERAGE);
+        write_hreg_to_mb!(self.initial_time, INITIAL_TIME);
+        write_hreg_to_mb!(self.initial_slope_time, INITIAL_SLOPE_TIME);
+        write_hreg_to_mb!(self.main_time, MAIN_TIME);
+        write_hreg_to_mb!(self.final_slope_time, FINAL_SLOPE_TIME);
+        write_hreg_to_mb!(self.final_amperage, FINAL_AMPERAGE);
+        write_hreg_to_mb!(self.final_time, FINAL_TIME);
+        write_hreg_to_mb!(self.hot_wire_voltage, HOT_WIRE_VOLTAGE);
+
+        // Write postflow time
+        write_hreg_to_mb!(self.postflow_time, POSTFLOW_TIME);
+
+        // Write all boolean registers
+        write_coil_to_mb!(self.use_dc_output, USE_DC_OUTPUT);
+        write_coil_to_mb!(self.use_ep_polarity, USE_EP_POLARITY);
+        write_coil_to_mb!(self.boost_en, BOOST_EN);
+        write_coil_to_mb!(self.droop_en, DROOP_EN);
+        write_coil_to_mb!(self.use_low_ocv, USE_LOW_OCV);
+        write_coil_to_mb!(self.pulser_en, PULSER_EN);
+        write_coil_to_mb!(self.use_low_ac_commutation_amp, USE_LOW_AC_COMMUTATION_AMP);
+        write_coil_to_mb!(self.ac_independant_en, AC_INDEPENDANT_EN);
+
+        Ok(())
+    }
+
+    /// Applies this welding profile to Miller memory using cached diff reads.
+    /// Returns an error on first write failure.
+    pub async fn apply_to_memory_diff(&self, miller_regs: &CachedModbus) -> Result<(), String> {
+        macro_rules! write_coil_to_mb {
+            ($val:expr, $reg:ident) => {
+                miller_regs
+                    .diff_write_coil(miller_register_definitions::$reg.address.address, $val)
+                    .await
+                    .map_err(|e| {
+                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
+                    })?
+            };
+        }
+
+        macro_rules! write_hreg_to_mb {
+            ($val:expr, $reg:ident) => {
+                miller_regs
+                    .diff_write_hreg(miller_register_definitions::$reg.address.address, $val)
                     .await
                     .map_err(|e| {
                         format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)

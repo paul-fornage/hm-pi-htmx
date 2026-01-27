@@ -4,6 +4,10 @@ pub enum LogTarget {
     FS
 }
 
+// TODO: This whole thing is stupid, just use the damned crate and get the file name.
+//  Could be nice if the use wants to view logs, but if they want logs they're allowed
+//  to know that the code lives in files
+
 impl Into<&'static str> for LogTarget {
     fn into(self) -> &'static str {
         match self {

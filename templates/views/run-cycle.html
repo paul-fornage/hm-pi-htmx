@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/header.html" %}
+
+<div id="view-run-cycle" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <div class="flex justify-between mb-6">
+        <h2 class="text-2xl font-bold text-slate-700 align-middle my-auto">Run Cycle</h2>
+    </div>
+
+    <form id="run-cycle-form"
+          hx-post="/run-cycle/start"
+          hx-target="#run-cycle-feedback"
+          hx-swap="innerHTML"
+          hx-disabled-elt=".run-cycle-submit"
+          class="group">
+        <div class="grid gap-4 md:grid-cols-2">
+            <div>
+                <label for="run-cycle-weld-profile" class="block text-sm font-medium mb-2">Weld Profile</label>
+                <select id="run-cycle-weld-profile"
+                        name="weld_profile"
+                        required
+                        class="w-full p-2 border border-gray-300 rounded bg-white">
+                    <option value="" {% if !self.has_selected_weld() %}selected{% endif %} disabled>
+                        Select a weld profile
+                    </option>
+                    {% for profile in weld_profiles %}
+                    <option value="{{ profile.name }}" {% if self.is_selected_weld(profile.name) %}selected{% endif %}>
+                        {{ profile.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="run-cycle-motion-profile" class="block text-sm font-medium mb-2">Motion Profile</label>
+                <select id="run-cycle-motion-profile"
+                        name="motion_profile"
+                        required
+                        class="w-full p-2 border border-gray-300 rounded bg-white">
+                    <option value="" {% if !self.has_selected_motion() %}selected{% endif %} disabled>
+                        Select a motion profile
+                    </option>
+                    {% for profile in motion_profiles %}
+                    <option value="{{ profile.name }}" {% if self.is_selected_motion(profile.name) %}selected{% endif %}>
+                        {{ profile.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3">
+            <div id="run-cycle-start"></div>
+            <div id="run-cycle-feedback" class="text-sm"></div>
+        </div>
+    </form>
+
+    <div id="run-cycle-status"
+         class="mt-6"
+         hx-get="/run-cycle/status"
+         hx-trigger="load, every 500ms"
+         hx-swap="innerHTML">
+        Loading...
+    </div>
+
+    <form id="run-cycle-go-to-start"
+          class="mt-4 group flex flex-wrap items-center gap-3"
+          hx-post="/run-cycle/go-to-start"
+          hx-target="#run-cycle-feedback"
+          hx-swap="innerHTML"
+          hx-disabled-elt="#run-cycle-go-to-start-button">
+        <button id="run-cycle-go-to-start-button"
+                type="submit"
+                class="px-4 py-2 bg-emerald-600 text-white border-none cursor-pointer rounded hover:bg-emerald-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-50 group-[.htmx-request]:cursor-not-allowed group-[.htmx-request]:pointer-events-none">
+            Go To Start Position
+        </button>
+        <div class="htmx-indicator inline-flex items-center gap-2 text-sm text-slate-500">
+            <svg class="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Working...</span>
+        </div>
+    </form>
+</div>
+{% endblock %}

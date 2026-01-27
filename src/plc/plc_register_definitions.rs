@@ -236,6 +236,12 @@ pub const Z_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
     description: "True when Z axis is homed",
 };
 
+pub const WELDER_SIMULATE_MODE: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 74 },
+    name: "WELDER SIMULATE MODE",
+    description: "True means welder runs in simulate mode",
+};
+
 // ============================================================================
 // DISCRETE INPUTS
 // ============================================================================
@@ -244,6 +250,16 @@ pub const FORGOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 0 },
     name: "FORGOR",
     description: "Discrete input (TODO: define purpose)",
+};
+pub const WELDER_ARC_COMMANDED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2 },
+    name: "WELDER ARC COMMANDED",
+    description: "true when an arc is commanded. This happens even in simulate mode, to show when it WOULD be active",
+};
+pub const WELDER_ARC_VALID: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 3 },
+    name: "WELDER ARC VALID",
+    description: "true when an arc is valid. this is from the miller and only happens when there is a REAL ARC",
 };
 
 // ============================================================================
@@ -533,6 +549,30 @@ pub const Z_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
     description: "Target position for Z axis go-to command (hundredths of an inch)",
 };
 
+pub const AXIS_X_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 99 },
+    name: "AXIS X DEFAULT JOG SPEED",
+    description: "Default jog speed for X axis (hundredths of an inch per minute)",
+};
+
+pub const AXIS_Y_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 100 },
+    name: "AXIS Y DEFAULT JOG SPEED",
+    description: "Default jog speed for Y axis (hundredths of an inch per minute)",
+};
+
+pub const AXIS_Z_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 101 },
+    name: "AXIS Z DEFAULT JOG SPEED",
+    description: "Default jog speed for Z axis (hundredths of an inch per minute)",
+};
+
+pub const AXIS_W_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 102 },
+    name: "AXIS W DEFAULT JOG SPEED",
+    description: "Default jog speed for W axis (hundredths of an inch per minute)",
+};
+
 
 pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     CONFIG_READY,
@@ -571,9 +611,15 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     X_AXIS_IS_HOMED,
     Y_AXIS_IS_HOMED,
     Z_AXIS_IS_HOMED,
+    WELDER_SIMULATE_MODE,
+
     FORGOR,
+    WELDER_ARC_COMMANDED,
+    WELDER_ARC_VALID,
+
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
+
     X_AXIS_POSITION,
     Y_AXIS_POSITION,
     Z_AXIS_POSITION,
@@ -619,6 +665,10 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     X_AXIS_GO_TO_POSITION,
     Y_AXIS_GO_TO_POSITION,
     Z_AXIS_GO_TO_POSITION,
+    AXIS_X_DEFAULT_JOG_SPEED,
+    AXIS_Y_DEFAULT_JOG_SPEED,
+    AXIS_Z_DEFAULT_JOG_SPEED,
+    AXIS_W_DEFAULT_JOG_SPEED,
 ];
 
 

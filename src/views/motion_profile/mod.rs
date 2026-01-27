@@ -64,22 +64,15 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/fs/load/delete_confirm"), delete(handle_delete_profile_confirm))
 }
 
-const MOTION_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 4] = [
-    BooleanRegisterInfo::new_default(&plc_register_definitions::WELD_ENABLE),
-    BooleanRegisterInfo::new_default(&plc_register_definitions::USES_Y_AXIS),
-    BooleanRegisterInfo::new_default(&plc_register_definitions::USES_Z_AXIS),
-    BooleanRegisterInfo::new_default(&plc_register_definitions::USES_W_AXIS),
-];
+const MOTION_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 0] = [];
 
-const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 8] = [
+const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 6] = [
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_START_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_END_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_PARK_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_WELD_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_WIRE_FEED_SPEED, "in/min", 2, 0),
-    AnalogRegisterInfo::new(&plc_register_definitions::AXIS_Z_HOMING_OFFSET, "in", 2, 0),
-    AnalogRegisterInfo::new(&plc_register_definitions::AXIS_Z_HOMING_SPEED, "in/min", 2, 0),
 ];
 
 pub async fn show_motion_profile() -> impl IntoResponse {

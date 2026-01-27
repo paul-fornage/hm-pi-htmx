@@ -22,18 +22,12 @@ impl MotionProfile {
             name,
             description,
             raw_profile: RawMotionProfile {
-                weld_enable: false,
-                uses_y_axis: false,
-                uses_z_axis: false,
-                uses_w_axis: false,
                 cycle_start_pos: 0,
                 cycle_end_pos: 0,
                 cycle_park_pos: 0,
                 cycle_weld_speed: 0,
                 cycle_reposition_speed: 0,
                 cycle_wire_feed_speed: 0,
-                axis_z_homing_offset: 0,
-                axis_z_homing_speed: 0,
             },
         }
     }
