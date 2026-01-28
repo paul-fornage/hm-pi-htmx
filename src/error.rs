@@ -58,6 +58,8 @@ pub enum HmPiError {
     CcConfigError(#[from] CcConfigParseError),
     #[error("Clearcore static config contained register {0} that was not defined")]
     CcConfigBadRegisterKey(String),
+    #[error("Failed to read back registers with the same value that was written to them.")]
+    ModbusFailToReadBackWrites(),
 }
 
 

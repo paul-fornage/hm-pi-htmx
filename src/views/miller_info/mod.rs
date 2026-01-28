@@ -23,13 +23,13 @@ use futures::future::join_all;
 use num_enum::FromPrimitive;
 
 const READ_TIMEOUT_DURATION: std::time::Duration = std::time::Duration::from_millis(100);
-
+const BASE_URL: &str = AppView::MillerInfo.url();
 pub fn routes() -> Router<AppState> {
     let page = AppView::MillerInfo;
     Router::new()
         .route(page.url(), get(show_miller_info))
         .route(&page.url_with_path("/grid"), get(show_miller_info_grid))
-        .route(&page.url_with_path("/ui/modal/{register_name}"), get(register_details_modal::modal_handler))
+        .route(&page.url_with_path("/modal/{register_name}"), get(register_details_modal::modal_handler))
 }
 
 async fn mb_read_helper(state: &AppState,address: &RegisterAddress) -> Option<ModbusValue>{

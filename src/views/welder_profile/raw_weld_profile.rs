@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
-use crate::AppState;
+use crate::{warn_targeted, AppState};
+use crate::error::HmPiError;
 // use crate::miller::miller_memory::MillerMemory;
 use crate::miller::miller_register_definitions;
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::modbus::RegisterMetadata;
+use crate::modbus::{MbDiffStub, ModbusValue, RegisterMetadata};
+
 
 /// Raw welding profile containing all register values as they are stored in modbus memory.
 /// All values are u16 or bool - no interpretation or conversion.
@@ -53,17 +55,22 @@ pub struct RawWeldProfile {
     pub postflow_time: u16,
 }
 
+
+
 impl RawWeldProfile {
     /// Captures the current welding profile from the Miller memory.
     /// Returns an error if any register cannot be read.
-    pub async fn capture_from_memory(miller_regs: &CachedModbus) -> Result<Self, String> {
+    pub async fn capture_from_memory(miller_regs: &CachedModbus) -> Result<Self, HmPiError> {
 
         macro_rules! pull_coil_from_mb {
                 ($reg:ident) => {
                     miller_regs
                         .read_coil(miller_register_definitions::$reg.address.address)
                         .await
-                        .ok_or(concat!("Failed to read ", stringify!($reg)))?
+                        .ok_or(HmPiError::MissingExpectedRegister(
+                            miller_register_definitions::$reg.address,
+                            miller_register_definitions::$reg.name.to_string()
+                    ))?
                 };
             }
 
@@ -72,7 +79,10 @@ impl RawWeldProfile {
                     miller_regs
                         .read_hreg(miller_register_definitions::$reg.address.address)
                         .await
-                        .ok_or(concat!("Failed to read ", stringify!($reg)))?
+                        .ok_or(HmPiError::MissingExpectedRegister(
+                            miller_register_definitions::$reg.address,
+                            miller_register_definitions::$reg.name.to_string()
+                    ))?
                 };
             }
 
@@ -159,37 +169,23 @@ impl RawWeldProfile {
     }
 
     /// Returns register metadata entries for values that differ from the cached Modbus data.
-    pub async fn modbus_diff(&self, miller_regs: &CachedModbus) -> Vec<&'static RegisterMetadata> {
+    pub async fn modbus_diff(&self, miller_regs: &CachedModbus) -> Vec<MbDiffStub> {
         let mut diff = Vec::new();
 
         macro_rules! diff_coil {
             ($field:ident, $reg:ident) => {
-                match miller_regs
-                    .read_coil(miller_register_definitions::$reg.address.address)
-                    .await
-                {
-                    Some(val) => {
-                        if val != self.$field {
-                            diff.push(&miller_register_definitions::$reg);
-                        }
-                    }
-                    None => diff.push(&miller_register_definitions::$reg),
+                match MbDiffStub::check_bool(miller_regs, &miller_register_definitions::$reg, self.$field).await {
+                    Some(diff_stub) => diff.push(diff_stub),
+                    None => {},
                 }
             };
         }
 
         macro_rules! diff_hreg {
             ($field:ident, $reg:ident) => {
-                match miller_regs
-                    .read_hreg(miller_register_definitions::$reg.address.address)
-                    .await
-                {
-                    Some(val) => {
-                        if val != self.$field {
-                            diff.push(&miller_register_definitions::$reg);
-                        }
-                    }
-                    None => diff.push(&miller_register_definitions::$reg),
+                match MbDiffStub::check_word(miller_regs, &miller_register_definitions::$reg, self.$field).await {
+                    Some(diff_stub) => diff.push(diff_stub),
+                    None => {},
                 }
             };
         }
@@ -237,16 +233,13 @@ impl RawWeldProfile {
 
     /// Applies this welding profile to the Miller memory.
     /// Returns an error on first write failure.
-    pub async fn apply_to_memory(&self, miller_regs: &CachedModbus) -> Result<(), String> {
+    pub async fn apply_to_memory(&self, miller_regs: &CachedModbus) -> Result<(), HmPiError> {
 
         macro_rules! write_coil_to_mb {
             ($val:expr, $reg:ident) => {
                 miller_regs
                     .write_coil(miller_register_definitions::$reg.address.address, $val)
-                    .await
-                    .map_err(|e| {
-                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
-                    })?
+                    .await?
             };
         }
 
@@ -254,10 +247,7 @@ impl RawWeldProfile {
             ($val:expr, $reg:ident) => {
                 miller_regs
                     .write_hreg(miller_register_definitions::$reg.address.address, $val)
-                    .await
-                    .map_err(|e| {
-                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
-                    })?
+                    .await?
             };
         }
 
@@ -307,17 +297,21 @@ impl RawWeldProfile {
         Ok(())
     }
 
+    pub async fn apply_diff(miller_regs: &CachedModbus, diffs: Vec<MbDiffStub>) -> Result<(), HmPiError> {
+        for diff in diffs {
+            diff.apply(miller_regs).await?
+        }
+        Ok(())
+    }
+
     /// Applies this welding profile to Miller memory using cached diff reads.
     /// Returns an error on first write failure.
-    pub async fn apply_to_memory_diff(&self, miller_regs: &CachedModbus) -> Result<(), String> {
+    pub async fn apply_to_memory_diff(&self, miller_regs: &CachedModbus) -> Result<(), HmPiError> {
         macro_rules! write_coil_to_mb {
             ($val:expr, $reg:ident) => {
                 miller_regs
                     .diff_write_coil(miller_register_definitions::$reg.address.address, $val)
-                    .await
-                    .map_err(|e| {
-                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
-                    })?
+                    .await?
             };
         }
 
@@ -325,10 +319,7 @@ impl RawWeldProfile {
             ($val:expr, $reg:ident) => {
                 miller_regs
                     .diff_write_hreg(miller_register_definitions::$reg.address.address, $val)
-                    .await
-                    .map_err(|e| {
-                        format!(concat!("Failed to save ", stringify!($reg), ": {:?}"), e)
-                    })?
+                    .await?
             };
         }
 

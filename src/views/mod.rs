@@ -67,7 +67,7 @@ impl AppView {
     }
 
     // The URL the tab links to
-    pub fn url(&self) -> &'static str {
+    pub const fn url(&self) -> &'static str {
         match self {
             AppView::Operations => "/",
             AppView::MillerInfo => "/miller-info",

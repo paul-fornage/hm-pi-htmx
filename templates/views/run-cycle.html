@@ -66,6 +66,15 @@
         }
     </style>
 
+    <div id="run-cycle-selected-profiles"
+         class="mt-3"
+         hx-post="/run-cycle/selected-profiles"
+         hx-include="#run-cycle-form"
+         hx-trigger="load, change from:#run-cycle-form select"
+         hx-swap="innerHTML">
+        Loading profiles...
+    </div>
+
     <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
         <div id="run-cycle-feedback" class="text-sm text-slate-600"></div>
         <div id="run-cycle-action-indicator"

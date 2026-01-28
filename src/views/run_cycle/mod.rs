@@ -7,7 +7,8 @@ use axum::{Form, Router};
 use serde::Deserialize;
 use tokio::time::{Duration, Instant};
 
-use crate::{debug_targeted, error_targeted, warn_targeted, AppState};
+use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
+use crate::error::HmPiError;
 use crate::plc::plc_register_definitions;
 use crate::views::{AppView, ViewTemplate};
 use crate::views::motion_profile::file_operations as motion_file_ops;
@@ -26,6 +27,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route(page.url(), get(show_run_cycle))
         .route(&page.url_with_path("/load-profiles"), post(load_profiles))
+        .route(&page.url_with_path("/selected-profiles"), post(selected_profiles))
         .route(&page.url_with_path("/start"), post(start_cycle_real))
         .route(&page.url_with_path("/start-simulate"), post(start_cycle_simulate))
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
@@ -113,6 +115,56 @@ pub struct RunCycleForm {
 #[template(path = "components/shared/result-feedback.html")]
 pub struct RunCycleFeedbackTemplate {
     pub result: Result<String, String>,
+}
+
+pub async fn selected_profiles(
+    Form(form): Form<RunCycleForm>,
+) -> impl IntoResponse {
+    let weld_profiles = match weld_file_ops::list_profiles().await {
+        Ok(list) => list,
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to list weld profiles: {}", err);
+            Vec::new()
+        }
+    };
+    let motion_profiles = match motion_file_ops::list_profiles().await {
+        Ok(list) => list,
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to list motion profiles: {}", err);
+            Vec::new()
+        }
+    };
+
+    let weld_name = form
+        .weld_profile
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_string);
+    let motion_name = form
+        .motion_profile
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_string);
+
+    let weld_description = weld_name
+        .as_deref()
+        .and_then(|name| weld_profiles.iter().find(|profile| profile.name == name))
+        .map(|profile| profile.description.trim().to_string())
+        .filter(|desc| !desc.is_empty());
+    let motion_description = motion_name
+        .as_deref()
+        .and_then(|name| motion_profiles.iter().find(|profile| profile.name == name))
+        .map(|profile| profile.description.trim().to_string())
+        .filter(|desc| !desc.is_empty());
+
+    RunCycleSelectedProfilesTemplate {
+        weld_name,
+        weld_description,
+        motion_name,
+        motion_description,
+    }
 }
 
 pub async fn start_cycle_real(
@@ -265,24 +317,30 @@ pub async fn load_profiles(
         Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)),
     };
 
-    if let Err(err) = weld_profile
-        .raw_profile
-        .apply_to_memory_diff(&state.miller_registers)
+    let weld_profile_diff = weld_profile.raw_profile.modbus_diff(&state.miller_registers).await;
+    let motion_profile_diff = motion_profile.raw_profile.modbus_diff(&state.clearcore_registers).await;
+
+    for reg in weld_profile_diff.iter() {
+        info_targeted!(MODBUS, "Weld profile register diff: {:?}", reg);
+    }
+    for reg in motion_profile_diff.iter() {
+        info_targeted!(MODBUS, "Motion profile register diff: {:?}", reg);
+    }
+
+    if let Err(err) = RawWeldProfile::apply_diff(&state.miller_registers, weld_profile_diff)
         .await
     {
         return feedback_err(format!("Failed to upload weld profile: {}", err));
     }
 
-    if let Err(err) = motion_profile
-        .raw_profile
-        .apply_to_memory(&state.clearcore_registers)
+    if let Err(err) = RawMotionProfile::apply_diff(&state.clearcore_registers, motion_profile_diff)
         .await
     {
         return feedback_err(format!("Failed to upload motion profile: {}", err));
     }
 
     if let Err(err) = wait_for_profiles(&state, &weld_profile, &motion_profile).await {
-        return feedback_err(err);
+        return feedback_err(err.to_string());
     }
 
     set_selected_profiles(&state, &weld_profile, &motion_profile).await;
@@ -348,6 +406,15 @@ pub struct RunCycleStatusTemplate {
     pub progress_width: String,
 }
 
+#[derive(Template, WebTemplate)]
+#[template(path = "components/run-cycle/selected-profiles.html")]
+pub struct RunCycleSelectedProfilesTemplate {
+    pub weld_name: Option<String>,
+    pub weld_description: Option<String>,
+    pub motion_name: Option<String>,
+    pub motion_description: Option<String>,
+}
+
 pub async fn go_to_start(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
@@ -386,7 +453,7 @@ async fn profiles_match(
     state: &AppState,
     weld_profile: &WeldProfile,
     motion_profile: &MotionProfile,
-) -> Result<(bool, bool), String> {
+) -> Result<(bool, bool), HmPiError> {
     let weld_current = RawWeldProfile::capture_from_memory(&state.miller_registers).await?;
     let motion_current = RawMotionProfile::capture_from_memory(&state.clearcore_registers).await?;
     Ok((
@@ -399,9 +466,9 @@ async fn wait_for_profiles(
     state: &AppState,
     weld_profile: &WeldProfile,
     motion_profile: &MotionProfile,
-) -> Result<(), String> {
+) -> Result<(), HmPiError> {
     let started = Instant::now();
-    let mut last_error: Option<String> = None;
+    let mut last_error: Option<HmPiError> = None;
 
     loop {
         match profiles_match(state, weld_profile, motion_profile).await {
@@ -423,15 +490,11 @@ async fn wait_for_profiles(
             if !different_regs.is_empty() {
                 error_targeted!(MODBUS, "Weld profile mismatch: {:#?}", different_regs);
             }
-            
-            let suffix = match last_error {
-                Some(err) => format!(": {}", err),
-                None => String::new(),
+
+            return match last_error {
+                Some(err) => Err(err),
+                None => Err(HmPiError::ModbusFailToReadBackWrites()),
             };
-            return Err(format!(
-                "Timed out waiting for profile readback{}",
-                suffix
-            ));
         }
 
         tokio::time::sleep(Duration::from_millis(100)).await;
