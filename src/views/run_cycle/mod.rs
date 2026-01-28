@@ -25,7 +25,9 @@ pub fn routes() -> Router<AppState> {
     let page = AppView::RunCycle;
     Router::new()
         .route(page.url(), get(show_run_cycle))
-        .route(&page.url_with_path("/start"), post(start_cycle))
+        .route(&page.url_with_path("/load-profiles"), post(load_profiles))
+        .route(&page.url_with_path("/start"), post(start_cycle_real))
+        .route(&page.url_with_path("/start-simulate"), post(start_cycle_simulate))
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
         .route(&page.url_with_path("/status"), get(run_cycle_status))
 }
@@ -103,10 +105,8 @@ impl ViewTemplate for RunCycleTemplate {
 
 #[derive(Deserialize)]
 pub struct RunCycleForm {
-    weld_profile: String,
-    motion_profile: String,
-    #[serde(default)]
-    simulate_weld: bool,
+    weld_profile: Option<String>,
+    motion_profile: Option<String>,
 }
 
 #[derive(Template)]
@@ -115,30 +115,54 @@ pub struct RunCycleFeedbackTemplate {
     pub result: Result<String, String>,
 }
 
-pub async fn start_cycle(
+pub async fn start_cycle_real(
     State(state): State<AppState>,
     Form(form): Form<RunCycleForm>,
 ) -> impl IntoResponse {
+    start_cycle(&state, &form, false).await
+}
+
+pub async fn start_cycle_simulate(
+    State(state): State<AppState>,
+    Form(form): Form<RunCycleForm>,
+) -> impl IntoResponse {
+    start_cycle(&state, &form, true).await
+}
+
+async fn start_cycle(
+    state: &AppState,
+    form: &RunCycleForm,
+    simulate_weld: bool,
+) -> impl IntoResponse {
     debug_targeted!(
         HTTP,
-        "Run cycle start requested: weld='{}', motion='{}', simulate={}",
+        "Run cycle start requested: weld='{:?}', motion='{:?}', simulate={}",
         form.weld_profile,
         form.motion_profile,
-        form.simulate_weld
+        simulate_weld
     );
 
-    let weld_name = form.weld_profile.trim();
-    let motion_name = form.motion_profile.trim();
-
-    if weld_name.is_empty() || motion_name.is_empty() {
-        return feedback_err("Select both profiles before starting".to_string());
-    }
+    let weld_name = match form.weld_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+        Some(name) => name,
+        None => return feedback_err("Select both profiles before starting".to_string()),
+    };
+    let motion_name = match form.motion_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+        Some(name) => name,
+        None => return feedback_err("Select both profiles before starting".to_string()),
+    };
 
     if matches!(
         mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address).await,
         Some(true)
     ) {
         return feedback_err("Job already active".to_string());
+    }
+
+    if matches!(
+        mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::IS_HOMED.address).await,
+        Some(false)
+    ) {
+        return feedback_err("ClearCore not homed".to_string());
     }
 
     let weld_profile = match weld_file_ops::load_profile(weld_name).await {
@@ -156,32 +180,34 @@ pub async fn start_cycle(
     };
 
     if !weld_matches || !motion_matches {
-        clear_selected_profiles(&state).await;
-
         if !weld_matches {
-            if let Err(err) = weld_profile.raw_profile.apply_to_memory_diff(&state.miller_registers).await {
-                return feedback_err(format!("Failed to upload weld profile: {}", err));
-            }
+            let diff_regs = weld_profile
+                .raw_profile
+                .modbus_diff(&state.miller_registers)
+                .await;
+            error_targeted!(MODBUS, "Weld profile mismatch: {:#?}", diff_regs);
         }
-
         if !motion_matches {
-            if let Err(err) = motion_profile.raw_profile.apply_to_memory(&state.clearcore_registers).await {
-                return feedback_err(format!("Failed to upload motion profile: {}", err));
-            }
+            let diff_regs = motion_profile
+                .raw_profile
+                .modbus_diff(&state.clearcore_registers)
+                .await;
+            error_targeted!(MODBUS, "Motion profile mismatch: {:#?}", diff_regs);
         }
-
-        if let Err(err) = wait_for_profiles(&state, &weld_profile, &motion_profile).await {
-            return feedback_err(err);
-        }
+        return feedback_err("Profiles are not loaded".to_string());
     }
 
-    set_selected_profiles(&state, &weld_profile, &motion_profile).await;
+    match mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address).await {
+        Some(true) => {}
+        Some(false) => return feedback_err("Machine is not at the start position".to_string()),
+        None => return feedback_err("Unable to read start position".to_string()),
+    }
 
     if let Err(err) = state
         .clearcore_registers
         .write_coil(
             plc_register_definitions::WELDER_SIMULATE_MODE.address.address,
-            form.simulate_weld,
+            simulate_weld,
         )
         .await
     {
@@ -203,12 +229,78 @@ pub async fn start_cycle(
     feedback_ok("Cycle started".to_string())
 }
 
+pub async fn load_profiles(
+    State(state): State<AppState>,
+    Form(form): Form<RunCycleForm>,
+) -> impl IntoResponse {
+    debug_targeted!(
+        HTTP,
+        "Load profiles requested: weld='{:?}', motion='{:?}'",
+        form.weld_profile,
+        form.motion_profile
+    );
+
+    let weld_name = match form.weld_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+        Some(name) => name,
+        None => return feedback_err("Select both profiles before loading".to_string()),
+    };
+    let motion_name = match form.motion_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+        Some(name) => name,
+        None => return feedback_err("Select both profiles before loading".to_string()),
+    };
+
+    if matches!(
+        mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address).await,
+        Some(true)
+    ) {
+        return feedback_err("Job already active".to_string());
+    }
+
+    let weld_profile = match weld_file_ops::load_profile(weld_name).await {
+        Ok(profile) => profile,
+        Err(err) => return feedback_err(format!("Failed to load weld profile: {}", err)),
+    };
+    let motion_profile = match motion_file_ops::load_profile(motion_name).await {
+        Ok(profile) => profile,
+        Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)),
+    };
+
+    if let Err(err) = weld_profile
+        .raw_profile
+        .apply_to_memory_diff(&state.miller_registers)
+        .await
+    {
+        return feedback_err(format!("Failed to upload weld profile: {}", err));
+    }
+
+    if let Err(err) = motion_profile
+        .raw_profile
+        .apply_to_memory(&state.clearcore_registers)
+        .await
+    {
+        return feedback_err(format!("Failed to upload motion profile: {}", err));
+    }
+
+    if let Err(err) = wait_for_profiles(&state, &weld_profile, &motion_profile).await {
+        return feedback_err(err);
+    }
+
+    set_selected_profiles(&state, &weld_profile, &motion_profile).await;
+
+    feedback_ok("Profiles loaded".to_string())
+}
+
 pub async fn run_cycle_status(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let job_active = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address)
         .await
         .unwrap_or(false);
+
+    let is_homed = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::IS_HOMED.address)
+        .await;
+    let at_start = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address)
+        .await;
 
     let arc_commanded = mb_read_bool_helper(
         &state.clearcore_registers,
@@ -235,6 +327,8 @@ pub async fn run_cycle_status(
 
     RunCycleStatusTemplate {
         job_active,
+        is_homed,
+        at_start,
         arc_commanded,
         arc_valid,
         progress_label,
@@ -246,6 +340,8 @@ pub async fn run_cycle_status(
 #[template(path = "components/run-cycle/status.html")]
 pub struct RunCycleStatusTemplate {
     pub job_active: bool,
+    pub is_homed: Option<bool>,
+    pub at_start: Option<bool>,
     pub arc_commanded: Option<bool>,
     pub arc_valid: Option<bool>,
     pub progress_label: String,
@@ -255,6 +351,26 @@ pub struct RunCycleStatusTemplate {
 pub async fn go_to_start(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if matches!(
+        mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address).await,
+        Some(true)
+    ) {
+        return feedback_err("Job already active".to_string());
+    }
+
+    match mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::IS_HOMED.address).await {
+        Some(true) => {}
+        Some(false) => return feedback_err("Machine is not homed".to_string()),
+        None => return feedback_err("Unable to read homed state".to_string()),
+    }
+
+    if matches!(
+        mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address).await,
+        Some(true)
+    ) {
+        return feedback_ok("Already at start position".to_string());
+    }
+
     if let Err(err) = state
         .clearcore_registers
         .write_coil(plc_register_definitions::GO_TO_START_LATCH.address.address, true)
@@ -337,19 +453,6 @@ async fn wait_for_job_active(state: &AppState) -> Result<(), String> {
         }
 
         tokio::time::sleep(Duration::from_millis(100)).await;
-    }
-}
-
-async fn clear_selected_profiles(state: &AppState) {
-    {
-        let mut metadata = state.weld_profile_metadata.lock().await;
-        metadata.name = None;
-        metadata.description = None;
-    }
-    {
-        let mut metadata = state.motion_profile_metadata.lock().await;
-        metadata.name = None;
-        metadata.description = None;
     }
 }
 

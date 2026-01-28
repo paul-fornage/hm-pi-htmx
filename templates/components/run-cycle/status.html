@@ -11,6 +11,26 @@
     </div>
     <div class="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <div class="flex items-center justify-between">
+            <span>Home position</span>
+            <span class="font-semibold text-slate-700">
+                {% if let Some(val) = is_homed %}
+                {% if val %}Yes{% else %}No{% endif %}
+                {% else %}
+                ---
+                {% endif %}
+            </span>
+        </div>
+        <div class="flex items-center justify-between">
+            <span>Start position</span>
+            <span class="font-semibold text-slate-700">
+                {% if let Some(val) = at_start %}
+                {% if val %}Yes{% else %}No{% endif %}
+                {% else %}
+                ---
+                {% endif %}
+            </span>
+        </div>
+        <div class="flex items-center justify-between">
             <span>Arc commanded</span>
             <span class="font-semibold text-slate-700">
                 {% if let Some(val) = arc_commanded %}
@@ -38,21 +58,42 @@
     <div class="text-sm text-slate-600">Cycle running...</div>
     {% else %}
     <div class="flex flex-wrap items-center gap-3">
-        <button id="run-cycle-start-button"
-                name="simulate_weld"
-                value="false"
+        <button id="run-cycle-load-button"
                 type="submit"
+                hx-post="/run-cycle/load-profiles"
+                hx-include="#run-cycle-form"
+                hx-target="#run-cycle-feedback"
+                hx-swap="innerHTML"
+                hx-disabled-elt=".run-cycle-submit"
+                hx-indicator="#run-cycle-action-indicator"
+                class="run-cycle-submit px-4 py-2 bg-amber-500 text-white border-none cursor-pointer rounded hover:bg-amber-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-50 group-[.htmx-request]:cursor-not-allowed group-[.htmx-request]:pointer-events-none">
+            Load Profiles
+        </button>
+        <button id="run-cycle-start-button"
+                type="submit"
+                hx-post="/run-cycle/start"
+                hx-include="#run-cycle-form"
+                hx-target="#run-cycle-feedback"
+                hx-swap="innerHTML"
+                hx-disabled-elt=".run-cycle-submit"
+                hx-indicator="#run-cycle-action-indicator"
                 class="run-cycle-submit px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-50 group-[.htmx-request]:cursor-not-allowed group-[.htmx-request]:pointer-events-none">
             Run Cycle
         </button>
         <button id="run-cycle-simulate-button"
-                name="simulate_weld"
-                value="true"
                 type="submit"
+                hx-post="/run-cycle/start-simulate"
+                hx-include="#run-cycle-form"
+                hx-target="#run-cycle-feedback"
+                hx-swap="innerHTML"
+                hx-disabled-elt=".run-cycle-submit"
+                hx-indicator="#run-cycle-action-indicator"
                 class="run-cycle-submit px-4 py-2 bg-slate-600 text-white border-none cursor-pointer rounded hover:bg-slate-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-50 group-[.htmx-request]:cursor-not-allowed group-[.htmx-request]:pointer-events-none">
             Simulate Motion
         </button>
-        <div class="htmx-indicator inline-flex items-center gap-2 text-sm text-slate-500">
+        <div id="run-cycle-action-indicator"
+             class="htmx-indicator inline-flex items-center gap-2 text-sm text-slate-500"
+             aria-live="polite">
             <svg class="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

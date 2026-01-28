@@ -9,10 +9,6 @@
     </div>
 
     <form id="run-cycle-form"
-          hx-post="/run-cycle/start"
-          hx-target="#run-cycle-feedback"
-          hx-swap="innerHTML"
-          hx-disabled-elt=".run-cycle-submit"
           class="group">
         <div class="grid gap-4 md:grid-cols-2">
             <div>
@@ -49,18 +45,24 @@
                 </select>
             </div>
         </div>
-
-        <div class="mt-4 flex items-center gap-3">
-            <div id="run-cycle-start"></div>
-            <div id="run-cycle-feedback" class="text-sm"></div>
-        </div>
     </form>
+
+    <style>
+        #run-cycle-form select:invalid {
+            border-color: #f59e0b;
+        }
+    </style>
+
+    <div class="mt-4 flex items-center gap-3">
+        <div id="run-cycle-start"></div>
+        <div id="run-cycle-feedback" class="text-sm"></div>
+    </div>
 
     <div id="run-cycle-status"
          class="mt-6"
          hx-get="/run-cycle/status"
          hx-trigger="load, every 500ms"
-         hx-swap="innerHTML">
+         hx-swap="morph:innerHTML">
         Loading...
     </div>
 

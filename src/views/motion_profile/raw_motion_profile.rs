@@ -40,6 +40,35 @@ impl RawMotionProfile {
         })
     }
 
+    pub async fn modbus_diff(&self, clearcore_regs: &CachedModbus) -> Vec<&'static crate::modbus::RegisterMetadata> {
+        let mut diff = Vec::new();
+
+        macro_rules! diff_hreg {
+        ($field:ident, $reg:ident) => {
+            match clearcore_regs
+                .read_hreg(crate::plc::plc_register_definitions::$reg.address.address)
+                .await
+            {
+                Some(val) => {
+                    if val != self.$field {
+                        diff.push(&crate::plc::plc_register_definitions::$reg);
+                    }
+                }
+                None => diff.push(&crate::plc::plc_register_definitions::$reg),
+            }
+        };
+    }
+
+        diff_hreg!(cycle_start_pos, CYCLE_START_POS);
+        diff_hreg!(cycle_end_pos, CYCLE_END_POS);
+        diff_hreg!(cycle_park_pos, CYCLE_PARK_POS);
+        diff_hreg!(cycle_weld_speed, CYCLE_WELD_SPEED);
+        diff_hreg!(cycle_reposition_speed, CYCLE_REPOSITION_SPEED);
+        diff_hreg!(cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
+
+        diff
+    }
+
     pub async fn apply_to_memory(&self, clearcore_regs: &CachedModbus) -> Result<(), String> {
         macro_rules! write_hreg_to_mb {
             ($val:expr, $reg:ident) => {
