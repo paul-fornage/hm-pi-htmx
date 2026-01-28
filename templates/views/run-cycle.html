@@ -3,14 +3,14 @@
 {% block content %}
 {% include "components/header.html" %}
 
-<div id="view-run-cycle" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
-    <div class="flex justify-between mb-6">
+<div id="view-run-cycle" class="bg-gray-100 p-4 rounded-lg mb-5 border border-gray-300">
+    <div class="flex justify-between mb-4">
         <h2 class="text-2xl font-bold text-slate-700 align-middle my-auto">Run Cycle</h2>
     </div>
 
     <form id="run-cycle-form"
           class="group">
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
             <div>
                 <label for="run-cycle-weld-profile" class="block text-sm font-medium mb-2">Weld Profile</label>
                 <select id="run-cycle-weld-profile"
@@ -44,6 +44,19 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="md:flex md:justify-end">
+                <button id="run-cycle-load-button"
+                        type="button"
+                        hx-post="/run-cycle/load-profiles"
+                        hx-include="#run-cycle-form"
+                        hx-target="#run-cycle-feedback"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt=".run-cycle-action"
+                        hx-indicator="#run-cycle-action-indicator"
+                        class="run-cycle-action w-full md:w-auto px-4 py-2 bg-amber-500 text-white border-none cursor-pointer rounded hover:bg-amber-600 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    Load Profiles
+                </button>
+            </div>
         </div>
     </form>
 
@@ -53,37 +66,64 @@
         }
     </style>
 
-    <div class="mt-4 flex items-center gap-3">
-        <div id="run-cycle-start"></div>
-        <div id="run-cycle-feedback" class="text-sm"></div>
-    </div>
-
-    <div id="run-cycle-status"
-         class="mt-6"
-         hx-get="/run-cycle/status"
-         hx-trigger="load, every 500ms"
-         hx-swap="morph:innerHTML">
-        Loading...
-    </div>
-
-    <form id="run-cycle-go-to-start"
-          class="mt-4 group flex flex-wrap items-center gap-3"
-          hx-post="/run-cycle/go-to-start"
-          hx-target="#run-cycle-feedback"
-          hx-swap="innerHTML"
-          hx-disabled-elt="#run-cycle-go-to-start-button">
-        <button id="run-cycle-go-to-start-button"
-                type="submit"
-                class="px-4 py-2 bg-emerald-600 text-white border-none cursor-pointer rounded hover:bg-emerald-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-50 group-[.htmx-request]:cursor-not-allowed group-[.htmx-request]:pointer-events-none">
-            Go To Start Position
-        </button>
-        <div class="htmx-indicator inline-flex items-center gap-2 text-sm text-slate-500">
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div id="run-cycle-feedback" class="text-sm text-slate-600"></div>
+        <div id="run-cycle-action-indicator"
+             class="htmx-indicator inline-flex items-center gap-2 text-sm text-slate-500"
+             aria-live="polite">
             <svg class="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <span>Working...</span>
         </div>
-    </form>
+    </div>
+
+    <div class="mt-3 grid gap-3 lg:grid-cols-[2fr_1fr] lg:items-stretch">
+        <div id="run-cycle-status"
+             class="h-full"
+             hx-get="/run-cycle/status"
+             hx-trigger="load, every 500ms"
+             hx-swap="morph:innerHTML">
+            Loading...
+        </div>
+        <div id="run-cycle-controls" class="h-full rounded-lg border border-slate-200 bg-white/70 p-3">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Cycle actions</div>
+            <div class="mt-2 grid gap-2">
+                <button id="run-cycle-start-button"
+                        type="button"
+                        hx-post="/run-cycle/start"
+                        hx-include="#run-cycle-form"
+                        hx-target="#run-cycle-feedback"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt=".run-cycle-action"
+                        hx-indicator="#run-cycle-action-indicator"
+                        class="run-cycle-action w-full px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    Run Cycle
+                </button>
+                <button id="run-cycle-simulate-button"
+                        type="button"
+                        hx-post="/run-cycle/start-simulate"
+                        hx-include="#run-cycle-form"
+                        hx-target="#run-cycle-feedback"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt=".run-cycle-action"
+                        hx-indicator="#run-cycle-action-indicator"
+                        class="run-cycle-action w-full px-4 py-2 bg-slate-600 text-white border-none cursor-pointer rounded hover:bg-slate-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    Simulate Motion
+                </button>
+                <button id="run-cycle-go-to-start-button"
+                        type="button"
+                        hx-post="/run-cycle/go-to-start"
+                        hx-target="#run-cycle-feedback"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt=".run-cycle-action"
+                        hx-indicator="#run-cycle-action-indicator"
+                        class="run-cycle-action w-full px-4 py-2 bg-emerald-600 text-white border-none cursor-pointer rounded hover:bg-emerald-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                    Go To Start Position
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
