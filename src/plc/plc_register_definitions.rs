@@ -1,4 +1,3 @@
-
 use crate::modbus::{ModbusAddressType, RegisterAddress, RegisterMetadata};
 use crate::modbus::cached_modbus::ModbusChunk;
 
@@ -98,16 +97,28 @@ pub const ERROR: RegisterMetadata = RegisterMetadata {
     description: "Error state",
 };
 
-pub const COMMANDED_FF_LATCH: RegisterMetadata = RegisterMetadata {
+pub const COMMANDED_LF_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 33 },
-    name: "COMMANDED FF LATCH",
-    description: "Commanded fast forward latch",
+    name: "COMMANDED LF LATCH",
+    description: "Is there a new commanded left finger position?",
 };
 
 pub const COMMANDED_RF_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 34 },
     name: "COMMANDED RF LATCH",
-    description: "Commanded rewind/reverse latch",
+    description: "Is there a new commanded right finger position?",
+};
+
+pub const COMMANDED_LF_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 35 },
+    name: "COMMANDED LF POSITION",
+    description: "Is the new commanded left finger position down?",
+};
+
+pub const COMMANDED_RF_POSITION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 36 },
+    name: "COMMANDED RF POSITION",
+    description: "Is the new commanded right finger position down?",
 };
 
 pub const JOG_X_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
@@ -264,6 +275,18 @@ pub const MANDREL_LATCH_CLOSED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 5 },
     name: "MANDREL LATCH CLOSED",
     description: "true when the mandrel latch is sensed to be closed",
+};
+
+pub const LF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 6 },
+    name: "LF COMMANDED DOWN",
+    description: "Are the left fingers currently commanded down",
+};
+
+pub const RF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 7 },
+    name: "RF COMMANDED DOWN",
+    description: "Are the right fingers currently commanded down",
 };
 
 // ============================================================================
@@ -593,8 +616,10 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     WELD_SIGNAL,
     IN_ESTOP,
     ERROR,
-    COMMANDED_FF_LATCH,
+    COMMANDED_LF_LATCH,
     COMMANDED_RF_LATCH,
+    COMMANDED_LF_POSITION,
+    COMMANDED_RF_POSITION,
     JOG_X_AXIS_POSITIVE,
     JOG_X_AXIS_NEGATIVE,
     JOG_Y_AXIS_POSITIVE,
@@ -620,6 +645,8 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     FORGOR,
     WELDER_ARC_COMMANDED,
     WELDER_ARC_VALID,
+    LF_COMMANDED_DOWN,
+    RF_COMMANDED_DOWN,
 
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
