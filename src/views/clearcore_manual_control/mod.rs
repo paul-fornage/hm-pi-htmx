@@ -10,6 +10,7 @@ use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
 use crate::views::{AppView, ViewTemplate};
 use crate::views::shared::result_feedback::FeedbackResult;
+use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
 use axum::extract::{Form, Path};
 use serde::Deserialize;
 
@@ -46,6 +47,7 @@ pub fn routes() -> Router<AppState> {
         .route(AppView::ClearcoreManualControl.url(), get(show_manual_control))
         .route(&AppView::ClearcoreManualControl.url_with_path("/home-axes"), post(home_all_axes_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/homing-status"), get(homing_status_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/status-feedback"), get(manual_control_status_feedback))
         .route(&AppView::ClearcoreManualControl.url_with_path("/x-position"), get(get_x_position_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/y-position"), get(get_y_position_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/z-position"), get(get_z_position_handler))
@@ -81,6 +83,18 @@ pub async fn homing_status_handler(State(state): State<AppState>) -> impl IntoRe
             is_homed: false,
             error: Some(error),
         },
+    }
+}
+
+pub async fn manual_control_status_feedback(State(state): State<AppState>) -> impl IntoResponse {
+    let mandrel_latch_closed = mb_read_bool_helper(
+        &state.clearcore_registers,
+        &cc_regs::MANDREL_LATCH_CLOSED.address,
+    )
+    .await;
+
+    StatusFeedbackTemplate {
+        mandrel_latch_closed,
     }
 }
 

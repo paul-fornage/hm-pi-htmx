@@ -92,12 +92,6 @@ pub const WELD_SIGNAL: RegisterMetadata = RegisterMetadata {
     description: "Weld signal",
 };
 
-pub const IN_ESTOP: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 21 },
-    name: "IN ESTOP",
-    description: "Currently in emergency stop",
-};
-
 pub const ERROR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 22 },
     name: "ERROR",
@@ -260,6 +254,16 @@ pub const WELDER_ARC_VALID: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 3 },
     name: "WELDER ARC VALID",
     description: "true when an arc is valid. this is from the miller and only happens when there is a REAL ARC",
+};
+pub const IN_ESTOP: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 4 },
+    name: "IN ESTOP",
+    description: "true when estop is engaged",
+};
+pub const MANDREL_LATCH_CLOSED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 5 },
+    name: "MANDREL LATCH CLOSED",
+    description: "true when the mandrel latch is sensed to be closed",
 };
 
 // ============================================================================

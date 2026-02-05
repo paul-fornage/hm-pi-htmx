@@ -29,6 +29,7 @@ const BASE_URL: &str = "/clearcore-config";
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route(AppView::ClearcoreConfig.url(), get(show_clearcore_config))
+        .route("/clearcore-config/status", get(show_clearcore_config_status))
         .route("/clearcore-config/grid", get(show_clearcore_config_grid))
         .route("/clearcore-config/edit/{register_name}", get(show_edit_modal))
         .route("/clearcore-config/write/{register_name}", post(submit_register_write))
@@ -103,6 +104,21 @@ fn find_dword_analog_register(name: &str) -> Option<&'static AnalogDwordRegister
 pub async fn show_clearcore_config() -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering clearcore static config view");
     ClearcoreConfigTemplate {}
+}
+
+pub async fn show_clearcore_config_status(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    let hmi_config_uploaded = state.clearcore_configured.load(std::sync::atomic::Ordering::Acquire);
+    let clearcore_config_uploaded = state
+        .clearcore_registers
+        .read_coil(CONFIG_READY.address.address)
+        .await;
+
+    ClearcoreConfigStatusTemplate {
+        hmi_config_uploaded,
+        clearcore_config_uploaded,
+    }
 }
 
 pub async fn show_clearcore_config_grid(
@@ -368,6 +384,13 @@ pub async fn handle_apply_config(
 pub struct ClearcoreConfigTemplate {}
 impl ViewTemplate for ClearcoreConfigTemplate { 
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreConfig; 
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-config/config-status.html")]
+pub struct ClearcoreConfigStatusTemplate {
+    pub hmi_config_uploaded: bool,
+    pub clearcore_config_uploaded: Option<bool>,
 }
 
 #[derive(Template, WebTemplate)]

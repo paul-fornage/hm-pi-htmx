@@ -14,7 +14,7 @@ use crate::views::{AppView, ViewTemplate};
 use crate::views::motion_profile::file_operations as motion_file_ops;
 use crate::views::motion_profile::motion_profile::{MotionProfile, ProfileListEntry as MotionProfileListEntry};
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
-use crate::views::shared::{mb_read_bool_helper, mb_read_word_helper};
+use crate::views::shared::{mb_read_bool_helper, mb_read_word_helper, StatusFeedbackTemplate};
 use crate::views::welder_profile::file_operations as weld_file_ops;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::welder_profile::weld_profile::{ProfileListEntry as WeldProfileListEntry, WeldProfile};
@@ -32,6 +32,7 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/start-simulate"), post(start_cycle_simulate))
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
         .route(&page.url_with_path("/status"), get(run_cycle_status))
+        .route(&page.url_with_path("/status-feedback"), get(run_cycle_status_feedback))
 }
 
 pub async fn show_run_cycle(
@@ -391,6 +392,20 @@ pub async fn run_cycle_status(
         arc_valid,
         progress_label,
         progress_width,
+    }
+}
+
+pub async fn run_cycle_status_feedback(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let mandrel_latch_closed = mb_read_bool_helper(
+        &state.clearcore_registers,
+        &plc_register_definitions::MANDREL_LATCH_CLOSED.address,
+    )
+    .await;
+
+    StatusFeedbackTemplate {
+        mandrel_latch_closed,
     }
 }
 

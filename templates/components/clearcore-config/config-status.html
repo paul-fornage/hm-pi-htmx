@@ -1,0 +1,25 @@
+<div class="flex items-center gap-4 text-sm text-slate-600">
+  <div class="flex items-center gap-2">
+    {% if hmi_config_uploaded %}
+    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+    <span class="font-semibold text-emerald-700">HMI uploaded</span>
+    {% else %}
+    <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+    <span class="font-semibold text-amber-700">HMI not uploaded</span>
+    {% endif %}
+  </div>
+  <div class="flex items-center gap-2">
+    {% if let Some(cc_config_uploaded) = clearcore_config_uploaded %}
+      {% if cc_config_uploaded %}
+      <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+      <span class="font-semibold text-emerald-700">ClearCore uploaded</span>
+      {% else %}
+      <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+      <span class="font-semibold text-amber-700">ClearCore not uploaded</span>
+      {% endif %}
+    {% else %}
+    <span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+    <span class="font-semibold text-slate-600">ClearCore unknown</span>
+    {% endif %}
+  </div>
+</div>
