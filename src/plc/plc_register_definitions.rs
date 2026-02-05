@@ -96,31 +96,26 @@ pub const ERROR: RegisterMetadata = RegisterMetadata {
     name: "ERROR",
     description: "Error state",
 };
-
-pub const COMMANDED_LF_LATCH: RegisterMetadata = RegisterMetadata {
+pub const COMMAND_LF_UP_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 33 },
-    name: "COMMANDED LF LATCH",
-    description: "Is there a new commanded left finger position?",
+    name: "COMMAND LF UP LATCH",
+    description: "latch: command left fingers up",
 };
-
-pub const COMMANDED_RF_LATCH: RegisterMetadata = RegisterMetadata {
+pub const COMMAND_LF_DOWN_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 34 },
-    name: "COMMANDED RF LATCH",
-    description: "Is there a new commanded right finger position?",
+    name: "COMMAND LF DOWN LATCH",
+    description: "latch: command left fingers down",
 };
-
-pub const COMMANDED_LF_POSITION: RegisterMetadata = RegisterMetadata {
+pub const COMMAND_RF_UP_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 35 },
-    name: "COMMANDED LF POSITION",
-    description: "Is the new commanded left finger position down?",
+    name: "COMMAND RF UP LATCH",
+    description: "latch: command right fingers up",
 };
-
-pub const COMMANDED_RF_POSITION: RegisterMetadata = RegisterMetadata {
+pub const COMMAND_RF_DOWN_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 36 },
-    name: "COMMANDED RF POSITION",
-    description: "Is the new commanded right finger position down?",
+    name: "COMMAND RF DOWN LATCH",
+    description: "latch: command right fingers down",
 };
-
 pub const JOG_X_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 40 },
     name: "JOG X AXIS POSITIVE",
@@ -616,10 +611,10 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     WELD_SIGNAL,
     IN_ESTOP,
     ERROR,
-    COMMANDED_LF_LATCH,
-    COMMANDED_RF_LATCH,
-    COMMANDED_LF_POSITION,
-    COMMANDED_RF_POSITION,
+    COMMAND_LF_UP_LATCH,
+    COMMAND_LF_DOWN_LATCH,
+    COMMAND_RF_UP_LATCH,
+    COMMAND_RF_DOWN_LATCH,
     JOG_X_AXIS_POSITIVE,
     JOG_X_AXIS_NEGATIVE,
     JOG_Y_AXIS_POSITIVE,
