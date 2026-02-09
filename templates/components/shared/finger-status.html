@@ -1,0 +1,10 @@
+
+{% match state %}
+{% when Some(true) %}
+<span class="w-24 px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">Clamped</span>
+{% when Some(false) %}
+<span class="w-24 px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700">Unclamped</span>
+{% when None %}
+<span class="w-24 px-2 py-0.5 rounded-full font-semibold bg-slate-100 text-slate-500">Unknown</span>
+{% endmatch %}
+

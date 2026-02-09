@@ -15,6 +15,7 @@ use crate::views::motion_profile::file_operations as motion_file_ops;
 use crate::views::motion_profile::motion_profile::{MotionProfile, ProfileListEntry as MotionProfileListEntry};
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
 use crate::views::shared::{mb_read_bool_helper, mb_read_word_helper, StatusFeedbackTemplate};
+use crate::views::shared::finger_status::finger_status_handler;
 use crate::views::welder_profile::file_operations as weld_file_ops;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::welder_profile::weld_profile::{ProfileListEntry as WeldProfileListEntry, WeldProfile};
@@ -30,6 +31,7 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/selected-profiles"), post(selected_profiles))
         .route(&page.url_with_path("/start"), post(start_cycle_real))
         .route(&page.url_with_path("/start-simulate"), post(start_cycle_simulate))
+        .route(&page.url_with_path("/finger-status/{side}"), get(finger_status_handler))
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
         .route(&page.url_with_path("/status"), get(run_cycle_status))
         .route(&page.url_with_path("/status-feedback"), get(run_cycle_status_feedback))
@@ -353,12 +355,15 @@ pub async fn run_cycle_status(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     let job_active = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address)
-        .await
-        .unwrap_or(false);
-
+        .await;
     let is_homed = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::IS_HOMED.address)
         .await;
     let at_start = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address)
+        .await;
+
+    let left_fingers_clamped = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::LF_COMMANDED_DOWN.address)
+        .await;
+    let right_fingers_clamped = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::RF_COMMANDED_DOWN.address)
         .await;
 
     let arc_commanded = mb_read_bool_helper(
@@ -372,7 +377,7 @@ pub async fn run_cycle_status(
     )
     .await;
 
-    let progress_raw = if job_active {
+    let progress_raw = if matches!(job_active, Some(true)) {
         mb_read_word_helper(&state.clearcore_registers, &plc_register_definitions::CYCLE_PROGRESS.address)
             .await
             .unwrap_or(0)
@@ -390,6 +395,8 @@ pub async fn run_cycle_status(
         at_start,
         arc_commanded,
         arc_valid,
+        left_fingers_clamped,
+        right_fingers_clamped,
         progress_label,
         progress_width,
     }
@@ -412,11 +419,13 @@ pub async fn run_cycle_status_feedback(
 #[derive(Template, WebTemplate)]
 #[template(path = "components/run-cycle/status.html")]
 pub struct RunCycleStatusTemplate {
-    pub job_active: bool,
+    pub job_active: Option<bool>,
     pub is_homed: Option<bool>,
     pub at_start: Option<bool>,
     pub arc_commanded: Option<bool>,
     pub arc_valid: Option<bool>,
+    pub left_fingers_clamped: Option<bool>,
+    pub right_fingers_clamped: Option<bool>,
     pub progress_label: String,
     pub progress_width: String,
 }

@@ -13,7 +13,7 @@ use crate::views::shared::result_feedback::FeedbackResult;
 use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
 use axum::extract::{Form, Path};
 use serde::Deserialize;
-
+use crate::views::shared::finger_status::{finger_status_handler, FingerSide, FingerStatusTemplate};
 
 macro_rules! read_or_bail {
     ($reg:ident) => {{
@@ -47,6 +47,8 @@ pub fn routes() -> Router<AppState> {
         .route(AppView::ClearcoreManualControl.url(), get(show_manual_control))
         .route(&AppView::ClearcoreManualControl.url_with_path("/home-axes"), post(home_all_axes_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/homing-status"), get(homing_status_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/finger-status/{side}"), get(finger_status_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/finger/{side}/{action}"), post(finger_command_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/status-feedback"), get(manual_control_status_feedback))
         .route(&AppView::ClearcoreManualControl.url_with_path("/x-position"), get(get_x_position_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/y-position"), get(get_y_position_handler))
@@ -67,6 +69,8 @@ pub struct HomingStatusTemplate {
     error: Option<String>,
 }
 
+
+
 pub async fn show_manual_control() -> impl IntoResponse {
     ManualControlTemplate {}
 }
@@ -85,6 +89,8 @@ pub async fn homing_status_handler(State(state): State<AppState>) -> impl IntoRe
         },
     }
 }
+
+
 
 pub async fn manual_control_status_feedback(State(state): State<AppState>) -> impl IntoResponse {
     let mandrel_latch_closed = mb_read_bool_helper(
@@ -153,6 +159,68 @@ pub async fn get_y_position_handler(State(state): State<AppState>) -> FeedbackRe
 
 pub async fn get_z_position_handler(State(state): State<AppState>) -> FeedbackResult<String, String> {
     get_axis_position(&state.clearcore_registers, AxisPosition::Z).await.into()
+}
+
+
+#[derive(Clone, Copy)]
+enum FingerCommand {
+    Up,
+    Down,
+}
+
+impl FingerCommand {
+    fn from_str(value: &str) -> Option<Self> {
+        match value.to_ascii_lowercase().as_str() {
+            "up" => Some(Self::Up),
+            "down" => Some(Self::Down),
+            _ => None,
+        }
+    }
+
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Up => "up",
+            Self::Down => "down",
+        }
+    }
+
+    fn latch_for(&self, side: FingerSide) -> &'static RegisterAddress {
+        match (side, self) {
+            (FingerSide::Left, Self::Up) => &cc_regs::COMMAND_LF_UP_LATCH.address,
+            (FingerSide::Left, Self::Down) => &cc_regs::COMMAND_LF_DOWN_LATCH.address,
+            (FingerSide::Right, Self::Up) => &cc_regs::COMMAND_RF_UP_LATCH.address,
+            (FingerSide::Right, Self::Down) => &cc_regs::COMMAND_RF_DOWN_LATCH.address,
+        }
+    }
+}
+
+pub async fn finger_command_handler(
+    State(state): State<AppState>,
+    Path((side, action)): Path<(String, String)>,
+) -> FeedbackResult<String, String> {
+    let side = match FingerSide::from_str(&side) {
+        Some(side) => side,
+        None => return FeedbackResult::new_err(format!("Unknown finger side: {}", side)),
+    };
+
+    let command = match FingerCommand::from_str(&action) {
+        Some(command) => command,
+        None => return FeedbackResult::new_err(format!("Unknown finger command: {}", action)),
+    };
+
+    if let Err(err) = state
+        .clearcore_registers
+        .write_coil(command.latch_for(side).address, true)
+        .await
+    {
+        return FeedbackResult::new_err(err.to_string());
+    }
+
+    FeedbackResult::new_ok(format!(
+        "Commanded {} fingers {}.",
+        side.label(),
+        command.label()
+    ))
 }
 
 #[derive(Clone, Copy)]
