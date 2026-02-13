@@ -10,6 +10,7 @@ use crate::miller::miller_register_types::WelderModel;
 #[template(path = "views/machine-config.html")]
 pub struct MachineConfigTemplate {
     pub current_model: WelderModel,
+    pub udp_logging_port: u16,
     pub save_status: Option<Result<(), crate::error::HmPiError>>,
 }
 
@@ -44,6 +45,7 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
     let config = state.machine_config.read().await;
     MachineConfigTemplate {
         current_model: config.welder_model.clone(),
+        udp_logging_port: config.udp_logging_port,
         save_status: None,
     }
 }
@@ -51,17 +53,24 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
 #[derive(serde::Deserialize)]
 pub struct MachineConfigForm {
     pub welder_model: WelderModel,
+    pub udp_logging_port: u16,
 }
 
 pub async fn save_machine_config(
     State(state): State<AppState>,
     Form(form): Form<MachineConfigForm>,
 ) -> Response {
-    info_targeted!(HTTP, "Saving machine config: {}", form.welder_model);
+    info_targeted!(
+        HTTP,
+        "Saving machine config: {}, udp_logging_port: {}",
+        form.welder_model,
+        form.udp_logging_port
+    );
 
     // Create new config
     let new_config = crate::machine_config::MachineConfig {
         welder_model: form.welder_model.clone(),
+        udp_logging_port: form.udp_logging_port,
     };
 
     // Save to disk

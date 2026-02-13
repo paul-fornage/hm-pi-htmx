@@ -1,3 +1,4 @@
 {
-  "welder_model": "Maxstar210"
+  "welder_model": "Maxstar210",
+  "udp_logging_port": 42069
 }

@@ -116,6 +116,19 @@ pub const COMMAND_RF_DOWN_LATCH: RegisterMetadata = RegisterMetadata {
     name: "COMMAND RF DOWN LATCH",
     description: "latch: command right fingers down",
 };
+
+pub const CYCLE_USE_AVC: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 37 },
+    name: "CYCLE USE AVC",
+    description: "When true, cycle will use CYCLE_AVC_VREF to manage Z height, else will use CYCLE_Z_STATIC_OFFSET",
+};
+
+pub const CYCLE_USE_TOUCH_RETRACT: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 38 },
+    name: "CYCLE USE TOUCH RETRACT",
+    description: "TODO",
+};
+
 pub const JOG_X_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 40 },
     name: "JOG X AXIS POSITIVE",
@@ -304,6 +317,11 @@ pub const SERIAL_NUMBER_HIGH: RegisterMetadata = RegisterMetadata {
 // HOLDING REGISTERS
 // ============================================================================
 
+pub const UDP_LOG_PORT: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6 },
+    name: "UDP LOG PORT",
+    description: "port to send UDP logs to. Logs will be sent to whoever connects to modbus on this port. 0 means no logging",
+};
 pub const X_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 8 },
     name: "X AXIS POSITION",
@@ -341,12 +359,6 @@ pub const CYCLE_WELD_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 16 },
     name: "CYCLE WELD SPEED",
     description: "Speed to weld (hundredths of an inch per minute)",
-};
-
-pub const CYCLE_REPOSITION_SPEED: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 17 },
-    name: "CYCLE REPOSITION SPEED",
-    description: "Speed to move carriage when not actively welding (hundredths of an inch per minute)",
 };
 
 pub const CYCLE_WIRE_FEED_SPEED: RegisterMetadata = RegisterMetadata {
@@ -419,6 +431,42 @@ pub const CYCLE_PROGRESS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 30 },
     name: "CYCLE PROGRESS",
     description: "Progress on current job (hundredths of percent, 0..10000)",
+};
+
+pub const CYCLE_AVC_VREF: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 31 },
+    name: "CYCLE AVC VREF",
+    description: "Target voltage for AVC (hundredth of volt)",
+};
+
+pub const CYCLE_Z_STATIC_OFFSET: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 32 },
+    name: "CYCLE Z STATIC OFFSET",
+    description: "offset to use for Z axis when CYCLE_USE_AVC is false. measured as distance from top of travel (hundredths of an inch)",
+};
+
+pub const CYCLE_REPOSITION_SPEED_X: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 33 },
+    name: "CYCLE REPOSITION SPEED X",
+    description: "speed to move x axis in cycle when not actively welding (hundredths of an inch per minute)",
+};
+
+pub const CYCLE_REPOSITION_SPEED_Y: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 34 },
+    name: "CYCLE REPOSITION SPEED Y",
+    description: "speed to move y axis in cycle when not actively welding (hundredths of an inch per minute)",
+};
+
+pub const CYCLE_REPOSITION_SPEED_Z: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 35 },
+    name: "CYCLE REPOSITION SPEED Z",
+    description: "speed to move z axis in cycle when not actively welding (hundredths of an inch per minute)",
+};
+
+pub const AXIS_Z_TORCH_UP_OFFSET: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 40 },
+    name: "AXIS Z TORCH UP OFFSET",
+    description: "offset to use for Z axis when torch is up like after a cycle. measured as distance from top of travel (hundredths of an inch)",
 };
 
 pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
@@ -615,6 +663,8 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     COMMAND_LF_DOWN_LATCH,
     COMMAND_RF_UP_LATCH,
     COMMAND_RF_DOWN_LATCH,
+    CYCLE_USE_AVC,
+    CYCLE_USE_TOUCH_RETRACT,
     JOG_X_AXIS_POSITIVE,
     JOG_X_AXIS_NEGATIVE,
     JOG_Y_AXIS_POSITIVE,
@@ -646,6 +696,7 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
 
+    UDP_LOG_PORT,
     X_AXIS_POSITION,
     Y_AXIS_POSITION,
     Z_AXIS_POSITION,
@@ -653,7 +704,6 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     CYCLE_END_POS,
     CYCLE_PARK_POS,
     CYCLE_WELD_SPEED,
-    CYCLE_REPOSITION_SPEED,
     CYCLE_WIRE_FEED_SPEED,
     AXIS_X_COMMANDED_JOG_SPEED,
     AXIS_Y_COMMANDED_JOG_SPEED,
@@ -666,6 +716,11 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     AXIS_Y_HOMING_OFFSET,
     AXIS_Z_HOMING_OFFSET,
     CYCLE_PROGRESS,
+    CYCLE_AVC_VREF,
+    CYCLE_Z_STATIC_OFFSET,
+    CYCLE_REPOSITION_SPEED_X,
+    CYCLE_REPOSITION_SPEED_Y,
+    CYCLE_REPOSITION_SPEED_Z,
     INCHES_PER_STEP_X_AXIS_LOWER,
     INCHES_PER_STEP_X_AXIS_UPPER,
     INCHES_PER_STEP_Y_AXIS_LOWER,

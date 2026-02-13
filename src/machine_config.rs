@@ -9,12 +9,14 @@ pub const MACHINE_CONFIG_PATH: &str = "machine_config.json";
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct MachineConfig {
     pub welder_model: WelderModel,
+    pub udp_logging_port: u16,
 }
 
 impl Default for MachineConfig {
     fn default() -> Self {
         Self {
             welder_model: WelderModel::Maxstar210,
+            udp_logging_port: 42069,
         }
     }
 }

@@ -2,9 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::HmPiError;
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::modbus::{MbDiffStub, ModbusValue, RegisterMetadata};
+use crate::modbus::MbDiffStub;
 use crate::plc::plc_register_definitions;
-use crate::warn_targeted;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RawMotionProfile {
@@ -12,8 +11,14 @@ pub struct RawMotionProfile {
     pub cycle_end_pos: u16,
     pub cycle_park_pos: u16,
     pub cycle_weld_speed: u16,
-    pub cycle_reposition_speed: u16,
+    pub cycle_reposition_speed_x: u16,
+    pub cycle_reposition_speed_y: u16,
+    pub cycle_reposition_speed_z: u16,
     pub cycle_wire_feed_speed: u16,
+    pub cycle_avc_vref: u16,
+    pub cycle_z_static_offset: u16,
+    pub cycle_use_avc: bool,
+    pub cycle_use_touch_retract: bool,
 }
 
 impl RawMotionProfile {
@@ -30,20 +35,44 @@ impl RawMotionProfile {
             };
         }
 
+        macro_rules! pull_coil_from_mb {
+            ($reg:ident) => {
+                clearcore_regs
+                    .read_coil(plc_register_definitions::$reg.address.address)
+                    .await
+                    .ok_or(HmPiError::MissingExpectedRegister(
+                        plc_register_definitions::$reg.address,
+                        plc_register_definitions::$reg.name.to_string(),
+                    ))?
+            };
+        }
+
         let cycle_start_pos = pull_hreg_from_mb!(CYCLE_START_POS);
         let cycle_end_pos = pull_hreg_from_mb!(CYCLE_END_POS);
         let cycle_park_pos = pull_hreg_from_mb!(CYCLE_PARK_POS);
         let cycle_weld_speed = pull_hreg_from_mb!(CYCLE_WELD_SPEED);
-        let cycle_reposition_speed = pull_hreg_from_mb!(CYCLE_REPOSITION_SPEED);
+        let cycle_reposition_speed_x = pull_hreg_from_mb!(CYCLE_REPOSITION_SPEED_X);
+        let cycle_reposition_speed_y = pull_hreg_from_mb!(CYCLE_REPOSITION_SPEED_Y);
+        let cycle_reposition_speed_z = pull_hreg_from_mb!(CYCLE_REPOSITION_SPEED_Z);
         let cycle_wire_feed_speed = pull_hreg_from_mb!(CYCLE_WIRE_FEED_SPEED);
+        let cycle_avc_vref = pull_hreg_from_mb!(CYCLE_AVC_VREF);
+        let cycle_z_static_offset = pull_hreg_from_mb!(CYCLE_Z_STATIC_OFFSET);
+        let cycle_use_avc = pull_coil_from_mb!(CYCLE_USE_AVC);
+        let cycle_use_touch_retract = pull_coil_from_mb!(CYCLE_USE_TOUCH_RETRACT);
 
         Ok(Self {
             cycle_start_pos,
             cycle_end_pos,
             cycle_park_pos,
             cycle_weld_speed,
-            cycle_reposition_speed,
+            cycle_reposition_speed_x,
+            cycle_reposition_speed_y,
+            cycle_reposition_speed_z,
             cycle_wire_feed_speed,
+            cycle_avc_vref,
+            cycle_z_static_offset,
+            cycle_use_avc,
+            cycle_use_touch_retract,
         })
     }
 
@@ -63,12 +92,31 @@ impl RawMotionProfile {
             };
         }
 
+        macro_rules! diff_coil {
+            ($field:ident, $reg:ident) => {
+                match MbDiffStub::check_bool(
+                    clearcore_regs,
+                    &plc_register_definitions::$reg,
+                    self.$field,
+                ).await {
+                    Some(diff_stub) => diff.push(diff_stub),
+                    None => {}
+                }
+            };
+        }
+
         diff_hreg!(cycle_start_pos, CYCLE_START_POS);
         diff_hreg!(cycle_end_pos, CYCLE_END_POS);
         diff_hreg!(cycle_park_pos, CYCLE_PARK_POS);
         diff_hreg!(cycle_weld_speed, CYCLE_WELD_SPEED);
-        diff_hreg!(cycle_reposition_speed, CYCLE_REPOSITION_SPEED);
+        diff_hreg!(cycle_reposition_speed_x, CYCLE_REPOSITION_SPEED_X);
+        diff_hreg!(cycle_reposition_speed_y, CYCLE_REPOSITION_SPEED_Y);
+        diff_hreg!(cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         diff_hreg!(cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
+        diff_hreg!(cycle_avc_vref, CYCLE_AVC_VREF);
+        diff_hreg!(cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        diff_coil!(cycle_use_avc, CYCLE_USE_AVC);
+        diff_coil!(cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
         diff
     }
@@ -82,12 +130,26 @@ impl RawMotionProfile {
             };
         }
 
+        macro_rules! write_coil_to_mb {
+            ($val:expr, $reg:ident) => {
+                clearcore_regs
+                    .write_coil(plc_register_definitions::$reg.address.address, $val)
+                    .await?
+            };
+        }
+
         write_hreg_to_mb!(self.cycle_start_pos, CYCLE_START_POS);
         write_hreg_to_mb!(self.cycle_end_pos, CYCLE_END_POS);
         write_hreg_to_mb!(self.cycle_park_pos, CYCLE_PARK_POS);
         write_hreg_to_mb!(self.cycle_weld_speed, CYCLE_WELD_SPEED);
-        write_hreg_to_mb!(self.cycle_reposition_speed, CYCLE_REPOSITION_SPEED);
+        write_hreg_to_mb!(self.cycle_reposition_speed_x, CYCLE_REPOSITION_SPEED_X);
+        write_hreg_to_mb!(self.cycle_reposition_speed_y, CYCLE_REPOSITION_SPEED_Y);
+        write_hreg_to_mb!(self.cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
+        write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
+        write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        write_coil_to_mb!(self.cycle_use_avc, CYCLE_USE_AVC);
+        write_coil_to_mb!(self.cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
         Ok(())
     }
@@ -111,12 +173,26 @@ impl RawMotionProfile {
             };
         }
 
+        macro_rules! write_coil_to_mb {
+            ($val:expr, $reg:ident) => {
+                clearcore_regs
+                    .diff_write_coil(plc_register_definitions::$reg.address.address, $val)
+                    .await?
+            };
+        }
+
         write_hreg_to_mb!(self.cycle_start_pos, CYCLE_START_POS);
         write_hreg_to_mb!(self.cycle_end_pos, CYCLE_END_POS);
         write_hreg_to_mb!(self.cycle_park_pos, CYCLE_PARK_POS);
         write_hreg_to_mb!(self.cycle_weld_speed, CYCLE_WELD_SPEED);
-        write_hreg_to_mb!(self.cycle_reposition_speed, CYCLE_REPOSITION_SPEED);
+        write_hreg_to_mb!(self.cycle_reposition_speed_x, CYCLE_REPOSITION_SPEED_X);
+        write_hreg_to_mb!(self.cycle_reposition_speed_y, CYCLE_REPOSITION_SPEED_Y);
+        write_hreg_to_mb!(self.cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
+        write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
+        write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        write_coil_to_mb!(self.cycle_use_avc, CYCLE_USE_AVC);
+        write_coil_to_mb!(self.cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
         Ok(())
     }

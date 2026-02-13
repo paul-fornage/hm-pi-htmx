@@ -64,15 +64,22 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/fs/load/delete_confirm"), delete(handle_delete_profile_confirm))
 }
 
-const MOTION_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 0] = [];
+const MOTION_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 2] = [
+    BooleanRegisterInfo::new_default(&plc_register_definitions::CYCLE_USE_AVC),
+    BooleanRegisterInfo::new_default(&plc_register_definitions::CYCLE_USE_TOUCH_RETRACT),
+];
 
-const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 6] = [
+const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 10] = [
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_START_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_END_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_PARK_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_WELD_SPEED, "in/min", 2, 0),
-    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED_X, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED_Y, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED_Z, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_WIRE_FEED_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_AVC_VREF, "V", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_Z_STATIC_OFFSET, "in", 2, 0),
 ];
 
 pub async fn show_motion_profile() -> impl IntoResponse {

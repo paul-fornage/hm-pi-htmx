@@ -1,16 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Modbus App</title>
+    <title>Mitusa Seamer</title>
     <script src="/htmx.min.js"></script>
     <script src="/htmx-sse.js"></script>
     <script src="/htmx-idiomorph.js"></script>
 
-<!--    <script src="/keyboard-init.js"></script>-->
+    <script src="/deps/hodgef-simple-keyboard-eeef13b/index.js" defer></script>
+    <script src="/keyboard-init.js" defer></script>
 
     <link href="/assets/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="/deps/hodgef-simple-keyboard-eeef13b/index.css">
+    <link rel="stylesheet" href="/keyboard.css">
 </head>
-<body hx-ext="sse" class="font-mono w-full mx-auto p-5 bg-gray-50 select-none cursor-default touch-pan-y" hx-boost="true">
+
+<body hx-ext="sse" sse-connect="/sse" class="font-mono w-full mx-auto p-5 bg-gray-50 select-none cursor-default touch-pan-y" hx-boost="true">
 {% block content %}{% endblock %}
+
+{% include "components/error-toast-manager.html" %}
+
+<div id="global-keyboard-layer" hx-preserve="true" hidden>
+    <div id="global-keyboard" class="simple-keyboard"></div>
+</div>
+
+<script>
+    // Debug SSE: Log all incoming SSE messages handled by HTMX
+    document.body.addEventListener('htmx:sseMessage', function (e) {
+        console.groupCollapsed(`SSE Received: ${e.detail.type}`);
+        console.log("Target Element:", e.target);
+        console.log("Data Payload:", e.detail.data);
+
+        // Check if the current element actually expects this event
+        const swapSpec = e.target.getAttribute('sse-swap');
+        if (swapSpec !== e.detail.type) {
+            console.warn(`Mismatch: Element expects '${swapSpec}' but received '${e.detail.type}'`);
+        }
+
+        console.groupEnd();
+    });
+
+    // Debug SSE: Log connection errors
+    document.body.addEventListener('htmx:sseError', function (e) {
+        console.log("htmx:sseError:", e);
+    });
+
+    // Debug SSE
+    document.body.addEventListener('htmx:sseOpen', function (e) {
+        console.log("htmx:sseOpen:", e);
+    });
+
+    document.body.addEventListener('htmx:sseClose', function (e) {
+        console.log("htmx:sseClose:", e);
+    });
+
+
+</script>
 </body>
 </html>

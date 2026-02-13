@@ -48,6 +48,7 @@ const CLEARCORE_STATIC_CONFIG_COILS: &[BooleanRegisterInfo] = &[
 ];
 
 const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
+    AnalogRegisterInfo::new(&UDP_LOG_PORT, "port", 0, 0),
     AnalogRegisterInfo::new(&AXIS_X_HOMING_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&AXIS_Y_HOMING_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&AXIS_Z_HOMING_SPEED, "in/min", 2, 0),
@@ -72,6 +73,7 @@ const CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS: &[AnalogRegisterInfo] = &[
     AnalogRegisterInfo::new(&AXIS_Y_DEFAULT_JOG_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&AXIS_Z_DEFAULT_JOG_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&AXIS_W_DEFAULT_JOG_SPEED, "in/min", 2, 0),
+    AnalogRegisterInfo::new(&AXIS_Z_TORCH_UP_OFFSET, "in", 2, 0),
 ];
 
 const CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS: &[AnalogDwordRegisterInfo] = &[

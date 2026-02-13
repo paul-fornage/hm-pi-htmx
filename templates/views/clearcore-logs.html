@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "components/header.html" %}
+
+<div id="view-clearcore-logs" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <div class="flex items-center justify-between mb-3">
+        <div>
+            <h2 class="text-xl font-bold">ClearCore Logs</h2>
+            <span class="text-xs text-slate-500">Last 200 entries at load</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <select id="filter-clearcore-level" class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded border border-slate-300 bg-white hover:bg-slate-50 outline-none cursor-pointer">
+                <option value="trace" selected>All Levels</option>
+                <option value="debug">Debug+</option>
+                <option value="info">Info+</option>
+                <option value="warn">Warn+</option>
+                <option value="error">Error only</option>
+            </select>
+            <label class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="toggle-clearcore-time" checked> Time
+            </label>
+            <label class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="toggle-clearcore-source"> Source
+            </label>
+            <label class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="toggle-clearcore-autoscroll" checked> Auto-scroll
+            </label>
+            <button id="clearcore-log-scroll-bottom"
+                    type="button"
+                    class="px-3 py-1.5 text-xs font-semibold text-slate-600 rounded border border-slate-300 bg-white hover:bg-slate-50">
+                Scroll to bottom
+            </button>
+        </div>
+    </div>
+
+    <style>
+        #view-clearcore-logs .clearcore-log-window {
+            background: #0b0f14;
+            border: 1px solid #1f2937;
+            border-radius: 0.6rem;
+            padding: 0.75rem;
+            height: 72vh;
+            overflow: auto;
+        }
+        #view-clearcore-logs .clearcore-log-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        #view-clearcore-logs .clearcore-log-entry {
+            display: block;
+            padding: 0 0.5rem;
+            color: #e2e8f0;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        #view-clearcore-logs .clearcore-log-timestamp {
+            color: #94a3b8;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.75;
+        }
+        #view-clearcore-logs.hide-timestamp .clearcore-log-timestamp {
+            display: none;
+        }
+        #view-clearcore-logs .clearcore-log-source {
+            color: #94a3b8;
+            font-variant-numeric: tabular-nums;
+            opacity: 0.75;
+        }
+        #view-clearcore-logs.hide-source .clearcore-log-source {
+            display: none;
+        }
+        #view-clearcore-logs .clearcore-log-message {
+            color: #e2e8f0;
+            white-space: pre-wrap;
+        }
+        #view-clearcore-logs .clearcore-log-level-error,
+        #view-clearcore-logs .clearcore-log-level-warn,
+        #view-clearcore-logs .clearcore-log-level-info,
+        #view-clearcore-logs .clearcore-log-level-debug,
+        #view-clearcore-logs .clearcore-log-level-trace {
+            display: inline-block;
+            font-weight: 700;
+            text-align: left;
+        }
+        #view-clearcore-logs .clearcore-log-level-error { color: #f87171; }
+        #view-clearcore-logs .clearcore-log-level-warn { color: #fbbf24; }
+        #view-clearcore-logs .clearcore-log-level-info { color: #60a5fa; }
+        #view-clearcore-logs .clearcore-log-level-debug { color: #c084fc; }
+        #view-clearcore-logs .clearcore-log-level-trace { color: #cbd5f5; }
+        @media (max-width: 900px) {
+            #view-clearcore-logs .clearcore-log-entry {
+                font-size: 11px;
+            }
+        }
+
+        /* Log Level Filtering Logic */
+        /* If min-level is debug, hide trace/none */
+        #view-clearcore-logs[data-min-level="debug"] .clearcore-log-entry-trace,
+        #view-clearcore-logs[data-min-level="debug"] .clearcore-log-entry-none { display: none; }
+
+        /* If min-level is info, hide debug/trace/none */
+        #view-clearcore-logs[data-min-level="info"] .clearcore-log-entry-debug,
+        #view-clearcore-logs[data-min-level="info"] .clearcore-log-entry-trace,
+        #view-clearcore-logs[data-min-level="info"] .clearcore-log-entry-none { display: none; }
+
+        /* If min-level is warn, hide info/debug/trace/none */
+        #view-clearcore-logs[data-min-level="warn"] .clearcore-log-entry-info,
+        #view-clearcore-logs[data-min-level="warn"] .clearcore-log-entry-debug,
+        #view-clearcore-logs[data-min-level="warn"] .clearcore-log-entry-trace,
+        #view-clearcore-logs[data-min-level="warn"] .clearcore-log-entry-none { display: none; }
+
+        /* If min-level is error, hide everything except error */
+        #view-clearcore-logs[data-min-level="error"] .clearcore-log-entry-warn,
+        #view-clearcore-logs[data-min-level="error"] .clearcore-log-entry-info,
+        #view-clearcore-logs[data-min-level="error"] .clearcore-log-entry-debug,
+        #view-clearcore-logs[data-min-level="error"] .clearcore-log-entry-trace,
+        #view-clearcore-logs[data-min-level="error"] .clearcore-log-entry-none { display: none; }
+    </style>
+
+
+<!--    <div class="text-sm text-slate-500 bg-white border border-slate-200 rounded px-3 py-2">-->
+<!--        No ClearCore logs available yet.-->
+<!--    </div>-->
+
+    <div id="clearcore-log-window" class="clearcore-log-window">
+        <ul id="clearcore-log-list" class="clearcore-log-list" sse-swap="clearcore-log" hx-swap="beforeend">
+            {% for entry in entries %}
+            {{ entry|safe }}
+            {% endfor %}
+        </ul>
+    </div>
+
+</div>
+
+<script>
+    (function () {
+        const container = document.getElementById("clearcore-log-window");
+        const wrapper = document.getElementById("view-clearcore-logs");
+        const logList = document.getElementById("clearcore-log-list");
+
+        function scrollToBottom() {
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        // Initial scroll on load
+        scrollToBottom();
+
+        // --- Auto-scroll Logic ---
+        const toggleAutoscroll = document.getElementById("toggle-clearcore-autoscroll");
+
+        if (toggleAutoscroll) {
+            // Scroll immediately when toggled ON
+            toggleAutoscroll.addEventListener("change", function(e) {
+                if (e.target.checked) {
+                    scrollToBottom();
+                }
+            });
+        }
+
+        // Listen for SSE messages specifically on our list
+        if (logList) {
+            logList.addEventListener('htmx:sseMessage', function(e) {
+                // Verify the event target is our specific list element
+                if (e.target !== logList) return;
+
+                if (toggleAutoscroll && toggleAutoscroll.checked) {
+                    scrollToBottom();
+                }
+            });
+        }
+
+        const button = document.getElementById("clearcore-log-scroll-bottom");
+        if (button && container) {
+            button.addEventListener("click", function () {
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        const toggleTime = document.getElementById("toggle-clearcore-time");
+        if (toggleTime && wrapper) {
+            wrapper.classList.toggle("hide-timestamp", !toggleTime.checked);
+            toggleTime.addEventListener("change", function(e) {
+                wrapper.classList.toggle("hide-timestamp", !e.target.checked);
+            });
+        }
+
+        const toggleSource = document.getElementById("toggle-clearcore-source");
+        if (toggleSource && wrapper) {
+            wrapper.classList.toggle("hide-source", !toggleSource.checked);
+            toggleSource.addEventListener("change", function(e) {
+                wrapper.classList.toggle("hide-source", !e.target.checked);
+            });
+        }
+
+        const filterLevel = document.getElementById("filter-clearcore-level");
+        if (filterLevel && wrapper) {
+            // Initialize default
+            wrapper.setAttribute("data-min-level", filterLevel.value);
+
+            filterLevel.addEventListener("change", function(e) {
+                wrapper.setAttribute("data-min-level", e.target.value);
+            });
+        }
+    })();
+</script>
+{% endblock %}

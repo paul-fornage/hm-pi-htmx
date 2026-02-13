@@ -8,6 +8,7 @@ pub mod clearcore_static_config;
 pub mod shared;
 pub mod clearcore_manual_control;
 pub mod run_cycle;
+mod clearcore_logs;
 
 use axum::Router;
 use crate::AppState;
@@ -21,6 +22,7 @@ pub use motion_profile::MotionProfileTemplate;
 pub use clearcore_static_config::ClearcoreConfigTemplate;
 pub use clearcore_manual_control::ManualControlTemplate;
 pub use run_cycle::RunCycleTemplate;
+pub use clearcore_logs::ClearcoreLogsTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -33,6 +35,7 @@ pub enum AppView {
     MotionProfile,
     ClearcoreConfig,
     ClearcoreManualControl,
+    ClearcoreLogs,
     RunCycle,
 }
 
@@ -42,6 +45,7 @@ impl AppView {
         &[
             AppView::RunCycle,
             AppView::ClearcoreManualControl,
+            AppView::ClearcoreLogs,
             AppView::WelderProfile,
             AppView::MotionProfile,
             AppView::ClearcoreConfig,
@@ -62,6 +66,7 @@ impl AppView {
             AppView::MotionProfile => "Motion Profile",
             AppView::ClearcoreConfig => "ClearCore Config",
             AppView::ClearcoreManualControl => "Manual Control",
+            AppView::ClearcoreLogs => "ClearCore Logs",
             AppView::RunCycle => "Run Cycle",
         }
     }
@@ -77,6 +82,7 @@ impl AppView {
             AppView::MotionProfile => "/motion-profile",
             AppView::ClearcoreConfig => "/clearcore-config",
             AppView::ClearcoreManualControl => "/clearcore-manual-control",
+            AppView::ClearcoreLogs => "/clearcore-logs",
             AppView::RunCycle => "/run-cycle",
         }
     }
@@ -119,4 +125,5 @@ pub fn routes() -> Router<AppState> {
         .merge(clearcore_static_config::routes())
         .merge(clearcore_manual_control::routes())
         .merge(run_cycle::routes())
+        .merge(clearcore_logs::routes())
 }

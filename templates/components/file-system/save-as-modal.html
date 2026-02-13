@@ -27,6 +27,8 @@
                         </label>
                         <input
                             type="text"
+                            inputmode="text"
+                            data-keyboard="text"
                             id="profile-name-input"
                             name="name"
                             value="{% if let Some(name) = current_name %}{{ name }}{% endif %}"

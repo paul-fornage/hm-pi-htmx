@@ -110,7 +110,9 @@
 
                             <!-- View C: Manual Input - Hide if NOT manual -->
                             <div id="view-manual" class="flex gap-2 items-center {% if !as_enum().is_manual() %} hidden {% endif %}">
-                                <input type="number"
+                                <input type="text"
+                                       inputmode="numeric"
+                                       data-keyboard="float"
                                        id="manual-input"
                                        min="1"
                                        max="50"

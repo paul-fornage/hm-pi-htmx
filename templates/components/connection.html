@@ -23,6 +23,8 @@
             <div class="flex-1">
                 <label for="host" class="block text-sm">Host IP</label>
                 <input type="text"
+                       inputmode="text"
+                       data-keyboard="text"
                        id="host"
                        name="host"
                        value="{{ host }}"
@@ -31,7 +33,9 @@
             </div>
             <div class="flex-1">
                 <label for="port" class="block text-sm">Port</label>
-                <input type="number"
+                <input type="text"
+                       inputmode="numeric"
+                       data-keyboard="float"
                        id="port"
                        name="port"
                        value="{{ port }}"
@@ -42,7 +46,9 @@
             </div>
             <div class="flex-1">
                 <label for="timeout_ms" class="block text-sm">Timeout (ms):</label>
-                <input type="number"
+                <input type="text"
+                       inputmode="numeric"
+                       data-keyboard="float"
                        id="timeout_ms"
                        name="timeout_ms"
                        min="100"
@@ -52,7 +58,9 @@
             </div>
             <div class="flex-1">
                 <label for="unit_id" class="block text-sm">Unit ID:</label>
-                <input type="number"
+                <input type="text"
+                       inputmode="numeric"
+                       data-keyboard="float"
                        id="unit_id"
                        name="unit_id"
                        step="1"

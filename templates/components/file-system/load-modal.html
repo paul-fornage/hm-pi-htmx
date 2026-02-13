@@ -19,16 +19,17 @@
             <div class="flex-1 border border-slate-300 rounded-lg overflow-hidden flex flex-col bg-white shadow-sm">
                 <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 shrink-0">
                     <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-2">Saved Profiles</h3>
-                    <input
-                        type="text"
-                        id="load-search-input"
-                        name="search"
-                        placeholder="Search profiles..."
-                        class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        hx-get="{{ base_url }}/fs/load/list"
-                        hx-trigger="keyup changed delay:500ms, search"
-                        hx-target="#load-profile-list"
-                        hx-include="this"
+                    <input type="text"
+                           inputmode="text"
+                           data-keyboard="text"
+                           id="load-search-input"
+                           name="search"
+                           placeholder="Search profiles..."
+                           class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           hx-get="{{ base_url }}/fs/load/list"
+                           hx-trigger="keyup changed delay:500ms, search"
+                           hx-target="#load-profile-list"
+                           hx-include="this"
                     />
                 </div>
                 <div id="load-profile-list"

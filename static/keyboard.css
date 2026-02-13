@@ -1,0 +1,80 @@
+#global-keyboard-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.5rem 0.75rem 0.75rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.15);
+  z-index: 50;
+}
+
+#global-keyboard-layer[hidden] {
+  display: none;
+}
+
+#global-keyboard {
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+#global-keyboard .hg-button {
+  height: 3rem;
+  font-size: 1.1rem;
+}
+
+#global-keyboard .sk-key-danger {
+  background: #ef4444;
+  border-bottom-color: #b91c1c;
+  color: #fff;
+}
+
+#global-keyboard .sk-key-danger.hg-activeButton {
+  background: #dc2626;
+}
+
+#global-keyboard .sk-key-neutral {
+  background: #e2e8f0;
+  border-bottom-color: #94a3b8;
+  color: #0f172a;
+}
+
+#global-keyboard .sk-key-success {
+  background: #e6f4dd;
+  border-bottom-color: #b3d2b1;
+  color: #042400;
+}
+
+#global-keyboard.keyboard-text .hg-row {
+  display: flex;
+  gap: 0.35rem;
+}
+
+#global-keyboard.keyboard-text .hg-row:not(:last-child) {
+  margin-bottom: 0.35rem;
+}
+
+#global-keyboard.keyboard-text .hg-row .hg-button-container,
+#global-keyboard.keyboard-text .hg-row .hg-button {
+  margin-right: 0;
+}
+
+#global-keyboard.keyboard-float .hg-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+#global-keyboard.keyboard-float .hg-row:not(:last-child) {
+  margin-bottom: 0.35rem;
+}
+
+#global-keyboard.keyboard-float .hg-row .hg-button-container,
+#global-keyboard.keyboard-float .hg-row .hg-button {
+  margin-right: 0;
+}
+
+#global-keyboard.keyboard-float .hg-button {
+  width: 100%;
+}

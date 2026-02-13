@@ -9,7 +9,10 @@ mod connection_management;
 mod views;
 mod machine_config;
 mod plc;
+mod udp_log_listener;
+pub mod sse;
 
+use tokio::sync::{broadcast, mpsc};
 use std::sync::atomic::AtomicBool;
 use axum::{
     routing::{get, post},
@@ -22,6 +25,7 @@ use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusManager, ModbusState};
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
+use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
@@ -36,6 +40,7 @@ pub struct AppState {
     pub motion_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::motion_profile::profile_metadata::MotionProfileMetadata>>,
     /// Not really an atomic sync flag or something, just cheaper than a mutex
     pub clearcore_configured: std::sync::Arc<AtomicBool>,
+    pub sse_tx: broadcast::Sender<SseEvent>,
 }
 
 #[tokio::main]
@@ -216,9 +221,20 @@ async fn main() {
 
     // Initialize machine config
     let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
-        .unwrap_or_else(|_| machine_config::MachineConfig::default());
+        .unwrap_or_else(|_| {
+            warn_targeted!(FS, "Failed to load machine config, using default values");
+            machine_config::MachineConfig::default()
+        });
+    let upd_log_port = machine_config.udp_logging_port;
     let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
 
+    let sse_tx: broadcast::Sender<SseEvent> = broadcast::Sender::new(32);
+    let sse_tx_clone = sse_tx.clone();
+    tokio::spawn(async move{ 
+        loop { 
+            udp_log_listener::start_listener(upd_log_port, sse_tx_clone.clone()).await; 
+        }
+    });
 
     // Initialize weld profile metadata
     let weld_profile_metadata = std::sync::Arc::new(tokio::sync::Mutex::new(
@@ -228,6 +244,8 @@ async fn main() {
         views::motion_profile::profile_metadata::MotionProfileMetadata::new()
     ));
 
+    
+
     // Initialize state with the managers
     let state = AppState {
         clearcore_registers,
@@ -236,6 +254,7 @@ async fn main() {
         weld_profile_metadata,
         motion_profile_metadata,
         clearcore_configured,
+        sse_tx,
     };
 
     debug_targeted!(HTTP, "Initialized application state");
@@ -243,6 +262,9 @@ async fn main() {
     let app = Router::new()
         // --- View Routes ---
         .merge(views::routes())
+
+        .route("/sse", get(sse::sse_handler))
+
         // --- Modbus Management Routes - ClearCore ---
         .route("/modbus/clearcore/manager", get(connection_management::get_clearcore_manager))
         .route("/modbus/clearcore/connect", post(connection_management::connect_clearcore))

@@ -26,8 +26,14 @@ impl MotionProfile {
                 cycle_end_pos: 0,
                 cycle_park_pos: 0,
                 cycle_weld_speed: 0,
-                cycle_reposition_speed: 0,
+                cycle_reposition_speed_x: 0,
+                cycle_reposition_speed_y: 0,
+                cycle_reposition_speed_z: 0,
                 cycle_wire_feed_speed: 0,
+                cycle_avc_vref: 0,
+                cycle_z_static_offset: 0,
+                cycle_use_avc: false,
+                cycle_use_touch_retract: false,
             },
         }
     }

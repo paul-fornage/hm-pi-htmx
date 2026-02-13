@@ -1,7 +1,8 @@
 pub enum LogTarget {
     HTTP,
     MODBUS,
-    FS
+    FS,
+    Clearcore
 }
 
 // TODO: This whole thing is stupid, just use the damned crate and get the file name.
@@ -13,7 +14,8 @@ impl Into<&'static str> for LogTarget {
         match self {
             LogTarget::HTTP => "http",
             LogTarget::MODBUS => "modbus",
-            LogTarget::FS => "fs"
+            LogTarget::FS => "fs",
+            LogTarget::Clearcore => "clearcore"
         }
     }
 }
