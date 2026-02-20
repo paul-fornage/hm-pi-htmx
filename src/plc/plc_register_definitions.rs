@@ -462,11 +462,10 @@ pub const CYCLE_REPOSITION_SPEED_Z: RegisterMetadata = RegisterMetadata {
     name: "CYCLE REPOSITION SPEED Z",
     description: "speed to move z axis in cycle when not actively welding (hundredths of an inch per minute)",
 };
-
-pub const AXIS_Z_TORCH_UP_OFFSET: RegisterMetadata = RegisterMetadata {
-    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 40 },
+pub const CYCLE_AXIS_Z_TORCH_UP_OFFSET: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 36 },
     name: "AXIS Z TORCH UP OFFSET",
-    description: "offset to use for Z axis when torch is up like after a cycle. measured as distance from top of travel (hundredths of an inch)",
+    description: "hundredths of an inch| offset to use for Z axis when torch is up after a cycle. measured as distance from top of travel",
 };
 
 pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
