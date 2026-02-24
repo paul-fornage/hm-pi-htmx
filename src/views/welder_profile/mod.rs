@@ -11,12 +11,12 @@ pub mod description_edit_modal;
 
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse};
 use axum::routing::{delete, get, post};
 use axum::{Form, Router};
 use serde::Deserialize;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate};
 use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
@@ -148,9 +148,10 @@ fn get_enum_register_type(name: &str) -> Option<EnumRegisterType> {
 }
 
 
-pub async fn show_welder_profile() -> impl IntoResponse {
+pub async fn show_welder_profile(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering welder profile view");
-    WelderProfileTemplate {}
+    let header = WelderProfileTemplate::header_context(&state).await;
+    WelderProfileTemplate { header }
 }
 
 pub async fn show_welder_profile_grid(
@@ -456,7 +457,9 @@ pub async fn submit_register_write(
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/welder-profile.html")]
-pub struct WelderProfileTemplate {}
+pub struct WelderProfileTemplate {
+    pub header: HeaderContext,
+}
 impl ViewTemplate for WelderProfileTemplate { const APP_VIEW_VARIANT: AppView = AppView::WelderProfile; }
 
 #[derive(Template, WebTemplate)]

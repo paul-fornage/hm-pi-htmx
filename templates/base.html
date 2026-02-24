@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <title>Mitusa Seamer</title>
-    <script src="/htmx.min.js"></script>
+    <script src="/htmx.js"></script>
     <script src="/htmx-sse.js"></script>
     <script src="/htmx-idiomorph.js"></script>
 
@@ -15,6 +15,7 @@
 </head>
 
 <body hx-ext="sse" sse-connect="/sse" class="font-mono w-full mx-auto p-5 bg-gray-50 select-none cursor-default touch-pan-y" hx-boost="true">
+{% block header %}{% endblock %}
 {% block content %}{% endblock %}
 
 {% include "components/error-toast-manager.html" %}
@@ -53,7 +54,11 @@
         console.log("htmx:sseClose:", e);
     });
 
-
+    // htmx.logger = function(elt, event, data) {
+    //     if(console) {
+    //         console.log(event, elt, data);
+    //     }
+    // }
 </script>
 </body>
 </html>

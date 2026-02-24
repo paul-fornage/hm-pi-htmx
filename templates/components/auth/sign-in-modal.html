@@ -1,0 +1,50 @@
+<div class="fixed inset-0 z-50 pt-20 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4"
+     id="auth-modal-backdrop">
+
+    <div class="absolute inset-0" onclick="document.getElementById('auth-modal').innerHTML = ''"></div>
+
+    <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md border border-slate-300 z-10 animate-in fade-in zoom-in duration-200">
+        <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
+            <h3 class="font-bold font-mono text-lg text-slate-800">Sign In</h3>
+            <button onclick="document.getElementById('auth-modal').innerHTML = ''"
+                    class="text-slate-400 hover:text-red-500 font-bold px-2 text-xl">&times;</button>
+        </div>
+
+        <form class="p-4 space-y-4" hx-post="/auth/sign-in" hx-target="#auth-modal" autocomplete="off">
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">Username</label>
+                <input
+                        autocomplete="off"
+                        name="username"
+                        type="text"
+                        data-keyboard="text"
+                        required
+                        class="w-full px-3 py-2 border border-slate-300 rounded">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">Password</label>
+                <input
+                        autocomplete="off"
+                        name="password"
+                        type="password"
+                        data-keyboard="text"
+                        required
+                        class="w-full px-3 py-2 border border-slate-300 rounded">
+            </div>
+            {% if has_error() %}
+                <div class="text-sm text-red-600 font-semibold">{{ error.as_ref().unwrap() }}</div>
+            {% endif %}
+            <div class="flex justify-end gap-2">
+                <button type="button"
+                        onclick="document.getElementById('auth-modal').innerHTML = ''"
+                        class="px-4 py-2 bg-white border border-slate-300 rounded text-sm font-medium hover:bg-slate-100 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors">
+                    Sign In
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

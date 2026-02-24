@@ -9,9 +9,12 @@ pub mod shared;
 pub mod clearcore_manual_control;
 pub mod run_cycle;
 mod clearcore_logs;
+mod auth;
+mod users;
 
 use axum::Router;
 use crate::AppState;
+use crate::auth::AuthLevel;
 
 pub use connections::ConnectionsTemplate;
 pub use operations::OperationsTemplate;
@@ -23,6 +26,7 @@ pub use clearcore_static_config::ClearcoreConfigTemplate;
 pub use clearcore_manual_control::ManualControlTemplate;
 pub use run_cycle::RunCycleTemplate;
 pub use clearcore_logs::ClearcoreLogsTemplate;
+pub use users::UsersTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -37,6 +41,7 @@ pub enum AppView {
     ClearcoreManualControl,
     ClearcoreLogs,
     RunCycle,
+    Users,
 }
 
 impl AppView {
@@ -52,6 +57,7 @@ impl AppView {
             AppView::MillerInfo,
             AppView::Connections,
             AppView::MachineConfig,
+            AppView::Users,
         ]
     }
 
@@ -68,6 +74,7 @@ impl AppView {
             AppView::ClearcoreManualControl => "Manual Control",
             AppView::ClearcoreLogs => "ClearCore Logs",
             AppView::RunCycle => "Run Cycle",
+            AppView::Users => "Users",
         }
     }
 
@@ -84,38 +91,88 @@ impl AppView {
             AppView::ClearcoreManualControl => "/clearcore-manual-control",
             AppView::ClearcoreLogs => "/clearcore-logs",
             AppView::RunCycle => "/run-cycle",
+            AppView::Users => "/users",
         }
     }
 
     pub fn url_with_path(&self, path: &'static str) -> String {
         format!("{}{}", self.url(), path)
     }
+
+    pub fn required_auth(&self) -> AuthLevel {
+        match self {
+            AppView::Operations => AuthLevel::Operator,
+            AppView::RunCycle => AuthLevel::Operator,
+            AppView::ClearcoreManualControl => AuthLevel::Operator,
+            AppView::ClearcoreLogs => AuthLevel::Manager,
+            AppView::WelderProfile => AuthLevel::Manager,
+            AppView::MotionProfile => AuthLevel::Manager,
+            AppView::ClearcoreConfig => AuthLevel::Manager,
+            AppView::MillerInfo => AuthLevel::Manager,
+            AppView::Connections => AuthLevel::Admin,
+            AppView::MachineConfig => AuthLevel::Admin,
+            // TODO: Confirm Users page auth level (defaulting to Admin).
+            AppView::Users => AuthLevel::Admin,
+        }
+    }
+
+    pub fn from_url(url: &str) -> Option<AppView> {
+        if url == AppView::Operations.url() {
+            return Some(AppView::Operations);
+        }
+        AppView::all().iter().copied().find(|v| v.url() == url)
+    }
 }
 
 // This struct is included in every page template to render the header
 pub struct HeaderContext {
-    pub tabs: &'static [AppView],
+    pub tabs: Vec<AppView>,
     pub active_tab: AppView,
+    pub auth_level: AuthLevel,
+    pub auth_username: Option<String>,
 }
 
 impl HeaderContext {
-    pub fn new(active_tab: AppView) -> Self {
+    pub fn new(active_tab: AppView, auth_level: AuthLevel, auth_username: Option<String>) -> Self {
+        let tabs = AppView::all()
+            .iter()
+            .copied()
+            .filter(|tab| tab.required_auth() <= auth_level)
+            .collect();
         Self {
-            tabs: AppView::all(),
+            tabs,
             active_tab,
+            auth_level,
+            auth_username,
         }
+    }
+
+    pub fn is_signed_in(&self) -> bool {
+        self.auth_username.is_some()
     }
 }
 
+pub async fn build_header_context(state: &AppState, active_tab: AppView) -> HeaderContext {
+    let auth_state = state.auth_state.read().await;
+    let auth_level = auth_state.level();
+    let auth_username = auth_state.username().map(|s| s.to_string());
+    HeaderContext::new(active_tab, auth_level, auth_username)
+}
 
 pub trait ViewTemplate{
     fn get_view() -> &'static AppView { &Self::APP_VIEW_VARIANT }
     fn all_views() -> &'static [AppView] { AppView::all() }
+    fn required_auth() -> AuthLevel { Self::APP_VIEW_VARIANT.required_auth() }
     const APP_VIEW_VARIANT: AppView;
+    
+    async fn header_context(state: &AppState) -> HeaderContext {
+        build_header_context(state, Self::APP_VIEW_VARIANT).await
+    }
 }
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .merge(auth::routes())
         .merge(operations::routes())
         .merge(connections::routes())
         .merge(miller_info::routes())
@@ -126,4 +183,5 @@ pub fn routes() -> Router<AppState> {
         .merge(clearcore_manual_control::routes())
         .merge(run_cycle::routes())
         .merge(clearcore_logs::routes())
+        .merge(users::routes())
 }

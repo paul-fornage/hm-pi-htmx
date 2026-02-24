@@ -7,10 +7,12 @@ mod clearcore_registers;
 mod miller;
 mod connection_management;
 mod views;
+mod auth;
 mod machine_config;
 mod plc;
 mod udp_log_listener;
 pub mod sse;
+mod hx_trigger;
 
 use tokio::sync::{broadcast, mpsc};
 use std::sync::atomic::AtomicBool;
@@ -38,6 +40,7 @@ pub struct AppState {
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
     pub motion_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::motion_profile::profile_metadata::MotionProfileMetadata>>,
+    pub auth_state: std::sync::Arc<tokio::sync::RwLock<auth::AuthState>>,
     /// Not really an atomic sync flag or something, just cheaper than a mutex
     pub clearcore_configured: std::sync::Arc<AtomicBool>,
     pub sse_tx: broadcast::Sender<SseEvent>,
@@ -244,6 +247,8 @@ async fn main() {
         views::motion_profile::profile_metadata::MotionProfileMetadata::new()
     ));
 
+    let auth_state = std::sync::Arc::new(tokio::sync::RwLock::new(auth::AuthState::default()));
+
     
 
     // Initialize state with the managers
@@ -253,6 +258,7 @@ async fn main() {
         machine_config,
         weld_profile_metadata,
         motion_profile_metadata,
+        auth_state,
         clearcore_configured,
         sse_tx,
     };
@@ -285,7 +291,6 @@ async fn main() {
         // --- Static files ---
         .fallback_service(ServeDir::new("static"))
         .nest_service("/assets", ServeDir::new("static/assets"))
-
         // Apply state
         .with_state(state);
 

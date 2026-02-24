@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block header %}
+<div id="app-header"
+     hx-get="/ui/header?tab={{ Self::get_view().url() }}"
+     hx-trigger="auth-changed"
+     hx-swap="innerHTML">
+    {% include "components/header.html" %}
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div id="user-edit-modal"></div>
+
+<div class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <h2 class="text-xl font-bold mb-3">Users</h2>
+
+    {% if has_load_error() %}
+    <div class="text-red-700 font-semibold mb-3">Failed to load users: {{ load_error.as_ref().unwrap() }}</div>
+    {% endif %}
+
+    <div id="users-action-status"></div>
+
+    <div class="overflow-x-auto mb-4">
+        <table class="w-full border border-gray-300 bg-white table-fixed">
+            <thead class="bg-gray-200 text-left">
+            <tr>
+                <th class="p-2 border-b border-gray-300">Username</th>
+                <th class="p-2 border-b border-gray-300">Password</th>
+                <th class="p-2 border-b border-gray-300">Level</th>
+                <th class="p-2 border-b border-gray-300 text-right">Actions</th>
+            </tr>
+            </thead>
+            <tbody id="users-table-body">
+            {% for user in self.sorted_users() %}
+            {% include "components/users/user-row.html" %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex gap-2">
+        <button type="button"
+                hx-get="/users/modal/add"
+                hx-target="#user-edit-modal"
+                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Add User
+        </button>
+    </div>
+</div>
+
+<script>
+    function togglePassword(btn) {
+        const input = btn.previousElementSibling;
+        if (input.type === "password") {
+            input.type = "text";
+            btn.textContent = "Hide";
+        } else {
+            input.type = "password";
+            btn.textContent = "Show";
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('user-edit-modal').innerHTML = '';
+    }
+</script>
+{% endblock %}

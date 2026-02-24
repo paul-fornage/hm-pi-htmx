@@ -5,12 +5,12 @@ mod boot_procedure;
 
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Form, Router};
 use serde::Deserialize;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::views::shared::analog_register::AnalogRegisterInfo;
@@ -102,9 +102,10 @@ fn find_dword_analog_register(name: &str) -> Option<&'static AnalogDwordRegister
     CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS.iter().find(|reg| reg.get_meta().name == name)
 }
 
-pub async fn show_clearcore_config() -> impl IntoResponse {
+pub async fn show_clearcore_config(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering clearcore static config view");
-    ClearcoreConfigTemplate {}
+    let header = build_header_context(&state, AppView::ClearcoreConfig).await;
+    ClearcoreConfigTemplate { header }
 }
 
 pub async fn show_clearcore_config_status(
@@ -382,7 +383,9 @@ pub async fn handle_apply_config(
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/clearcore-config.html")]
-pub struct ClearcoreConfigTemplate {}
+pub struct ClearcoreConfigTemplate {
+    pub header: HeaderContext,
+}
 impl ViewTemplate for ClearcoreConfigTemplate { 
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreConfig; 
 }

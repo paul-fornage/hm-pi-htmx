@@ -1,7 +1,7 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::{AppState, info_targeted, error_targeted};
 use crate::logging::LogTarget;
 use crate::miller::miller_register_types::WelderModel;
@@ -9,6 +9,7 @@ use crate::miller::miller_register_types::WelderModel;
 #[derive(Template, WebTemplate)]
 #[template(path = "views/machine-config.html")]
 pub struct MachineConfigTemplate {
+    pub header: HeaderContext,
     pub current_model: WelderModel,
     pub udp_logging_port: u16,
     pub save_status: Option<Result<(), crate::error::HmPiError>>,
@@ -43,7 +44,9 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
     info_targeted!(HTTP, "Rendering machine config view");
 
     let config = state.machine_config.read().await;
+    let header = build_header_context(&state, AppView::MachineConfig).await;
     MachineConfigTemplate {
+        header,
         current_model: config.welder_model.clone(),
         udp_logging_port: config.udp_logging_port,
         save_status: None,

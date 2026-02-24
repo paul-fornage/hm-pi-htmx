@@ -6,29 +6,8 @@ use serde_json::json;
 use axum::http::{HeaderMap, HeaderValue};
 
 use crate::error_targeted;
+use crate::hx_trigger::HxTrigger;
 use super::motion_profile::ProfileListEntry;
-
-pub struct HxTrigger {
-    pub event: &'static str,
-    pub target: &'static str,
-}
-impl HxTrigger {
-    pub fn to_json(&self) -> serde_json::Value {
-        json!({
-            self.event: { "target": self.target }
-        })
-    }
-
-    pub fn list_to_json(targets: &[HxTrigger]) -> serde_json::Map<String, serde_json::Value> {
-        let mut map = serde_json::Map::with_capacity(targets.len());
-        for t in targets {
-            map.insert(
-                t.event.to_string(), json!({ "target": t.target })
-            );
-        }
-        map
-    }
-}
 
 pub const RELOAD_LIST_EVENT: HxTrigger = HxTrigger {
     event: "reload-profile-list",

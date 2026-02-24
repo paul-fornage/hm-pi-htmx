@@ -1,25 +1,27 @@
 
 use askama::Template;
 use askama_web::WebTemplate;
+use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::{debug_targeted, AppState};
 
 
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/raw-reg-viewer.html")]
-pub struct OperationsTemplate {}
+pub struct OperationsTemplate {
+    pub header: HeaderContext,
+}
 
 impl ViewTemplate for OperationsTemplate { const APP_VIEW_VARIANT: AppView = AppView::Operations; }
 
-const OPERATIONS_TEMPLATE: OperationsTemplate = OperationsTemplate {};
-
-async fn show_operations() -> impl IntoResponse {
+async fn show_operations(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering operations view");
-    OPERATIONS_TEMPLATE
+    let header = build_header_context(&state, AppView::Operations).await;
+    OperationsTemplate { header }
 }
 
 pub fn routes() -> Router<AppState> {

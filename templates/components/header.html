@@ -6,17 +6,38 @@
             Loading status...
         </span>
     </div>
+    <div class="flex items-center gap-3">
+        {% if header.is_signed_in() %}
+            <div>
+                <span class="font-semibold">{{ header.auth_username.as_ref().unwrap() }}</span>
+                <span class="text-xs uppercase tracking-wide text-gray-500 ml-2">{{ header.auth_level.label() }}</span>
+            </div>
+            <button
+                hx-post="/auth/sign-out"
+                hx-trigger="click"
+                hx-target="this"
+                hx-swap="none"
+                hx-vals='{"current_url":"{{ header.active_tab.url() }}"}'
+                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit cursor-pointer"
+            >
+                Sign Out
+            </button>
+        {% else %}
+            <button
+                hx-get="/auth/sign-in"
+                hx-target="#auth-modal"
+                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit cursor-pointer"
+            >
+                Sign In
+            </button>
+        {% endif %}
+    </div>
 </header>
 
 <nav class="flex border-b-2 border-gray-300 mb-5 gap-1">
-    <!-- call self.all_views() to get the list -->
-    {% for tab in Self::all_views() %}
+    {% for tab in header.tabs %}
     <a href="{{ tab.url() }}"
-       class="px-5 py-2.5 ... 
-           {# call self.current_view() to check equality #}
-           {% if tab == Self::get_view() %}
-             !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5
-           {% endif %}">
+       class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300 border-b-0 rounded-t hover:bg-white hover:text-blue-600 transition-colors{% if *tab == header.active_tab %} !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">
         {{ tab.label() }}
     </a>
     {% endfor %}

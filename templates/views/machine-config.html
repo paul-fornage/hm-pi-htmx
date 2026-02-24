@@ -1,7 +1,18 @@
 {% extends "base.html" %}
 
+{% block header %}
+<div id="app-header"
+     hx-get="/ui/header?tab={{ Self::get_view().url() }}"
+     hx-trigger="auth-changed"
+     hx-swap="innerHTML">
+    {% include "components/header.html" %}
+</div>
+{% endblock %}
+
+
 {% block content %}
-{% include "components/header.html" %}
+
+<div id="auth-modal"></div>
 
 <main class="container mx-auto">
     <div class="flex items-center justify-between mb-4 h-18">

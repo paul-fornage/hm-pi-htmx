@@ -1,7 +1,18 @@
 {% extends "base.html" %}
 
+{% block header %}
+<div id="app-header"
+     hx-get="/ui/header?tab={{ Self::get_view().url() }}"
+     hx-trigger="auth-changed"
+     hx-swap="innerHTML">
+    {% include "components/header.html" %}
+</div>
+{% endblock %}
+
+
 {% block content %}
-{% include "components/header.html" %}
+
+<div id="auth-modal"></div>
 
 <div id="view-operations">
     <div class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">

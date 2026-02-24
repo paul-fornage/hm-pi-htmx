@@ -4,7 +4,23 @@
 
 See SSE HTMX for next steps
 
+
+```clankerprompt
+Can you fix the sign in endpoint and modal? `src/views/auth.rs` (not `src/auth.rs`)
+
+I noticed that after signing in, the header does not update to show the newly accessible endpoints, or the username and auth level. Luckily, there is already an htmx trigger emitted for auth change, so it should be pretty simple. Also if the user is already on a page at time of sign out that isn't accessible to the signed out operator, it should boot them back to manual control. The trigger should trigger a specific element, not global if possible. Also if it's not too hard, use the HxTrigger struct! 
+`src/hx_trigger.rs`
+Example usage in `src/views/welder_profile/file_system_templates.rs`
+
+Does this make sense?
+
+Tell me how you plan on doing this, NO GETTING THE URL
+```
+
+
+
 TODO: 
+- [ ] Sign out changes tabs
 - [ ] clearcore UDP messages should use ascii control chars to not log line numbers and file name to front end alerts
 - [ ] update speeds as part of the motion profile
 - [ ] preemptive frontend feedback for things like mandrel must be closed or fingers not down

@@ -22,14 +22,14 @@
         "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
         "{tab} q w e r t y u i o p [ ] \\",
         "{lock} a s d f g h j k l ; ' {enter}",
-        "{shift} z x c v b n m , . / {shift}",
+        "{shift} z x c v b n m , . / {shift} {close}",
         "{space}"
       ],
       shift: [
         "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
         "{tab} Q W E R T Y U I O P { } |",
         "{lock} A S D F G H J K L : \" {enter}",
-        "{shift} Z X C V B N M < > ? {shift}",
+        "{shift} Z X C V B N M < > ? {shift} {close}",
         "{space}"
       ]
     }
@@ -81,7 +81,7 @@
   }
 
   function handleKeyboardChange(input) {
-    if (!activeInput || !activeInput.isConnected) {
+    if (!checkNonNullAndConnected(activeInput)) {
       hideKeyboard();
       return;
     }
@@ -94,18 +94,39 @@
 
   function handleKeyPress(button) {
     if (button === "{close}") {
-      if (activeInput) {
+      if (checkNonNullAndConnected(activeInput)) {
         activeInput.blur();
+        console.debug("close keyboard: blurring ", activeInput);
+      } else {
+        console.debug("close keyboard: no active input. hideKeyboard()");
+        hideKeyboard();
+      }
+      return;
+    }
+
+    if (button === "{enter}") {
+      console.debug("enter pressed");
+      if (checkNonNullAndConnected(activeInput)) {
+        console.debug("has active input: ", activeInput);
+        if(activeInput.form) {
+          console.debug("submitting form");
+          activeInput.form.requestSubmit();
+          activeInput.blur();
+        }
+      } else {
+        hideKeyboard();
       }
       return;
     }
 
     if (button === "{clear}") {
       keyboard.clearInput();
-      if (activeInput) {
+      if (checkNonNullAndConnected(activeInput)) {
         activeInput.value = "";
         // Dispatch input event so frameworks/listeners detect the change
         activeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      } else {
+        hideKeyboard();
       }
       return;
     }
@@ -133,13 +154,13 @@
     keyboardRoot.classList.toggle("keyboard-float", type === "float");
     keyboardRoot.classList.toggle("keyboard-text", type === "text");
 
-    if (activeInput && activeInputHandler) {
+    if (checkNonNullAndConnected(activeInput) && activeInputHandler) {
       activeInput.removeEventListener("input", activeInputHandler);
     }
 
     activeInput = input;
     activeInputHandler = () => {
-      if (!activeInput || !activeInput.isConnected) {
+      if (!checkNonNullAndConnected(activeInput)) {
         hideKeyboard();
         return;
       }
@@ -163,13 +184,39 @@
   }
 
   function hideKeyboard() {
-    if (activeInput && activeInputHandler) {
+    if (checkNonNullAndConnected(activeInput) && activeInputHandler) {
       activeInput.removeEventListener("input", activeInputHandler);
     }
     activeInput = null;
     activeInputHandler = null;
     activeType = null;
     keyboardLayer.hidden = true;
+  }
+
+  function checkNonNullAndConnected(element) {
+    if(element){
+      if(element.isConnected){
+        return true;
+      } else {
+        element = null;
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  
+  function checkNonNullAndConnected(activeInput) {
+    if(activeInput){
+      if(activeInput.isConnected){
+        return true;
+      } else {
+        activeInput = null;
+        return false;
+      }
+    } else {
+      return false;
+    }
   }
 
   document.addEventListener("focusin", (event) => {
@@ -184,6 +231,7 @@
   });
 
   document.addEventListener("focusout", (event) => {
+    console.log("focus out from", event.target);
     if (event.target !== activeInput) {
       return;
     }

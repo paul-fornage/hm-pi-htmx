@@ -9,11 +9,12 @@ pub mod version_info;
 
 use askama::Template;
 use askama_web::WebTemplate;
+use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use axum::{Form, Router};
 use log::{error, warn};
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
 use crate::miller::miller_register_definitions;
 use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted, AppState};
@@ -86,9 +87,10 @@ async fn mb_read_dword_helper(state: &AppState,address: &RegisterAddress) -> Opt
 
 
 
-pub async fn show_miller_info() -> impl IntoResponse {
+pub async fn show_miller_info(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Rendering miller info view");
-    MillerInfoTemplate {}
+    let header = build_header_context(&state, AppView::MillerInfo).await;
+    MillerInfoTemplate { header }
 }
 
 pub async fn show_miller_info_grid(
@@ -271,7 +273,9 @@ pub const MILLER_ANALOG_INFO_VIEW: [AnalogRegisterInfo; 27] = [
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/miller-info.html")]
-pub struct MillerInfoTemplate {}
+pub struct MillerInfoTemplate {
+    pub header: HeaderContext,
+}
 impl ViewTemplate for MillerInfoTemplate { const APP_VIEW_VARIANT: AppView = AppView::MillerInfo; }
 
 #[derive(Template, WebTemplate)]
@@ -285,4 +289,3 @@ pub struct MillerInfoGridTemplate {
     pub error_list: error_list::ErrorListTemplate,
     pub version_info: version_info::VersionInfoTemplate,
 }
-

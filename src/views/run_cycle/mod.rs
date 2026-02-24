@@ -10,7 +10,7 @@ use tokio::time::{Duration, Instant};
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use crate::error::HmPiError;
 use crate::plc::plc_register_definitions;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::views::motion_profile::file_operations as motion_file_ops;
 use crate::views::motion_profile::motion_profile::{MotionProfile, ProfileListEntry as MotionProfileListEntry};
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
@@ -69,7 +69,9 @@ pub async fn show_run_cycle(
     let selected_weld = selected_weld.filter(|name| weld_profiles.iter().any(|p| p.name == *name));
     let selected_motion = selected_motion.filter(|name| motion_profiles.iter().any(|p| p.name == *name));
 
+    let header = build_header_context(&state, AppView::RunCycle).await;
     RunCycleTemplate {
+        header,
         weld_profiles,
         motion_profiles,
         selected_weld,
@@ -80,6 +82,7 @@ pub async fn show_run_cycle(
 #[derive(Template, WebTemplate)]
 #[template(path = "views/run-cycle.html")]
 pub struct RunCycleTemplate {
+    pub header: HeaderContext,
     pub weld_profiles: Vec<WeldProfileListEntry>,
     pub motion_profiles: Vec<MotionProfileListEntry>,
     pub selected_weld: Option<String>,

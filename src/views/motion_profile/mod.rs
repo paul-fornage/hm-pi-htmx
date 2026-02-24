@@ -7,7 +7,7 @@ pub mod file_system_templates;
 
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse};
 use axum::routing::{delete, get, post};
 use axum::{Form, Router};
@@ -15,7 +15,7 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::plc::plc_register_definitions;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::views::shared::{
     AnalogEditModalTemplate,
     BooleanEditModalTemplate,
@@ -84,8 +84,9 @@ const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 11] = [
 
 ];
 
-pub async fn show_motion_profile() -> impl IntoResponse {
-    MotionProfileTemplate {}
+pub async fn show_motion_profile(State(state): State<AppState>) -> impl IntoResponse {
+    let header = build_header_context(&state, AppView::MotionProfile).await;
+    MotionProfileTemplate { header }
 }
 
 pub async fn show_motion_profile_grid(
@@ -257,7 +258,9 @@ fn find_analog_register(name: &str) -> Option<&'static AnalogRegisterInfo> {
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/motion-profile.html")]
-pub struct MotionProfileTemplate {}
+pub struct MotionProfileTemplate {
+    pub header: HeaderContext,
+}
 impl ViewTemplate for MotionProfileTemplate { const APP_VIEW_VARIANT: AppView = AppView::MotionProfile; }
 
 #[derive(Template, WebTemplate)]

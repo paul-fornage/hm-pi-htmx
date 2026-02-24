@@ -8,7 +8,7 @@ use crate::AppState;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
-use crate::views::{AppView, ViewTemplate};
+use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::views::shared::result_feedback::FeedbackResult;
 use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
 use axum::extract::{Form, Path};
@@ -37,7 +37,9 @@ macro_rules! read_or_bail {
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/manual-control.html")]
-pub struct ManualControlTemplate {}
+pub struct ManualControlTemplate {
+    pub header: HeaderContext,
+}
 impl ViewTemplate for ManualControlTemplate {
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreManualControl;
 }
@@ -71,8 +73,9 @@ pub struct HomingStatusTemplate {
 
 
 
-pub async fn show_manual_control() -> impl IntoResponse {
-    ManualControlTemplate {}
+pub async fn show_manual_control(State(state): State<AppState>) -> impl IntoResponse {
+    let header = build_header_context(&state, AppView::ClearcoreManualControl).await;
+    ManualControlTemplate { header }
 }
 
 pub async fn homing_status_handler(State(state): State<AppState>) -> impl IntoResponse {
