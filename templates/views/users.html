@@ -32,7 +32,10 @@
                 <th class="p-2 border-b border-gray-300 text-right">Actions</th>
             </tr>
             </thead>
-            <tbody id="users-table-body">
+            <tbody id="users-table-body"
+                   hx-get="/users/rows"
+                   hx-trigger="users-updated from:body"
+                   hx-swap="innerHTML">
             {% for user in self.sorted_users() %}
             {% include "components/users/user-row.html" %}
             {% endfor %}

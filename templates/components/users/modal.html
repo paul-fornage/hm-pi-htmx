@@ -9,8 +9,8 @@
             {% endmatch %}
         </h3>
         <form hx-post="{% match user %}{% when Some with (_) %}/users/edit{% when None %}/users/add{% endmatch %}"
-              hx-target="{% match user %}{% when Some with (u) %}#user-row-{{ u.username }}{% when None %}#users-table-body{% endmatch %}"
-              hx-swap="{% match user %}{% when Some with (_) %}outerHTML{% when None %}beforeend{% endmatch %}"
+              hx-target="#users-action-status"
+              hx-swap="innerHTML"
               hx-on::after-request="closeModal()"
               class="space-y-4">
 

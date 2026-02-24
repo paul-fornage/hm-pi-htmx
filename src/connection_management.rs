@@ -98,7 +98,7 @@ async fn handle_connect(
             };
 
             // Save config before attempting connection
-            if let Err(e) = config.save_to_path(config_path) {
+            if let Err(e) = config.save_to_path(config_path).await {
                 warn_targeted!(MODBUS, "Failed to save {} config: {}", name, e);
             }
 

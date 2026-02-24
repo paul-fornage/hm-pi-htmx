@@ -1,4 +1,4 @@
-<tr class="border-t border-gray-200" id="user-row-{{ user.username }}">
+<tr class="border-t border-gray-200">
     <td class="p-2">{{ user.username }}</td>
     <td class="p-2">
         <div class="flex items-center gap-2">
@@ -19,8 +19,8 @@
                 class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">Edit</button>
         <button type="button"
                 hx-delete="/users/delete?username={{ user.username }}"
-                hx-target="#user-row-{{ user.username }}"
-                hx-swap="outerHTML"
+                hx-target="#users-action-status"
+                hx-swap="innerHTML"
                 hx-confirm="Are you sure you want to delete {{ user.username }}?"
                 class="px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">Delete</button>
     </td>

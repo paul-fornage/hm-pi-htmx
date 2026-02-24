@@ -125,14 +125,21 @@ impl ConnectionConfig {
         }
     }
 
-    pub fn save_to_path(&self, path: &str) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    pub fn save_to_path_blocking(&self, path: &str) -> std::result::Result<(), std::io::Error> {
         let json = serde_json::to_string_pretty(self)?;
         std::fs::write(path, json)?;
         info_targeted!(MODBUS, "Saved config to {}", path);
         Ok(())
     }
 
-    pub fn load_from_path(path: &str) -> Option<Self> {
+    pub async fn save_to_path(&self, path: &str) -> std::result::Result<(), std::io::Error> {
+        let json = serde_json::to_string_pretty(self)?;
+        tokio::fs::write(path, json).await?;
+        info_targeted!(MODBUS, "Saved config to {}", path);
+        Ok(())
+    }
+
+    pub fn load_from_path_blocking(path: &str) -> Option<Self> {
         let path_obj = std::path::Path::new(path);
         if !path_obj.exists() {
             info_targeted!(MODBUS, "Config file {} does not exist", path);
@@ -140,6 +147,31 @@ impl ConnectionConfig {
         }
 
         match std::fs::read_to_string(path_obj) {
+            Ok(contents) => match serde_json::from_str(&contents) {
+                Ok(config) => {
+                    info_targeted!(MODBUS, "Loaded config from {}", path);
+                    Some(config)
+                }
+                Err(e) => {
+                    warn_targeted!(MODBUS, "Failed to parse config from {}: {}", path, e);
+                    None
+                }
+            },
+            Err(e) => {
+                warn_targeted!(MODBUS, "Failed to read config from {}: {}", path, e);
+                None
+            }
+        }
+    }
+
+    pub async fn load_from_path(path: &str) -> Option<Self> {
+        let path_obj = std::path::Path::new(path);
+        if !path_obj.exists() {
+            info_targeted!(MODBUS, "Config file {} does not exist", path);
+            return None;
+        }
+
+        match tokio::fs::read_to_string(path_obj).await {
             Ok(contents) => match serde_json::from_str(&contents) {
                 Ok(config) => {
                     info_targeted!(MODBUS, "Loaded config from {}", path);

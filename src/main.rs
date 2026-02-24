@@ -64,14 +64,16 @@ async fn main() {
 
     // Initialize Modbus Managers - load from saved config or use defaults
     let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
-        .unwrap_or_else(|| {
+        .await.unwrap_or_else(|| {
+            warn_targeted!(FS, "Failed to read Clearcore modbus connection config. Using default Clearcore Modbus config");
             let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
             modbus::ConnectionConfig::new(addr, 1)
         });
     let clearcore_modbus = modbus::ModbusManager::new(clearcore_config.clone());
 
     let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
-        .unwrap_or_else(|| {
+        .await.unwrap_or_else(|| {
+            warn_targeted!(FS, "Failed to read Miller modbus connection config. Using default Miller Modbus config");
             let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
             modbus::ConnectionConfig::new(addr, 1)
         });
@@ -89,27 +91,7 @@ async fn main() {
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
 
-        match clearcore.connect(clearcore_config).await {
-            Ok(()) => {
-                match clearcore_updater.initialize_all().await{
-                    Ok(()) => {
-                        trace_targeted!(MODBUS, "Initialized Clearcore registers");
-                    },
-                    Err(e) => {
-                        warn_targeted!(MODBUS, "Error initializing Clearcore registers: {:?}", e);
-                    },
-                }
-                info_targeted!(MODBUS, "Clearcore auto-connected");
-                let configured = ClearcoreConfig::on_boot(&thread_copy_clearcore_registers).await.unwrap_or_else(|e| {
-                    warn_targeted!(MODBUS, "Error loading Clearcore config: {:?}", e);
-                    false
-                });
-                thread_copy_clearcore_configured.store(configured, std::sync::atomic::Ordering::Release);
-            },
-            Err(e) => {
-                info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
-            }
-        }
+
         loop {
             interval.tick().await;
             let current_state = clearcore_updater.get_connection_state().await
@@ -117,6 +99,37 @@ async fn main() {
             if !(current_state == ModbusState::Connected) {
                 clearcore_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+                let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
+                    .await.unwrap_or_else(|| {
+                        warn_targeted!(FS, "Failed to read Clearcore modbus connection config. Using default Clearcore Modbus config");
+                        let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+                        modbus::ConnectionConfig::new(addr, 1)
+                    });
+                
+                match clearcore.connect(clearcore_config).await {
+                    Ok(()) => {
+                        match clearcore_updater.initialize_all().await{
+                            Ok(()) => {
+                                trace_targeted!(MODBUS, "Initialized Clearcore registers");
+                            },
+                            Err(e) => {
+                                warn_targeted!(MODBUS, "Error initializing Clearcore registers: {:?}", e);
+                                continue;
+                            },
+                        }
+                        info_targeted!(MODBUS, "Clearcore auto-connected");
+                        let configured = ClearcoreConfig::on_boot(&thread_copy_clearcore_registers).await.unwrap_or_else(|e| {
+                            warn_targeted!(MODBUS, "Error loading Clearcore config: {:?}", e);
+                            false
+                        });
+                        thread_copy_clearcore_configured.store(configured, std::sync::atomic::Ordering::Release);
+                    },
+                    Err(e) => {
+                        info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
+                    }
+                }
+
                 continue;
             }
             match clearcore_updater.update().await{
@@ -159,24 +172,7 @@ async fn main() {
     let welder = welder_modbus.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
-
-        match welder.connect(welder_config).await {
-            Ok(()) => {
-                match miller_updater.initialize_all().await {
-                    Ok(()) => {
-                        trace_targeted!(MODBUS, "Initialized Welder registers");
-                    }
-                    Err(e) => {
-                        warn_targeted!(MODBUS, "Error initializing Welder registers: {:?}", e);
-                    }
-                }
-                info_targeted!(MODBUS, "Welder auto-connected");
-            }
-            Err(e) => {
-                info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e);
-            }
-        }
-
+        
         loop {
             interval.tick().await;
             let current_state = miller_updater
@@ -186,6 +182,30 @@ async fn main() {
             if !(current_state == ModbusState::Connected) {
                 miller_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                
+                let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
+                    .await.unwrap_or_else(|| {
+                        warn_targeted!(FS, "Failed to read Miller modbus connection config. Using default Miller Modbus config");
+                        let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
+                        modbus::ConnectionConfig::new(addr, 1)
+                    });
+                
+                match welder.connect(welder_config).await {
+                    Ok(()) => {
+                        match miller_updater.initialize_all().await {
+                            Ok(()) => {
+                                trace_targeted!(MODBUS, "Initialized Welder registers");
+                            }
+                            Err(e) => {
+                                warn_targeted!(MODBUS, "Error initializing Welder registers: {:?}", e);
+                            }
+                        }
+                        info_targeted!(MODBUS, "Welder auto-connected");
+                    }
+                    Err(e) => {
+                        info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e);
+                    }
+                }
                 continue;
             }
             match miller_updater.update().await {

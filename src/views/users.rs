@@ -1,7 +1,7 @@
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Query, State};
-use axum::response::{IntoResponse, Response};
+use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use axum::{Form, Router};
 use serde::Deserialize;
@@ -36,9 +36,9 @@ impl ViewTemplate for UsersTemplate {
 }
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/users/user-row.html")]
-pub struct UserRowTemplate {
-    pub user: UserRecord,
+#[template(path = "components/users/user-rows.html")]
+pub struct UserRowsTemplate {
+    pub users: Vec<UserRecord>,
 }
 
 #[derive(Template, WebTemplate)]
@@ -87,6 +87,7 @@ pub struct EditQuery {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route(AppView::Users.url(), get(show_users))
+        .route("/users/rows", get(user_rows))
         .route("/users/add", post(add_user))
         .route("/users/edit", post(edit_user))
         .route("/users/delete", delete(delete_user))
@@ -125,6 +126,13 @@ pub async fn edit_modal(Query(query): Query<EditQuery>) -> impl IntoResponse {
     UserModalTemplate { user }
 }
 
+pub async fn user_rows() -> impl IntoResponse {
+    let users = auth::load_users().await.unwrap_or_default();
+    let mut list: Vec<_> = users.into_values().collect();
+    list.sort_by(|a, b| a.username.cmp(&b.username));
+    UserRowsTemplate { users: list }
+}
+
 pub async fn add_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Adding user: {:?}", form);
     let mut users = auth::load_users().await.unwrap_or_default();
@@ -152,16 +160,14 @@ pub async fn add_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
         }.into_response();
     }
 
-    // // Render both templates and combine them if successful
-    // let status_html = ActionStatusTemplate {
-    //     result: Ok("User added successfully".into())
-    // }.render().unwrap_or_default();
-    // TODO: ADD OOB SWAP BACK! It was stopping the row from being sent.
-    // axum::response::Html(format!("{}\n{}", status_html, row_html)).into_response()
+    let status_html = ActionStatusTemplate {
+        result: Ok("User added successfully".into())
+    }.render().unwrap_or_default();
 
-    let row_html = UserRowTemplate { user: new_user }.render().unwrap_or_default();
-
-    axum::response::Html(row_html).into_response()
+    (
+        [("HX-Trigger", "users-updated")],
+        axum::response::Html(status_html),
+    ).into_response()
 }
 
 pub async fn edit_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
@@ -194,16 +200,14 @@ pub async fn edit_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
         }.into_response();
     }
 
-    // // Render both templates and combine them
-    // let status_html = ActionStatusTemplate {
-    //     result: Ok("User updated successfully".into())
-    // }.render().unwrap_or_default();
-    // TODO: ADD OOB SWAP BACK! It was stopping the row from being sent.
-    // axum::response::Html(format!("{}{}", status_html, row_html)).into_response()
+    let status_html = ActionStatusTemplate {
+        result: Ok("User updated successfully".into())
+    }.render().unwrap_or_default();
 
-    let row_html = UserRowTemplate { user: new_user };
-
-    row_html.into_response()
+    (
+        [("HX-Trigger", "users-updated")],
+        axum::response::Html(status_html),
+    ).into_response()
 }
 
 pub async fn delete_user(Query(query): Query<DeleteQuery>) -> impl IntoResponse {
@@ -219,10 +223,12 @@ pub async fn delete_user(Query(query): Query<DeleteQuery>) -> impl IntoResponse 
         }.into_response();
     }
 
-    // Return the status update. HTMX will pull out the OOB element, and replace the row with the remaining empty string
     let status_html = ActionStatusTemplate {
         result: Ok(format!("User {} deleted", query.username))
     }.render().unwrap_or_default();
 
-    axum::response::Html(status_html).into_response()
+    (
+        [("HX-Trigger", "users-updated")],
+        axum::response::Html(status_html),
+    ).into_response()
 }
