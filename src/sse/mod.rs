@@ -1,3 +1,4 @@
+pub mod connection_status;
 pub mod error_toast;
 
 use std::convert::Infallible;
@@ -7,6 +8,7 @@ use axum::response::sse::{Event, KeepAlive};
 use futures::{Stream, stream};
 use tokio::sync::broadcast;
 use crate::{debug_targeted, trace_targeted, warn_targeted, AppState};
+use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
 use crate::udp_log_listener::ClearcoreLog;
 
@@ -14,6 +16,7 @@ use crate::udp_log_listener::ClearcoreLog;
 pub enum SseEvent {
     ErrorToast(ErrorToast),
     NewLog(ClearcoreLog),
+    ConnectionStatus(ConnectionStatus),
 }
 
 pub trait SseEventExt {
@@ -25,6 +28,7 @@ impl SseEvent {
         match self {
             SseEvent::ErrorToast(err) => err.as_axum_event(),
             SseEvent::NewLog(log) => log.as_axum_event(),
+            SseEvent::ConnectionStatus(evt) => evt.as_axum_event(),
         }
     }
 }

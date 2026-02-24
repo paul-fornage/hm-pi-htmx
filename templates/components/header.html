@@ -2,7 +2,7 @@
     <div class="flex gap-6 items-center">
         <h1 class="text-2xl font-bold">Mitusa Seamer</h1>
         <!-- Reusing your existing endpoint for status -->
-        <span id="modbus-status" hx-get="/modbus/status" hx-trigger="load, every 100ms" hx-swap="innerHTML">
+        <span id="modbus-status" hx-get="/modbus/status" hx-trigger="load, every 20s, sse:connection-status" hx-swap="innerHTML">
             Loading status...
         </span>
     </div>

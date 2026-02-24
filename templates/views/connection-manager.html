@@ -19,12 +19,12 @@
     <p class="mb-4">Manage your Modbus TCP connections here.</p>
 
     <!-- ClearCore Connection -->
-    <div hx-get="/modbus/clearcore/manager" hx-trigger="load" hx-swap="innerHTML" class="mb-4">
+    <div hx-get="/modbus/clearcore/manager" hx-trigger="load, sse:connection-status" hx-swap="innerHTML" class="mb-4">
         Loading ClearCore connection...
     </div>
 
     <!-- Welder Connection -->
-    <div hx-get="/modbus/welder/manager" hx-trigger="load" hx-swap="innerHTML">
+    <div hx-get="/modbus/welder/manager" hx-trigger="load, sse:connection-status" hx-swap="innerHTML">
         Loading Welder connection...
     </div>
 </div>

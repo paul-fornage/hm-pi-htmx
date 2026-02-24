@@ -33,7 +33,7 @@
 
         // Check if the current element actually expects this event
         const swapSpec = e.target.getAttribute('sse-swap');
-        if (swapSpec !== e.detail.type) {
+        if (swapSpec && swapSpec !== e.detail.type) {
             console.warn(`Mismatch: Element expects '${swapSpec}' but received '${e.detail.type}'`);
         }
 

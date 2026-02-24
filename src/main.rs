@@ -27,6 +27,8 @@ use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusManager, ModbusState};
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
+use crate::sse::connection_status::ConnectionStatus;
+use crate::sse::error_toast::ErrorToast;
 use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
@@ -46,6 +48,49 @@ pub struct AppState {
     pub clearcore_auto_connect: std::sync::Arc<AtomicBool>,
     pub welder_auto_connect: std::sync::Arc<AtomicBool>,
     pub sse_tx: broadcast::Sender<SseEvent>,
+}
+
+fn emit_connection_change(
+    sse_tx: &broadcast::Sender<SseEvent>,
+    connection_key: &'static str,
+    connection_label: &'static str,
+    last_state: &mut ModbusState,
+    new_state: ModbusState,
+) {
+    if *last_state == new_state {
+        return;
+    }
+
+    if sse_tx
+        .send(SseEvent::ConnectionStatus(ConnectionStatus::new(
+            connection_key,
+            new_state.clone(),
+        )))
+        .is_err()
+    {
+        warn_targeted!(
+            MODBUS,
+            "Failed to send connection status SSE event for {}",
+            connection_key
+        );
+    }
+
+    if matches!(*last_state, ModbusState::Connected) && !matches!(new_state, ModbusState::Connected) {
+        let msg = format!(
+            "{} connection lost ({})",
+            connection_label,
+            new_state.to_str()
+        );
+        if sse_tx.send(SseEvent::ErrorToast(ErrorToast { msg })).is_err() {
+            warn_targeted!(
+                MODBUS,
+                "Failed to send connection error toast SSE event for {}",
+                connection_key
+            );
+        }
+    }
+
+    *last_state = new_state;
 }
 
 #[tokio::main]
@@ -89,18 +134,29 @@ async fn main() {
     let clearcore_auto_connect = std::sync::Arc::new(AtomicBool::new(true));
     let welder_auto_connect = std::sync::Arc::new(AtomicBool::new(true));
 
+    let sse_tx: broadcast::Sender<SseEvent> = broadcast::Sender::new(32);
+
     let clearcore = clearcore_modbus.clone();
     let thread_copy_clearcore_registers = clearcore_registers.clone();
     let thread_copy_clearcore_configured = clearcore_configured.clone();
     let thread_copy_clearcore_auto_connect = clearcore_auto_connect.clone();
+    let thread_copy_clearcore_sse = sse_tx.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
+        let mut last_state = ModbusState::Disconnected;
 
 
         loop {
             interval.tick().await;
             let current_state = clearcore_updater.get_connection_state().await
                 .unwrap_or(ModbusState::Disconnected);
+            emit_connection_change(
+                &thread_copy_clearcore_sse,
+                "clearcore",
+                "ClearCore",
+                &mut last_state,
+                current_state.clone(),
+            );
             if !(current_state == ModbusState::Connected) {
                 clearcore_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
@@ -108,6 +164,14 @@ async fn main() {
                     debug_targeted!(MODBUS, "Clearcore auto-connect disabled; skipping connect attempt");
                     continue;
                 }
+
+                emit_connection_change(
+                    &thread_copy_clearcore_sse,
+                    "clearcore",
+                    "ClearCore",
+                    &mut last_state,
+                    ModbusState::Connecting,
+                );
 
                 let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
                     .await.unwrap_or_else(|| {
@@ -139,6 +203,18 @@ async fn main() {
                     }
                 }
 
+                let post_connect_state = clearcore_updater
+                    .get_connection_state()
+                    .await
+                    .unwrap_or(ModbusState::Disconnected);
+                emit_connection_change(
+                    &thread_copy_clearcore_sse,
+                    "clearcore",
+                    "ClearCore",
+                    &mut last_state,
+                    post_connect_state,
+                );
+
                 continue;
             }
             match clearcore_updater.update().await{
@@ -164,6 +240,17 @@ async fn main() {
                                 warn_targeted!(MODBUS, "Error disconnecting Clearcore: {:?}", e);
                             }
                         }
+                        let post_disconnect_state = clearcore_updater
+                            .get_connection_state()
+                            .await
+                            .unwrap_or(ModbusState::Disconnected);
+                        emit_connection_change(
+                            &thread_copy_clearcore_sse,
+                            "clearcore",
+                            "ClearCore",
+                            &mut last_state,
+                            post_disconnect_state,
+                        );
                     } else {
                         warn_targeted!(MODBUS, "Error updating Clearcore registers: {:?}", e);
                     }
@@ -180,8 +267,10 @@ async fn main() {
 
     let welder = welder_modbus.clone();
     let thread_copy_welder_auto_connect = welder_auto_connect.clone();
+    let thread_copy_welder_sse = sse_tx.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
+        let mut last_state = ModbusState::Disconnected;
         
         loop {
             interval.tick().await;
@@ -189,6 +278,13 @@ async fn main() {
                 .get_connection_state()
                 .await
                 .unwrap_or(ModbusState::Disconnected);
+            emit_connection_change(
+                &thread_copy_welder_sse,
+                "welder",
+                "Welder",
+                &mut last_state,
+                current_state.clone(),
+            );
             if !(current_state == ModbusState::Connected) {
                 miller_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
@@ -196,6 +292,14 @@ async fn main() {
                     debug_targeted!(MODBUS, "Welder auto-connect disabled; skipping connect attempt");
                     continue;
                 }
+
+                emit_connection_change(
+                    &thread_copy_welder_sse,
+                    "welder",
+                    "Welder",
+                    &mut last_state,
+                    ModbusState::Connecting,
+                );
                 
                 let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
                     .await.unwrap_or_else(|| {
@@ -220,6 +324,17 @@ async fn main() {
                         info_targeted!(MODBUS, "Welder auto-connect failed: {:?}", e);
                     }
                 }
+                let post_connect_state = miller_updater
+                    .get_connection_state()
+                    .await
+                    .unwrap_or(ModbusState::Disconnected);
+                emit_connection_change(
+                    &thread_copy_welder_sse,
+                    "welder",
+                    "Welder",
+                    &mut last_state,
+                    post_connect_state,
+                );
                 continue;
             }
             match miller_updater.update().await {
@@ -247,6 +362,17 @@ async fn main() {
                                 warn_targeted!(MODBUS, "Error disconnecting Welder: {:?}", e);
                             }
                         }
+                        let post_disconnect_state = miller_updater
+                            .get_connection_state()
+                            .await
+                            .unwrap_or(ModbusState::Disconnected);
+                        emit_connection_change(
+                            &thread_copy_welder_sse,
+                            "welder",
+                            "Welder",
+                            &mut last_state,
+                            post_disconnect_state,
+                        );
                     } else {
                         warn_targeted!(MODBUS, "Error updating Welder registers: {:?}", e);
                     }
@@ -265,7 +391,6 @@ async fn main() {
     let upd_log_port = machine_config.udp_logging_port;
     let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
 
-    let sse_tx: broadcast::Sender<SseEvent> = broadcast::Sender::new(32);
     let sse_tx_clone = sse_tx.clone();
     tokio::spawn(async move{ 
         loop { 
