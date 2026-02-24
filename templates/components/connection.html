@@ -3,14 +3,29 @@
 <!--suppress XmlDuplicatedId -->
 <div id="connection-manager-{{ name }}" class="p-4 border rounded bg-green-50">
     <h3 class="font-bold mb-2">{{ name }} Connection</h3>
+    <div class="flex items-center gap-3 mb-3">
+        <button hx-post="/modbus/{{ name }}/disconnect"
+                hx-target="#connection-manager-{{ name }}"
+                hx-swap="outerHTML"
+                class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            Disconnect
+        </button>
+        <form hx-post="/modbus/{{ name }}/auto-connect"
+              hx-target="#connection-manager-{{ name }}"
+              hx-swap="outerHTML"
+              class="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2">
+            <input type="hidden" name="enabled" value="{% if auto_connect %}false{% else %}true{% endif %}">
+            <span class="text-sm font-medium text-gray-700">Auto-connect</span>
+            <button type="submit"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {% if auto_connect %}bg-green-500{% else %}bg-gray-300{% endif %}">
+                <span class="sr-only">Toggle auto-connect</span>
+                <span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform {% if auto_connect %}translate-x-5{% else %}translate-x-1{% endif %}"></span>
+            </button>
+            <span class="text-xs text-gray-500">{% if auto_connect %}On{% else %}Off{% endif %}</span>
+        </form>
+    </div>
     <p>Target: <strong>{{ host }}</strong></p>
     <p class="text-sm text-gray-600 mb-2">Port: {{ port }} | Unit: {{ unit_id }}</p>
-    <button hx-post="/modbus/{{ name }}/disconnect"
-            hx-target="#connection-manager-{{ name }}"
-            hx-swap="outerHTML"
-            class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        Disconnect
-    </button>
 </div>
 
 <!-- If we are disconnected, show Connect form -->
@@ -18,8 +33,9 @@
 <!--suppress XmlDuplicatedId -->
 <div id="connection-manager-{{ name }}" class="p-4 border rounded bg-gray-50">
     <h3 class="font-bold mb-2">{{ name }} Connection</h3>
-    <form hx-post="/modbus/{{ name }}/connect" hx-target="#connection-manager-{{ name }}" hx-swap="outerHTML">
-        <div class="flex gap-2 items-end">
+    <div class="flex items-end gap-3 mb-3">
+        <form hx-post="/modbus/{{ name }}/connect" hx-target="#connection-manager-{{ name }}" hx-swap="outerHTML">
+            <div class="flex gap-2 items-end">
             <div class="flex-1">
                 <label for="host" class="block text-sm">Host IP</label>
                 <input type="text"
@@ -74,10 +90,24 @@
                     Connect
                 </button>
             </div>
-        </div>
-        {% if let Some(err) = error %}
-        <p class="text-red-500 mt-2 text-sm">{{ err }}</p>
-        {% endif %}
-    </form>
+            </div>
+            {% if let Some(err) = error %}
+            <p class="text-red-500 mt-2 text-sm">{{ err }}</p>
+            {% endif %}
+        </form>
+        <form hx-post="/modbus/{{ name }}/auto-connect"
+              hx-target="#connection-manager-{{ name }}"
+              hx-swap="outerHTML"
+              class="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2">
+            <input type="hidden" name="enabled" value="{% if auto_connect %}false{% else %}true{% endif %}">
+            <span class="text-sm font-medium text-gray-700">Auto-connect</span>
+            <button type="submit"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {% if auto_connect %}bg-green-500{% else %}bg-gray-300{% endif %}">
+                <span class="sr-only">Toggle auto-connect</span>
+                <span class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform {% if auto_connect %}translate-x-5{% else %}translate-x-1{% endif %}"></span>
+            </button>
+            <span class="text-xs text-gray-500">{% if auto_connect %}On{% else %}Off{% endif %}</span>
+        </form>
+    </div>
 </div>
 {% endif %}

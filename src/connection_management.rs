@@ -5,6 +5,7 @@ use axum::{
 };
 use serde::Deserialize;
 use std::net::SocketAddr;
+use std::sync::atomic::Ordering;
 use askama::Template;
 use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState, trace_targeted};
 use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
@@ -14,6 +15,7 @@ use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
 pub struct ConnectionTemplate {
     pub name: String,
     pub connected: bool,
+    pub auto_connect: bool,
     pub host: String,
     pub port: u16,
     pub unit_id: u8,
@@ -38,12 +40,18 @@ pub struct ConnectForm {
     timeout_ms: Option<u32>,
 }
 
+#[derive(Deserialize)]
+pub struct AutoConnectForm {
+    enabled: bool,
+}
+
 
 
 // Generic function to get connection manager template for a given ModbusManager
 async fn get_connection_template(
     manager: &ModbusManager,
     name: &str,
+    auto_connect: bool,
 ) -> ConnectionTemplate {
     let (connected, host, port, unit_id, timeout_ms) = match manager.cloned_config().await {
         Ok(config) => (
@@ -64,6 +72,7 @@ async fn get_connection_template(
     ConnectionTemplate {
         name: name.to_string(),
         connected,
+        auto_connect,
         host,
         port,
         unit_id,
@@ -78,6 +87,7 @@ async fn handle_connect(
     name: &str,
     config_path: &str,
     form: ConnectForm,
+    auto_connect: bool,
 ) -> ConnectionTemplate {
     info_targeted!(HTTP, "POST /modbus/{}/connect - host: {}, port: {}", name, form.host, form.port);
     let addr_str = format!("{}:{}", form.host, form.port);
@@ -107,6 +117,7 @@ async fn handle_connect(
                     ConnectionTemplate {
                         name: name.to_string(),
                         connected: true,
+                        auto_connect,
                         host: form.host,
                         port: form.port,
                         unit_id: form.unit_id,
@@ -119,6 +130,7 @@ async fn handle_connect(
                     ConnectionTemplate {
                         name: name.to_string(),
                         connected: false,
+                        auto_connect,
                         host: form.host,
                         port: form.port,
                         unit_id: form.unit_id,
@@ -133,6 +145,7 @@ async fn handle_connect(
             ConnectionTemplate {
                 name: name.to_string(),
                 connected: false,
+                auto_connect,
                 host: form.host,
                 port: form.port,
                 unit_id: form.unit_id,
@@ -147,6 +160,7 @@ async fn handle_connect(
 async fn handle_disconnect(
     manager: &ModbusManager,
     name: &str,
+    auto_connect: bool,
 ) -> ConnectionTemplate {
     info_targeted!(HTTP, "POST /modbus/{}/disconnect - disconnecting", name);
 
@@ -168,6 +182,7 @@ async fn handle_disconnect(
     ConnectionTemplate {
         name: name.to_string(),
         connected: false,
+        auto_connect,
         host,
         port,
         unit_id,
@@ -176,11 +191,22 @@ async fn handle_disconnect(
     }
 }
 
+fn render_connection_template(template: ConnectionTemplate, name: &str) -> impl IntoResponse {
+    match template.render() {
+        Ok(html) => Html(html).into_response(),
+        Err(e) => {
+            error_targeted!(HTTP, "Failed to render connection template for {}: {:?}", name, e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
 // GET /modbus/manager - Renders the initial connection box
 pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/manager - rendering connection manager");
-    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore").await;
-    Html(template.render().unwrap())
+    let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
+    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore", auto_connect).await;
+    render_connection_template(template, "clearcore")
 }
 
 // GET /modbus/status - Returns the icon, checks actual connectivity
@@ -210,26 +236,30 @@ pub async fn connect_clearcore(
     State(state): State<AppState>,
     Form(form): Form<ConnectForm>,
 ) -> impl IntoResponse {
+    let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
     let template = handle_connect(
         &state.clearcore_registers.manager,
         "clearcore",
         crate::modbus::CLEARCORE_CONFIG_PATH,
-        form
+        form,
+        auto_connect,
     ).await;
-    Html(template.render().unwrap())
+    render_connection_template(template, "clearcore")
 }
 
 // POST /modbus/clearcore/disconnect
 pub async fn disconnect_clearcore(State(state): State<AppState>) -> impl IntoResponse {
-    let template = handle_disconnect(&state.clearcore_registers.manager, "clearcore").await;
-    Html(template.render().unwrap())
+    let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
+    let template = handle_disconnect(&state.clearcore_registers.manager, "clearcore", auto_connect).await;
+    render_connection_template(template, "clearcore")
 }
 
 // GET /modbus/clearcore/manager
 pub async fn get_clearcore_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/clearcore/manager - rendering clearcore connection manager");
-    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore").await;
-    Html(template.render().unwrap())
+    let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
+    let template = get_connection_template(&state.clearcore_registers.manager, "clearcore", auto_connect).await;
+    render_connection_template(template, "clearcore")
 }
 
 // POST /modbus/welder/connect
@@ -237,24 +267,58 @@ pub async fn connect_welder(
     State(state): State<AppState>,
     Form(form): Form<ConnectForm>,
 ) -> impl IntoResponse {
+    let auto_connect = state.welder_auto_connect.load(Ordering::Acquire);
     let template = handle_connect(
         &state.miller_registers.manager,
         "welder",
         crate::modbus::WELDER_CONFIG_PATH,
-        form
+        form,
+        auto_connect,
     ).await;
-    Html(template.render().unwrap())
+    render_connection_template(template, "welder")
 }
 
 // POST /modbus/welder/disconnect
 pub async fn disconnect_welder(State(state): State<AppState>) -> impl IntoResponse {
-    let template = handle_disconnect(&state.miller_registers.manager, "welder").await;
-    Html(template.render().unwrap())
+    let auto_connect = state.welder_auto_connect.load(Ordering::Acquire);
+    let template = handle_disconnect(&state.miller_registers.manager, "welder", auto_connect).await;
+    render_connection_template(template, "welder")
 }
 
 // GET /modbus/welder/manager
 pub async fn get_welder_manager(State(state): State<AppState>) -> impl IntoResponse {
     debug_targeted!(HTTP, "GET /modbus/welder/manager - rendering welder connection manager");
-    let template = get_connection_template(&state.miller_registers.manager, "welder").await;
-    Html(template.render().unwrap())
+    let auto_connect = state.welder_auto_connect.load(Ordering::Acquire);
+    let template = get_connection_template(&state.miller_registers.manager, "welder", auto_connect).await;
+    render_connection_template(template, "welder")
+}
+
+// POST /modbus/clearcore/auto-connect
+pub async fn set_clearcore_auto_connect(
+    State(state): State<AppState>,
+    Form(form): Form<AutoConnectForm>,
+) -> impl IntoResponse {
+    info_targeted!(MODBUS, "Clearcore auto-connect set to {}", form.enabled);
+    state.clearcore_auto_connect.store(form.enabled, Ordering::Release);
+    let template = get_connection_template(
+        &state.clearcore_registers.manager,
+        "clearcore",
+        form.enabled,
+    ).await;
+    render_connection_template(template, "clearcore")
+}
+
+// POST /modbus/welder/auto-connect
+pub async fn set_welder_auto_connect(
+    State(state): State<AppState>,
+    Form(form): Form<AutoConnectForm>,
+) -> impl IntoResponse {
+    info_targeted!(MODBUS, "Welder auto-connect set to {}", form.enabled);
+    state.welder_auto_connect.store(form.enabled, Ordering::Release);
+    let template = get_connection_template(
+        &state.miller_registers.manager,
+        "welder",
+        form.enabled,
+    ).await;
+    render_connection_template(template, "welder")
 }

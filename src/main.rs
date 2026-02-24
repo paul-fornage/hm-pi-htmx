@@ -15,7 +15,7 @@ pub mod sse;
 mod hx_trigger;
 
 use tokio::sync::{broadcast, mpsc};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use axum::{
     routing::{get, post},
     Router,
@@ -43,6 +43,8 @@ pub struct AppState {
     pub auth_state: std::sync::Arc<tokio::sync::RwLock<auth::AuthState>>,
     /// Not really an atomic sync flag or something, just cheaper than a mutex
     pub clearcore_configured: std::sync::Arc<AtomicBool>,
+    pub clearcore_auto_connect: std::sync::Arc<AtomicBool>,
+    pub welder_auto_connect: std::sync::Arc<AtomicBool>,
     pub sse_tx: broadcast::Sender<SseEvent>,
 }
 
@@ -84,10 +86,13 @@ async fn main() {
         CachedModbus::new_with_updater(clearcore_modbus.clone(), CLEARCORE_CHUNKS);
 
     let clearcore_configured = std::sync::Arc::new(AtomicBool::new(false));
+    let clearcore_auto_connect = std::sync::Arc::new(AtomicBool::new(true));
+    let welder_auto_connect = std::sync::Arc::new(AtomicBool::new(true));
 
     let clearcore = clearcore_modbus.clone();
     let thread_copy_clearcore_registers = clearcore_registers.clone();
     let thread_copy_clearcore_configured = clearcore_configured.clone();
+    let thread_copy_clearcore_auto_connect = clearcore_auto_connect.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
 
@@ -99,6 +104,10 @@ async fn main() {
             if !(current_state == ModbusState::Connected) {
                 clearcore_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                if !thread_copy_clearcore_auto_connect.load(Ordering::Acquire) {
+                    debug_targeted!(MODBUS, "Clearcore auto-connect disabled; skipping connect attempt");
+                    continue;
+                }
 
                 let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
                     .await.unwrap_or_else(|| {
@@ -170,6 +179,7 @@ async fn main() {
         CachedModbus::new_with_updater(welder_modbus.clone(), MILLER_CHUNKS);
 
     let welder = welder_modbus.clone();
+    let thread_copy_welder_auto_connect = welder_auto_connect.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
         
@@ -182,6 +192,10 @@ async fn main() {
             if !(current_state == ModbusState::Connected) {
                 miller_updater.clear_cache().await;
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+                if !thread_copy_welder_auto_connect.load(Ordering::Acquire) {
+                    debug_targeted!(MODBUS, "Welder auto-connect disabled; skipping connect attempt");
+                    continue;
+                }
                 
                 let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
                     .await.unwrap_or_else(|| {
@@ -280,6 +294,8 @@ async fn main() {
         motion_profile_metadata,
         auth_state,
         clearcore_configured,
+        clearcore_auto_connect,
+        welder_auto_connect,
         sse_tx,
     };
 
@@ -295,11 +311,13 @@ async fn main() {
         .route("/modbus/clearcore/manager", get(connection_management::get_clearcore_manager))
         .route("/modbus/clearcore/connect", post(connection_management::connect_clearcore))
         .route("/modbus/clearcore/disconnect", post(connection_management::disconnect_clearcore))
+        .route("/modbus/clearcore/auto-connect", post(connection_management::set_clearcore_auto_connect))
 
         // --- Modbus Management Routes - Welder ---
         .route("/modbus/welder/manager", get(connection_management::get_welder_manager))
         .route("/modbus/welder/connect", post(connection_management::connect_welder))
         .route("/modbus/welder/disconnect", post(connection_management::disconnect_welder))
+        .route("/modbus/welder/auto-connect", post(connection_management::set_welder_auto_connect))
 
         .route("/modbus/manager", get(connection_management::get_connection_manager))
         .route("/modbus/status", get(connection_management::get_status))
