@@ -9,7 +9,7 @@ use tokio_modbus::client::{Client, Context, Reader, Writer};
 use serde::{Deserialize, Serialize};
 use tokio_modbus::prelude::SlaveContext;
 use crate::error::{HmPiError, Result};
-use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted};
+use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted, debug_targeted};
 use crate::modbus::modbus_transaction_types::*;
 
 const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
@@ -167,14 +167,14 @@ impl ConnectionConfig {
     pub async fn load_from_path(path: &str) -> Option<Self> {
         let path_obj = std::path::Path::new(path);
         if !path_obj.exists() {
-            info_targeted!(MODBUS, "Config file {} does not exist", path);
+            warn_targeted!(MODBUS, "Config file {} does not exist", path);
             return None;
         }
 
         match tokio::fs::read_to_string(path_obj).await {
             Ok(contents) => match serde_json::from_str(&contents) {
                 Ok(config) => {
-                    info_targeted!(MODBUS, "Loaded config from {}", path);
+                    debug_targeted!(MODBUS, "Loaded config from {}", path);
                     Some(config)
                 }
                 Err(e) => {

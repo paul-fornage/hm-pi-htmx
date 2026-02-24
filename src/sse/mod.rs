@@ -8,6 +8,7 @@ use axum::response::sse::{Event, KeepAlive};
 use futures::{Stream, stream};
 use tokio::sync::broadcast;
 use crate::{debug_targeted, trace_targeted, warn_targeted, AppState};
+use crate::modbus::ModbusState;
 use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
 use crate::udp_log_listener::ClearcoreLog;
@@ -30,6 +31,10 @@ impl SseEvent {
             SseEvent::NewLog(log) => log.as_axum_event(),
             SseEvent::ConnectionStatus(evt) => evt.as_axum_event(),
         }
+    }
+
+    pub fn new_connection_status(connection: &'static str, state: ModbusState) -> Self {
+        Self::ConnectionStatus(ConnectionStatus::new(connection, state))
     }
 }
 

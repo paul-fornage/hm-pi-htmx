@@ -61,18 +61,12 @@ fn emit_connection_change(
         return;
     }
 
-    if sse_tx
-        .send(SseEvent::ConnectionStatus(ConnectionStatus::new(
-            connection_key,
-            new_state.clone(),
-        )))
-        .is_err()
-    {
-        warn_targeted!(
-            MODBUS,
-            "Failed to send connection status SSE event for {}",
-            connection_key
-        );
+    match sse_tx.send(SseEvent::new_connection_status(connection_key, new_state.clone())) {
+        Ok(_) => {}
+        Err(e) => {
+            warn_targeted!( MODBUS,
+                "Failed to send connection status SSE event for {connection_key}: {e}");
+        }
     }
 
     if matches!(*last_state, ModbusState::Connected) && !matches!(new_state, ModbusState::Connected) {
