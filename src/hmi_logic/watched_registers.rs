@@ -51,7 +51,12 @@ pub fn estop_emitter(sse_tx: broadcast::Sender<SseEvent>) -> WatchedRegister {
         address: &plc_register_definitions::IN_ESTOP.address,
         handler: Box::new(move |new_value| {
             info_targeted!(MODBUS, "Received Estop state update: {:?}", new_value);
-            match sse_tx.send(EstopStateUpdate{}.into()){
+            let in_estop = match new_value {
+                Some(ModbusValue::Bool(in_estop)) => Some(in_estop),
+                Some(ModbusValue::U16(_a_word_reg)) => None,
+                None => None,
+            };
+            match sse_tx.send(EstopStateUpdate { in_estop }.into()){
                 Ok(_) => {}
                 Err(e) => {
                     warn_targeted!(MODBUS, "Failed to send EstopStateUpdate SSE event: {:?}", e);
