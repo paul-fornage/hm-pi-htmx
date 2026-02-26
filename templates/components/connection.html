@@ -36,60 +36,66 @@
     <div class="flex items-end gap-3 mb-3">
         <form hx-post="/modbus/{{ name }}/connect" hx-target="#connection-manager-{{ name }}" hx-swap="outerHTML">
             <div class="flex gap-2 items-end">
-            <div class="flex-1">
-                <label for="host" class="block text-sm">Host IP</label>
-                <input type="text"
-                       inputmode="text"
-                       data-keyboard="text"
-                       id="host"
-                       name="host"
-                       value="{{ host }}"
-                       class="border p-1 rounded"
-                       required>
-            </div>
-            <div class="flex-1">
-                <label for="port" class="block text-sm">Port</label>
-                <input type="text"
-                       inputmode="numeric"
-                       data-keyboard="float"
-                       id="port"
-                       name="port"
-                       value="{{ port }}"
-                       min="1"
-                       max="65535"
-                       class="border p-1 rounded"
-                       required>
-            </div>
-            <div class="flex-1">
-                <label for="timeout_ms" class="block text-sm">Timeout (ms):</label>
-                <input type="text"
-                       inputmode="numeric"
-                       data-keyboard="float"
-                       id="timeout_ms"
-                       name="timeout_ms"
-                       min="100"
-                       max="9999"
-                       value="{{ timeout_ms }}"
-                       class="border p-1 rounded w-max">
-            </div>
-            <div class="flex-1">
-                <label for="unit_id" class="block text-sm">Unit ID:</label>
-                <input type="text"
-                       inputmode="numeric"
-                       data-keyboard="float"
-                       id="unit_id"
-                       name="unit_id"
-                       step="1"
-                       min="1"
-                       max="255"
-                       value="{{ unit_id }}"
-                       class="border p-1 rounded w-max">
-            </div>
-            <div class="flex-1/2">
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 h-9">
-                    Connect
-                </button>
-            </div>
+                <div class="flex-1">
+                    <label for="host" class="block text-sm">Host IP</label>
+                    <input type="text"
+                           inputmode="text"
+                           data-keyboard="text"
+                           id="host"
+                           name="host"
+                           value="{{ host }}"
+                           class="border p-1 rounded disabled:bg-gray-200 disabled:text-gray-500"
+                           {% if auto_connect %}disabled{% endif %}
+                           required>
+                </div>
+                <div class="flex-1">
+                    <label for="port" class="block text-sm">Port</label>
+                    <input type="text"
+                           inputmode="numeric"
+                           data-keyboard="float"
+                           id="port"
+                           name="port"
+                           value="{{ port }}"
+                           min="1"
+                           max="65535"
+                           class="border p-1 rounded disabled:bg-gray-200 disabled:text-gray-500"
+                           {% if auto_connect %}disabled{% endif %}
+                           required>
+                </div>
+                <div class="flex-1">
+                    <label for="timeout_ms" class="block text-sm">Timeout (ms):</label>
+                    <input type="text"
+                           inputmode="numeric"
+                           data-keyboard="float"
+                           id="timeout_ms"
+                           name="timeout_ms"
+                           min="100"
+                           max="9999"
+                           value="{{ timeout_ms }}"
+                           class="border p-1 rounded w-max disabled:bg-gray-200 disabled:text-gray-500"
+                           {% if auto_connect %}disabled{% endif %}>
+                </div>
+                <div class="flex-1">
+                    <label for="unit_id" class="block text-sm">Unit ID:</label>
+                    <input type="text"
+                           inputmode="numeric"
+                           data-keyboard="float"
+                           id="unit_id"
+                           name="unit_id"
+                           step="1"
+                           min="1"
+                           max="255"
+                           value="{{ unit_id }}"
+                           class="border p-1 rounded w-max disabled:bg-gray-200 disabled:text-gray-500"
+                           {% if auto_connect %}disabled{% endif %}>
+                </div>
+                <div class="flex-1/2">
+                    <button type="submit"
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 h-9 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                            {% if auto_connect %}disabled{% endif %}>
+                        Connect
+                    </button>
+                </div>
             </div>
             {% if let Some(err) = error %}
             <p class="text-red-500 mt-2 text-sm">{{ err }}</p>

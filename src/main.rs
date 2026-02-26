@@ -13,8 +13,10 @@ mod plc;
 mod udp_log_listener;
 pub mod sse;
 mod hx_trigger;
+mod estop_component;
+pub mod hmi_logic;
 
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::{broadcast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use axum::{
     routing::{get, post},
@@ -23,16 +25,18 @@ use axum::{
 use tower_http::services::ServeDir;
 use crate::error::HmPiError;
 use crate::logging::LogTarget;
-use crate::miller::miller_register_definitions::{MILLER_CHUNKS, MILLER_REGISTERS};
+use crate::miller::miller_register_definitions::{MILLER_CHUNKS};
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::modbus::{ModbusManager, ModbusState};
+use crate::modbus::{ModbusState};
+use crate::hmi_logic::mb_watcher::{cc_mb_watcher_task};
+use crate::hmi_logic::watched_registers;
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
 use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
 use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 
-pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
+pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
 
 #[derive(Clone)]
@@ -61,7 +65,7 @@ fn emit_connection_change(
         return;
     }
 
-    match sse_tx.send(SseEvent::new_connection_status(connection_key, new_state.clone())) {
+    match sse_tx.send(ConnectionStatus::new(connection_key, new_state.clone()).into()) {
         Ok(_) => {}
         Err(e) => {
             warn_targeted!( MODBUS,
@@ -190,7 +194,7 @@ async fn main() {
                             warn_targeted!(MODBUS, "Error loading Clearcore config: {:?}", e);
                             false
                         });
-                        thread_copy_clearcore_configured.store(configured, std::sync::atomic::Ordering::Release);
+                        thread_copy_clearcore_configured.store(configured, Ordering::Release);
                     },
                     Err(e) => {
                         info_targeted!(MODBUS, "Clearcore auto-connect failed: {:?}", e);
@@ -402,7 +406,18 @@ async fn main() {
 
     let auth_state = std::sync::Arc::new(tokio::sync::RwLock::new(auth::AuthState::default()));
 
-    
+    let watcher_cc_regs = clearcore_registers.clone();
+    let watcher_welder_regs = miller_registers.clone();
+
+    let miller_regs_clone = miller_registers.clone();
+
+    let touch_retract_watcher = watched_registers::touch_retract_passthrough(miller_regs_clone);
+    let estop_watcher = watched_registers::estop_emitter(sse_tx.clone());
+    let cc_watcher_tasks = vec![touch_retract_watcher, estop_watcher];
+
+    tokio::spawn(async move {
+        cc_mb_watcher_task(&watcher_cc_regs, cc_watcher_tasks).await;
+    });
 
     // Initialize state with the managers
     let state = AppState {
@@ -423,6 +438,7 @@ async fn main() {
     let app = Router::new()
         // --- View Routes ---
         .merge(views::routes())
+        .merge(estop_component::routes())
 
         .route("/sse", get(sse::sse_handler))
 

@@ -284,17 +284,20 @@ pub const MANDREL_LATCH_CLOSED: RegisterMetadata = RegisterMetadata {
     name: "MANDREL LATCH CLOSED",
     description: "true when the mandrel latch is sensed to be closed",
 };
-
 pub const LF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 6 },
     name: "LF COMMANDED DOWN",
     description: "Are the left fingers currently commanded down",
 };
-
 pub const RF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 7 },
     name: "RF COMMANDED DOWN",
     description: "Are the right fingers currently commanded down",
+};
+pub const TOUCH_RETRACT_REQUESTED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 8 },
+    name: "TOUCH RETRACT REQUESTED",
+    description: "true when clearcore wants to enable touch retract",
 };
 
 // ============================================================================
@@ -691,6 +694,7 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     WELDER_ARC_VALID,
     LF_COMMANDED_DOWN,
     RF_COMMANDED_DOWN,
+    TOUCH_RETRACT_REQUESTED,
 
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,

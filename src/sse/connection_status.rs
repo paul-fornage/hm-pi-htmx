@@ -20,8 +20,9 @@ impl ConnectionStatus {
 }
 
 impl SseEventExt for ConnectionStatus {
+    const EVENT_TAG: &'static str = "connection-status";
     fn as_axum_event(&self) -> Event {
         let data = serde_json::to_string(self).unwrap_or_else(|_| "{}".to_string());
-        Event::default().event("connection-status").data(data)
+        Event::default().event(Self::EVENT_TAG).data(data)
     }
 }

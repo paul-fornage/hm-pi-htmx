@@ -83,8 +83,9 @@ pub struct ClearcoreLog {
 }
 
 impl SseEventExt for ClearcoreLog{
+    const EVENT_TAG: &'static str = "clearcore-log";
     fn as_axum_event(&self) -> Event {
-        Event::default().event("clearcore-log").data(self.as_html_list_element())
+        Event::default().event(Self::EVENT_TAG).data(self.as_html_list_element())
     }
 }
 

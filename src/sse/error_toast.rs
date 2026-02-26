@@ -10,9 +10,11 @@ pub struct ErrorToast {
 }
 
 impl SseEventExt for ErrorToast {
+
+    const EVENT_TAG: &'static str = "error-toast";
     fn as_axum_event(&self) -> Event {
         Event::default()
-            .event("error-toast")
+            .event(Self::EVENT_TAG)
             .data(self.render().unwrap_or("FAILED TO RENDER".to_string()))
     }
 }

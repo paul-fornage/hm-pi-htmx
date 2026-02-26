@@ -67,7 +67,7 @@ async fn get_connection_template(
         }
     };
 
-    debug_targeted!(MODBUS, "{} connection state: connected={}, host={}", name, connected, host);
+    trace_targeted!(MODBUS, "{} connection state: connected={}, host={}", name, connected, host);
 
     ConnectionTemplate {
         name: name.to_string(),
@@ -203,7 +203,7 @@ fn render_connection_template(template: ConnectionTemplate, name: &str) -> impl 
 
 // GET /modbus/manager - Renders the initial connection box
 pub async fn get_connection_manager(State(state): State<AppState>) -> impl IntoResponse {
-    debug_targeted!(HTTP, "GET /modbus/manager - rendering connection manager");
+    trace_targeted!(HTTP, "GET /modbus/manager - rendering connection manager");
     let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
     let template = get_connection_template(&state.clearcore_registers.manager, "clearcore", auto_connect).await;
     render_connection_template(template, "clearcore")
@@ -256,7 +256,7 @@ pub async fn disconnect_clearcore(State(state): State<AppState>) -> impl IntoRes
 
 // GET /modbus/clearcore/manager
 pub async fn get_clearcore_manager(State(state): State<AppState>) -> impl IntoResponse {
-    debug_targeted!(HTTP, "GET /modbus/clearcore/manager - rendering clearcore connection manager");
+    trace_targeted!(HTTP, "GET /modbus/clearcore/manager - rendering clearcore connection manager");
     let auto_connect = state.clearcore_auto_connect.load(Ordering::Acquire);
     let template = get_connection_template(&state.clearcore_registers.manager, "clearcore", auto_connect).await;
     render_connection_template(template, "clearcore")
@@ -287,7 +287,7 @@ pub async fn disconnect_welder(State(state): State<AppState>) -> impl IntoRespon
 
 // GET /modbus/welder/manager
 pub async fn get_welder_manager(State(state): State<AppState>) -> impl IntoResponse {
-    debug_targeted!(HTTP, "GET /modbus/welder/manager - rendering welder connection manager");
+    trace_targeted!(HTTP, "GET /modbus/welder/manager - rendering welder connection manager");
     let auto_connect = state.welder_auto_connect.load(Ordering::Acquire);
     let template = get_connection_template(&state.miller_registers.manager, "welder", auto_connect).await;
     render_connection_template(template, "welder")

@@ -1,12 +1,17 @@
-<header class="flex justify-between items-center mb-5">
+<header class="flex justify-between items-center mb-3">
     <div class="flex gap-6 items-center">
         <h1 class="text-2xl font-bold">Mitusa Seamer</h1>
-        <!-- Reusing your existing endpoint for status -->
-        <span id="modbus-status" hx-get="/modbus/status" hx-trigger="load, every 20s, sse:connection-status" hx-swap="innerHTML">
+        <span
+                hx-preserve="true"
+                id="modbus-status"
+                hx-get="/modbus/status"
+                hx-trigger="load, every 20s, sse:connection-status"
+                hx-swap="morph:innerHTML">
             Loading status...
         </span>
     </div>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
         {% if header.is_signed_in() %}
             <div>
                 <span class="font-semibold">{{ header.auth_username.as_ref().unwrap() }}</span>
@@ -31,10 +36,21 @@
                 Sign In
             </button>
         {% endif %}
+        </div>
+        <div
+            hx-preserve="true"
+            id="estop-control"
+            hx-get="/ui/estop"
+            hx-trigger="load, every 20s, sse:estop-state-update"
+            hx-swap="morph:innerHTML"
+            class="inline-flex items-center gap-2 border-l h-12 border-gray-300 pl-4"
+        >
+            Loading E-stop...
+        </div>
     </div>
 </header>
 
-<nav class="flex border-b-2 border-gray-300 mb-5 gap-1">
+<nav class="flex border-b-2 border-gray-300 mb-3 gap-1">
     {% for tab in header.tabs %}
     <a href="{{ tab.url() }}"
        class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300 border-b-0 rounded-t hover:bg-white hover:text-blue-600 transition-colors{% if *tab == header.active_tab %} !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">

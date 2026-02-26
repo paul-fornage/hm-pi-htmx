@@ -1,0 +1,57 @@
+
+
+    <span class="inline-flex items-center h-12 px-3 rounded-md text-xs font-semibold
+        {% match in_estop %}
+            {% when None %} bg-gray-200 text-gray-700
+            {% when Some with (false) %}
+                {% if requesting_estop %} bg-amber-100 text-amber-800
+                {% else %} bg-emerald-100 text-emerald-700
+                {% endif %}
+            {% when Some with (true) %}
+                {% if requesting_estop %} bg-red-100 text-red-700
+                {% else %} bg-amber-100 text-amber-800
+                {% endif %}
+        {% endmatch %}
+    ">
+        {% match in_estop %}
+            {% when None %} E-stop Unknown
+            {% when Some with (false) %}
+                {% if requesting_estop %} Commanding E-stop...
+                {% else %} E-stop Safe
+                {% endif %}
+            {% when Some with (true) %}
+                {% if requesting_estop %} E-stopped
+                {% else %} Releasing E-stop...
+                {% endif %}
+        {% endmatch %}
+    </span>
+    <form
+        hx-post="/ui/estop/request"
+        hx-target="#estop-control"
+        hx-swap="innerHTML"
+        class="ml-1"
+    >
+        <input
+            type="hidden"
+            name="requesting_estop"
+            value="{% if requesting_estop %}false{% else %}true{% endif %}"
+        >
+        <button
+            type="submit"
+            class="inline-flex items-center h-12 px-6 text-sm font-bold rounded-md text-white transition-colors
+                {% if requesting_estop %} bg-slate-600 hover:bg-slate-700
+                {% else %} bg-red-600 hover:bg-red-700
+                {% endif %}
+            "
+        >
+            {% if requesting_estop %} Release E-stop
+            {% else %}
+                {% match in_estop %}
+                    {% when None %} Force E-stop
+                    {% when Some with (false) %} E-stop
+                    {% when Some with (true) %} E-stop
+                {% endmatch %}
+            {% endif %}
+        </button>
+    </form>
+
