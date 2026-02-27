@@ -438,37 +438,55 @@ pub const CYCLE_PROGRESS: RegisterMetadata = RegisterMetadata {
 
 pub const CYCLE_AVC_VREF: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 31 },
-    name: "CYCLE AVC VREF",
+    name: "AVC VREF",
     description: "Target voltage for AVC (hundredth of volt)",
 };
 
 pub const CYCLE_Z_STATIC_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 32 },
-    name: "CYCLE Z STATIC OFFSET",
+    name: "Z STATIC OFFSET",
     description: "offset to use for Z axis when CYCLE_USE_AVC is false. measured as distance from top of travel (hundredths of an inch)",
 };
 
 pub const CYCLE_REPOSITION_SPEED_X: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 33 },
-    name: "CYCLE REPOSITION SPEED X",
+    name: "REPOSITION SPEED X",
     description: "speed to move x axis in cycle when not actively welding (hundredths of an inch per minute)",
 };
 
 pub const CYCLE_REPOSITION_SPEED_Y: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 34 },
-    name: "CYCLE REPOSITION SPEED Y",
+    name: "REPOSITION SPEED Y",
     description: "speed to move y axis in cycle when not actively welding (hundredths of an inch per minute)",
 };
 
 pub const CYCLE_REPOSITION_SPEED_Z: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 35 },
-    name: "CYCLE REPOSITION SPEED Z",
+    name: "REPOSITION SPEED Z",
     description: "speed to move z axis in cycle when not actively welding (hundredths of an inch per minute)",
 };
 pub const CYCLE_AXIS_Z_TORCH_UP_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 36 },
     name: "AXIS Z TORCH UP OFFSET",
     description: "hundredths of an inch| offset to use for Z axis when torch is up after a cycle. measured as distance from top of travel",
+};
+
+pub const CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 37 },
+    name: "TOUCH RETRACT REPOSITION DIST",
+    description: "hundredths of an inch| distance to move the Z axis at reposition speed before slowing down during touch retract. measured as distance from top of travel",
+};
+
+pub const CYCLE_TOUCH_RETRACT_PROBE_SPEED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 38 },
+    name: "TOUCH RETRACT PROBE SPEED",
+    description: "hundredths of an inch per minute| probing speed after reaching CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE during touch retract",
+};
+
+pub const CYCLE_TOUCH_RETRACT_FINAL_HEIGHT: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 39 },
+    name: "TOUCH RETRACT FINAL HEIGHT",
+    description: "hundredths of an inch| final height when using touch retract measured from the part (only used with touch retract mode)",
 };
 
 pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
@@ -724,6 +742,10 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     CYCLE_REPOSITION_SPEED_X,
     CYCLE_REPOSITION_SPEED_Y,
     CYCLE_REPOSITION_SPEED_Z,
+    CYCLE_AXIS_Z_TORCH_UP_OFFSET,
+    CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE,
+    CYCLE_TOUCH_RETRACT_PROBE_SPEED,
+    CYCLE_TOUCH_RETRACT_FINAL_HEIGHT,
     INCHES_PER_STEP_X_AXIS_LOWER,
     INCHES_PER_STEP_X_AXIS_UPPER,
     INCHES_PER_STEP_Y_AXIS_LOWER,

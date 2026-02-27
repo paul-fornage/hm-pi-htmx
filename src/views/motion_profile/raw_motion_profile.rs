@@ -17,6 +17,9 @@ pub struct RawMotionProfile {
     pub cycle_wire_feed_speed: u16,
     pub cycle_avc_vref: u16,
     pub cycle_z_static_offset: u16,
+    pub cycle_touch_retract_reposition_distance: u16,
+    pub cycle_touch_retract_probe_speed: u16,
+    pub cycle_touch_retract_final_height: u16,
     pub cycle_use_avc: bool,
     pub cycle_use_touch_retract: bool,
 }
@@ -57,6 +60,9 @@ impl RawMotionProfile {
         let cycle_wire_feed_speed = pull_hreg_from_mb!(CYCLE_WIRE_FEED_SPEED);
         let cycle_avc_vref = pull_hreg_from_mb!(CYCLE_AVC_VREF);
         let cycle_z_static_offset = pull_hreg_from_mb!(CYCLE_Z_STATIC_OFFSET);
+        let cycle_touch_retract_reposition_distance = pull_hreg_from_mb!(CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
+        let cycle_touch_retract_probe_speed = pull_hreg_from_mb!(CYCLE_TOUCH_RETRACT_PROBE_SPEED);
+        let cycle_touch_retract_final_height = pull_hreg_from_mb!(CYCLE_TOUCH_RETRACT_FINAL_HEIGHT);
         let cycle_use_avc = pull_coil_from_mb!(CYCLE_USE_AVC);
         let cycle_use_touch_retract = pull_coil_from_mb!(CYCLE_USE_TOUCH_RETRACT);
 
@@ -71,6 +77,9 @@ impl RawMotionProfile {
             cycle_wire_feed_speed,
             cycle_avc_vref,
             cycle_z_static_offset,
+            cycle_touch_retract_reposition_distance,
+            cycle_touch_retract_probe_speed,
+            cycle_touch_retract_final_height,
             cycle_use_avc,
             cycle_use_touch_retract,
         })
@@ -115,6 +124,9 @@ impl RawMotionProfile {
         diff_hreg!(cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         diff_hreg!(cycle_avc_vref, CYCLE_AVC_VREF);
         diff_hreg!(cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        diff_hreg!(cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
+        diff_hreg!(cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);
+        diff_hreg!(cycle_touch_retract_final_height, CYCLE_TOUCH_RETRACT_FINAL_HEIGHT);
         diff_coil!(cycle_use_avc, CYCLE_USE_AVC);
         diff_coil!(cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
@@ -148,6 +160,9 @@ impl RawMotionProfile {
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
         write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        write_hreg_to_mb!(self.cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
+        write_hreg_to_mb!(self.cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);
+        write_hreg_to_mb!(self.cycle_touch_retract_final_height, CYCLE_TOUCH_RETRACT_FINAL_HEIGHT);
         write_coil_to_mb!(self.cycle_use_avc, CYCLE_USE_AVC);
         write_coil_to_mb!(self.cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
@@ -191,6 +206,9 @@ impl RawMotionProfile {
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
         write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
+        write_hreg_to_mb!(self.cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
+        write_hreg_to_mb!(self.cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);
+        write_hreg_to_mb!(self.cycle_touch_retract_final_height, CYCLE_TOUCH_RETRACT_FINAL_HEIGHT);
         write_coil_to_mb!(self.cycle_use_avc, CYCLE_USE_AVC);
         write_coil_to_mb!(self.cycle_use_touch_retract, CYCLE_USE_TOUCH_RETRACT);
 
