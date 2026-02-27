@@ -53,7 +53,7 @@
 <nav class="flex border-b-2 border-gray-300 mb-3 gap-1">
     {% for tab in header.tabs %}
     <a href="{{ tab.url() }}"
-       class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300 border-b-0 rounded-t hover:bg-white hover:text-blue-600 transition-colors{% if *tab == header.active_tab %} !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">
+       class="flex-1 px-5 text-center py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300 border-b-0 rounded-t hover:bg-white hover:text-blue-600 transition-colors{% if *tab == header.active_tab %} !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">
         {{ tab.label() }}
     </a>
     {% endfor %}
