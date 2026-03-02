@@ -25,7 +25,7 @@ use axum::{
 use tower_http::services::ServeDir;
 use crate::error::HmPiError;
 use crate::logging::LogTarget;
-use crate::miller::miller_register_definitions::{MILLER_CHUNKS};
+use crate::miller::miller_register_definitions::{MILLER_CHUNKS, PS_UI_DISABLE};
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusState};
 use crate::hmi_logic::mb_watcher::{cc_mb_watcher_task};
@@ -44,6 +44,7 @@ pub struct AppState {
     pub clearcore_registers: CachedModbus,
     pub miller_registers: CachedModbus,
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
+    pub ps_ui_disable: std::sync::Arc<AtomicBool>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
     pub motion_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::motion_profile::profile_metadata::MotionProfileMetadata>>,
     pub auth_state: std::sync::Arc<tokio::sync::RwLock<auth::AuthState>>,
@@ -106,6 +107,16 @@ async fn main() {
     builder.init();
 
     info_targeted!(HTTP, "Starting Modbus HTMX application");
+
+    // Initialize machine config
+    let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
+        .unwrap_or_else(|_| {
+            warn_targeted!(FS, "Failed to load machine config, using default values");
+            machine_config::MachineConfig::default()
+        });
+    let upd_log_port = machine_config.udp_logging_port;
+    let ps_ui_disable = std::sync::Arc::new(AtomicBool::new(machine_config.ps_ui_disable));
+    let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
 
     // Initialize Modbus Managers - load from saved config or use defaults
     let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
@@ -266,6 +277,8 @@ async fn main() {
     let welder = welder_modbus.clone();
     let thread_copy_welder_auto_connect = welder_auto_connect.clone();
     let thread_copy_welder_sse = sse_tx.clone();
+    let thread_copy_welder_registers = miller_registers.clone();
+    let thread_copy_ps_ui_disable = ps_ui_disable.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
         let mut last_state = ModbusState::Disconnected;
@@ -314,6 +327,17 @@ async fn main() {
                             }
                             Err(e) => {
                                 warn_targeted!(MODBUS, "Error initializing Welder registers: {:?}", e);
+                            }
+                        }
+                        let disable_ui = thread_copy_ps_ui_disable.load(Ordering::Acquire);
+                        match thread_copy_welder_registers
+                            .diff_write_coil(PS_UI_DISABLE.address.address, disable_ui)
+                            .await {
+                            Ok(()) => {
+                                info_targeted!(MODBUS, "Applied PS_UI_DISABLE on connect: {}", disable_ui);
+                            }
+                            Err(e) => {
+                                warn_targeted!(MODBUS, "Failed to apply PS_UI_DISABLE on connect: {:?}", e);
                             }
                         }
                         info_targeted!(MODBUS, "Welder auto-connected");
@@ -378,17 +402,6 @@ async fn main() {
             }
         }
     });
-
-
-    // Initialize machine config
-    let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
-        .unwrap_or_else(|_| {
-            warn_targeted!(FS, "Failed to load machine config, using default values");
-            machine_config::MachineConfig::default()
-        });
-    let upd_log_port = machine_config.udp_logging_port;
-    let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
-
     let sse_tx_clone = sse_tx.clone();
     tokio::spawn(async move{ 
         loop { 
@@ -424,6 +437,7 @@ async fn main() {
         clearcore_registers,
         miller_registers,
         machine_config,
+        ps_ui_disable,
         weld_profile_metadata,
         motion_profile_metadata,
         auth_state,

@@ -2,9 +2,12 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
 use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
-use crate::{AppState, info_targeted, error_targeted};
+use crate::{AppState, error_targeted, info_targeted, warn_targeted};
 use crate::logging::LogTarget;
+use crate::miller::miller_register_definitions::PS_UI_DISABLE;
 use crate::miller::miller_register_types::WelderModel;
+use crate::modbus::ModbusState;
+use std::sync::atomic::Ordering;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/machine-config.html")]
@@ -12,6 +15,7 @@ pub struct MachineConfigTemplate {
     pub header: HeaderContext,
     pub current_model: WelderModel,
     pub udp_logging_port: u16,
+    pub ps_ui_disable: bool,
     pub save_status: Option<Result<(), crate::error::HmPiError>>,
 }
 
@@ -49,6 +53,7 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
         header,
         current_model: config.welder_model.clone(),
         udp_logging_port: config.udp_logging_port,
+        ps_ui_disable: config.ps_ui_disable,
         save_status: None,
     }
 }
@@ -57,6 +62,7 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
 pub struct MachineConfigForm {
     pub welder_model: WelderModel,
     pub udp_logging_port: u16,
+    pub ps_ui_disable: bool,
 }
 
 pub async fn save_machine_config(
@@ -65,15 +71,17 @@ pub async fn save_machine_config(
 ) -> Response {
     info_targeted!(
         HTTP,
-        "Saving machine config: {}, udp_logging_port: {}",
+        "Saving machine config: {}, udp_logging_port: {}, ps_ui_disable: {}",
         form.welder_model,
-        form.udp_logging_port
+        form.udp_logging_port,
+        form.ps_ui_disable
     );
 
     // Create new config
     let new_config = crate::machine_config::MachineConfig {
         welder_model: form.welder_model.clone(),
         udp_logging_port: form.udp_logging_port,
+        ps_ui_disable: form.ps_ui_disable,
     };
 
     // Save to disk
@@ -86,7 +94,28 @@ pub async fn save_machine_config(
                 Ok(loaded_config) => {
                     // Update in-memory state
                     *state.machine_config.write().await = loaded_config.clone();
+                    let ui_disabled = loaded_config.ps_ui_disable;
+                    state.ps_ui_disable.store(ui_disabled, Ordering::Release);
                     info_targeted!(HTTP, "Config reloaded from disk and updated in memory");
+
+                    let connection_state = state.miller_registers
+                        .get_connection_state()
+                        .await
+                        .unwrap_or(ModbusState::Disconnected);
+                    if connection_state == ModbusState::Connected {
+                        match state.miller_registers
+                            .write_coil(PS_UI_DISABLE.address.address, ui_disabled)
+                            .await {
+                            Ok(()) => {
+                                info_targeted!(HTTP, "Applied PS_UI_DISABLE {ui_disabled} to connected welder");
+                            }
+                            Err(e) => {
+                                warn_targeted!(HTTP, "Failed to apply PS_UI_DISABLE to welder: {:?}", e);
+                            }
+                        }
+                    } else {
+                        warn_targeted!(HTTP, "Welder not connected, cannot apply PS_UI_DISABLE");
+                    }
 
                     StatusMessageTemplate {
                         save_status: Some(Ok(())),

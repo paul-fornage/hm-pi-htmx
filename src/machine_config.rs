@@ -10,6 +10,8 @@ pub const MACHINE_CONFIG_PATH: &str = "machine_config.json";
 pub struct MachineConfig {
     pub welder_model: WelderModel,
     pub udp_logging_port: u16,
+    #[serde(default)]
+    pub ps_ui_disable: bool,
 }
 
 impl Default for MachineConfig {
@@ -17,6 +19,7 @@ impl Default for MachineConfig {
         Self {
             welder_model: WelderModel::Maxstar210,
             udp_logging_port: 42069,
+            ps_ui_disable: false,
         }
     }
 }

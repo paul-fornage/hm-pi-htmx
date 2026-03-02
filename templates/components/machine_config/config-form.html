@@ -26,6 +26,37 @@
             </div>
         </div>
 
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">
+                Disable power supply UI (PS_UI_DISABLE)
+            </label>
+            <div class="inline-flex rounded border border-gray-300 overflow-hidden">
+                <label class="cursor-pointer">
+                    <input type="radio"
+                           name="ps_ui_disable"
+                           value="false"
+                           class="sr-only peer"
+                           {% if !ps_ui_disable %}checked{% endif %}>
+                    <span class="block px-3 py-1 text-sm peer-checked:bg-blue-500 peer-checked:text-white">
+                        Off (UI Enabled)
+                    </span>
+                </label>
+                <label class="cursor-pointer border-l border-gray-300">
+                    <input type="radio"
+                           name="ps_ui_disable"
+                           value="true"
+                           class="sr-only peer"
+                           {% if ps_ui_disable %}checked{% endif %}>
+                    <span class="block px-3 py-1 text-sm peer-checked:bg-blue-500 peer-checked:text-white">
+                        On (UI Disabled)
+                    </span>
+                </label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                Disables the front panel UI on the power source to allow Modbus control of protected registers.
+            </p>
+        </div>
+
         <button
             type="submit"
             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">

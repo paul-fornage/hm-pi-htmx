@@ -1,5 +1,5 @@
 {
-  "socket_addr": "192.168.1.8:502",
+  "socket_addr": "192.168.1.9:502",
   "unit_id": 1,
   "timeout_duration": 1000
 }

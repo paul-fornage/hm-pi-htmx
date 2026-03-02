@@ -1,4 +1,5 @@
 {
   "welder_model": "Maxstar210",
-  "udp_logging_port": 42069
+  "udp_logging_port": 42069,
+  "ps_ui_disable": true
 }
