@@ -1,13 +1,25 @@
 use std::path::PathBuf;
+use num_enum::{IntoPrimitive};
 use crate::paths::{full_path_for_subdir, full_path_for_subdir_verified, local_data_root_ensuring_exists};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, IntoPrimitive)]
+#[repr(u8)]
 pub enum Subdir {
-    MotionProfiles,
+    MotionProfiles = 0,
     WeldProfiles,
     Logs,
     Users,
     Config,
+}
+
+pub struct SubdirPaths {
+    pub paths: [PathBuf; 5]
+}
+impl SubdirPaths {
+    pub fn get(&self, subdir: Subdir) -> &PathBuf {
+        let offset: u8 = subdir.into();
+        &self.paths[offset as usize]
+    }
 }
 
 impl Subdir {

@@ -2,11 +2,11 @@ use std::path::{Path, PathBuf};
 use tokio::fs;
 use log::{error, info, warn};
 use crate::paths::full_path_for_subdir;
-use crate::paths::subdirs::MOTION_PROFILES;
+use crate::paths::subdirs::Subdir;
 use super::motion_profile::{MotionProfile, ProfileListEntry};
 
 pub fn profile_path() -> PathBuf {
-    full_path_for_subdir(MOTION_PROFILES)
+    Subdir::MotionProfiles.full_local_path()
 }
 const PROFILE_EXTENSION: &str = "json";
 
