@@ -1,23 +1,27 @@
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use log::{error, info, warn};
+use crate::paths::full_path_for_subdir;
+use crate::paths::subdirs::MOTION_PROFILES;
 use super::motion_profile::{MotionProfile, ProfileListEntry};
 
-const PROFILES_DIR: &str = "./motion_profiles";
+pub fn profile_path() -> PathBuf {
+    full_path_for_subdir(MOTION_PROFILES)
+}
 const PROFILE_EXTENSION: &str = "json";
 
 async fn ensure_profiles_dir() -> Result<(), String> {
-    match fs::create_dir_all(PROFILES_DIR).await {
+    match fs::create_dir_all(profile_path()).await {
         Ok(_) => Ok(()),
         Err(e) => {
-            error!("Failed to create profiles directory '{}': {}", PROFILES_DIR, e);
+            error!("Failed to create profiles directory '{}': {}", profile_path().display(), e);
             Err(format!("Failed to create profiles directory: {}", e))
         }
     }
 }
 
 fn name_to_path(name: &str) -> PathBuf {
-    Path::new(PROFILES_DIR).join(format!("{}.{}", name, PROFILE_EXTENSION))
+    profile_path().join(format!("{}.{}", name, PROFILE_EXTENSION))
 }
 
 fn validate_filename(name: &str) -> Result<(), String> {
@@ -123,12 +127,13 @@ pub async fn delete_profile(name: &str) -> Result<(), String> {
 }
 
 pub async fn list_profiles() -> Result<Vec<ProfileListEntry>, String> {
-    if !Path::new(PROFILES_DIR).exists() {
+    let profile_path = profile_path();
+    if !profile_path.exists() {
         return Ok(Vec::new());
     }
 
-    let mut dir_entries = fs::read_dir(PROFILES_DIR).await.map_err(|e| {
-        error!("Failed to read profiles directory '{}': {}", PROFILES_DIR, e);
+    let mut dir_entries = fs::read_dir(profile_path.clone()).await.map_err(|e| {
+        error!("Failed to read profiles directory '{}': {}", profile_path.display(), e);
         format!("Failed to read profiles directory: {}", e)
     })?;
 

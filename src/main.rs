@@ -15,6 +15,7 @@ pub mod sse;
 mod hx_trigger;
 mod estop_component;
 pub mod hmi_logic;
+mod paths;
 
 use tokio::sync::{broadcast};
 use std::sync::atomic::{AtomicBool, Ordering};
