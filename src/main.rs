@@ -20,6 +20,7 @@ mod file_io;
 
 use tokio::sync::{broadcast};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::LazyLock;
 use axum::{
     routing::{get, post},
     Router,
@@ -38,9 +39,13 @@ use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
 use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
+use crate::paths::subdirs::{Subdir, SubdirPaths};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
+pub static SUBDIR_PATHS: LazyLock<SubdirPaths> = LazyLock::new(|| {
+    SubdirPaths::new_mapped(|subdir| subdir.full_local_path())
+});
 
 #[derive(Clone)]
 pub struct AppState {
@@ -97,17 +102,8 @@ fn emit_connection_change(
 
 #[tokio::main]
 async fn main() {
-
-    let mut builder = env_logger::Builder::from_default_env();
-    if cfg!(debug_assertions) {
-        builder.filter_level(log::LevelFilter::Debug);
-        builder.filter(Some(LogTarget::MODBUS.into()), log::LevelFilter::Debug);
-        builder.filter(Some(LogTarget::HTTP.into()), log::LevelFilter::Debug);
-        builder.filter(Some("tokio_modbus::service::tcp"), log::LevelFilter::Info);
-    } else {
-        builder.filter_level(log::LevelFilter::Info);
-    }
-    builder.init();
+    logging::init_logger(SUBDIR_PATHS.get(Subdir::Logs))
+        .expect("Failed to initialize logger");
 
     info_targeted!(HTTP, "Starting Modbus HTMX application");
 
