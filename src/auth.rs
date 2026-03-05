@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::path::Path;
 use serde::{Deserialize, Serialize};
+use crate::file_io::{deserialize_json, serialize_json, FileIoError, FixedDiskFile};
+use crate::paths::subdirs::Subdir;
 use crate::debug_targeted;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -70,25 +73,31 @@ impl UserRecord {
 
 pub const USERS_PATH: &str = "users.json";
 
-pub async fn load_users() -> Result<HashMap<String, UserRecord>, String> {
-    match tokio::fs::read_to_string(USERS_PATH).await {
-        Ok(contents) => serde_json::from_str(&contents).map_err(|e| e.to_string()),
-        Err(err) => {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                Ok(HashMap::new())
-            } else {
-                Err(err.to_string())
-            }
-        }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct UserStore(pub HashMap<String, UserRecord>);
+
+impl FixedDiskFile for UserStore {
+    const SUBDIR: Subdir = Subdir::Users;
+    const FILE_NAME: &'static str = USERS_PATH;
+
+    fn serialize_value(&self, path: &Path) -> Result<String, FileIoError> {
+        serialize_json(self, path)
+    }
+
+    fn deserialize_value(path: &Path, contents: &str) -> Result<Self, FileIoError> {
+        deserialize_json(contents, path)
     }
 }
 
-pub async fn save_users(users: &HashMap<String, UserRecord>) -> Result<(), String> {
+pub async fn load_users() -> Result<HashMap<String, UserRecord>, FileIoError> {
+    let store = UserStore::load().await?;
+    Ok(store.0)
+}
+
+pub async fn save_users(users: &HashMap<String, UserRecord>) -> Result<(), FileIoError> {
     debug_targeted!(FS, "Saving users list ({} users)", users.len());
-    let json = serde_json::to_string_pretty(users).map_err(|e| e.to_string())?;
-    tokio::fs::write(USERS_PATH, json)
-        .await
-        .map_err(|e| e.to_string())
+    let store = UserStore(users.clone());
+    store.save().await
 }
 
 pub async fn verify_credentials(username: &str, password: &str) -> Result<AuthState, String> {
@@ -98,7 +107,14 @@ pub async fn verify_credentials(username: &str, password: &str) -> Result<AuthSt
         });
     }
 
-    let users = load_users().await?;
+    let users = match load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            debug_targeted!(FS, "Users file not found; treating as empty");
+            HashMap::new()
+        }
+        Err(err) => return Err(err.to_string()),
+    };
     if let Some(user) = users.get(username).filter(|u| u.password == password) {
         return Ok(match user.level {
             AuthLevel::Admin => AuthState::Admin {

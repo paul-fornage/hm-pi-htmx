@@ -16,6 +16,7 @@ mod hx_trigger;
 mod estop_component;
 pub mod hmi_logic;
 mod paths;
+mod file_io;
 
 use tokio::sync::{broadcast};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -25,6 +26,7 @@ use axum::{
 };
 use tower_http::services::ServeDir;
 use crate::error::HmPiError;
+use crate::file_io::{FileIoError, FixedDiskFile, NamedDiskFile};
 use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::{MILLER_CHUNKS, PS_UI_DISABLE};
 use crate::modbus::cached_modbus::CachedModbus;
@@ -110,30 +112,46 @@ async fn main() {
     info_targeted!(HTTP, "Starting Modbus HTMX application");
 
     // Initialize machine config
-    let machine_config = machine_config::MachineConfig::load(machine_config::MACHINE_CONFIG_PATH)
-        .unwrap_or_else(|_| {
-            warn_targeted!(FS, "Failed to load machine config, using default values");
+    let machine_config = match machine_config::MachineConfig::load().await {
+        Ok(config) => config,
+        Err(err) => {
+            warn_targeted!(FS, "Failed to load machine config ({}), using default values", err);
             machine_config::MachineConfig::default()
-        });
+        }
+    };
     let upd_log_port = machine_config.udp_logging_port;
     let ps_ui_disable = std::sync::Arc::new(AtomicBool::new(machine_config.ps_ui_disable));
     let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
 
     // Initialize Modbus Managers - load from saved config or use defaults
-    let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
-        .await.unwrap_or_else(|| {
-            warn_targeted!(FS, "Failed to read Clearcore modbus connection config. Using default Clearcore Modbus config");
+    let clearcore_config = match modbus::ConnectionConfig::load(modbus::CLEARCORE_CONFIG_NAME).await {
+        Ok(config) => config,
+        Err(FileIoError::NotFound { .. }) => {
+            warn_targeted!(FS, "Clearcore modbus config not found. Using default Clearcore Modbus config");
             let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
             modbus::ConnectionConfig::new(addr, 1)
-        });
+        }
+        Err(err) => {
+            warn_targeted!(FS, "Failed to read Clearcore modbus config ({}). Using default Clearcore Modbus config", err);
+            let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+            modbus::ConnectionConfig::new(addr, 1)
+        }
+    };
     let clearcore_modbus = modbus::ModbusManager::new(clearcore_config.clone());
 
-    let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
-        .await.unwrap_or_else(|| {
-            warn_targeted!(FS, "Failed to read Miller modbus connection config. Using default Miller Modbus config");
+    let welder_config = match modbus::ConnectionConfig::load(modbus::WELDER_CONFIG_NAME).await {
+        Ok(config) => config,
+        Err(FileIoError::NotFound { .. }) => {
+            warn_targeted!(FS, "Miller modbus config not found. Using default Miller Modbus config");
             let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
             modbus::ConnectionConfig::new(addr, 1)
-        });
+        }
+        Err(err) => {
+            warn_targeted!(FS, "Failed to read Miller modbus config ({}). Using default Miller Modbus config", err);
+            let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
+            modbus::ConnectionConfig::new(addr, 1)
+        }
+    };
     let welder_modbus = modbus::ModbusManager::new(welder_config.clone());
 
 
@@ -183,12 +201,19 @@ async fn main() {
                     ModbusState::Connecting,
                 );
 
-                let clearcore_config = modbus::ConnectionConfig::load_from_path(modbus::CLEARCORE_CONFIG_PATH)
-                    .await.unwrap_or_else(|| {
-                        warn_targeted!(FS, "Failed to read Clearcore modbus connection config. Using default Clearcore Modbus config");
+                let clearcore_config = match modbus::ConnectionConfig::load(modbus::CLEARCORE_CONFIG_NAME).await {
+                    Ok(config) => config,
+                    Err(FileIoError::NotFound { .. }) => {
+                        warn_targeted!(FS, "Clearcore modbus config not found. Using default Clearcore Modbus config");
                         let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
                         modbus::ConnectionConfig::new(addr, 1)
-                    });
+                    }
+                    Err(err) => {
+                        warn_targeted!(FS, "Failed to read Clearcore modbus config ({}). Using default Clearcore Modbus config", err);
+                        let addr: std::net::SocketAddr = "192.168.1.68:502".parse().unwrap();
+                        modbus::ConnectionConfig::new(addr, 1)
+                    }
+                };
                 
                 match clearcore.connect(clearcore_config).await {
                     Ok(()) => {
@@ -313,12 +338,19 @@ async fn main() {
                     ModbusState::Connecting,
                 );
                 
-                let welder_config = modbus::ConnectionConfig::load_from_path(modbus::WELDER_CONFIG_PATH)
-                    .await.unwrap_or_else(|| {
-                        warn_targeted!(FS, "Failed to read Miller modbus connection config. Using default Miller Modbus config");
+                let welder_config = match modbus::ConnectionConfig::load(modbus::WELDER_CONFIG_NAME).await {
+                    Ok(config) => config,
+                    Err(FileIoError::NotFound { .. }) => {
+                        warn_targeted!(FS, "Miller modbus config not found. Using default Miller Modbus config");
                         let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
                         modbus::ConnectionConfig::new(addr, 1)
-                    });
+                    }
+                    Err(err) => {
+                        warn_targeted!(FS, "Failed to read Miller modbus config ({}). Using default Miller Modbus config", err);
+                        let addr: std::net::SocketAddr = "192.168.1.104:50205".parse().unwrap();
+                        modbus::ConnectionConfig::new(addr, 1)
+                    }
+                };
                 
                 match welder.connect(welder_config).await {
                     Ok(()) => {

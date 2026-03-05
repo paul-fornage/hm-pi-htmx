@@ -297,7 +297,7 @@ pub async fn handle_save_config(
                 Ok(_) => FeedbackResult::new_ok("Configuration saved successfully".to_string()),
                 Err(e) => {
                     warn_targeted!(FS, "Failed to save config: {}", e);
-                    FeedbackResult::new_err(e)
+                    FeedbackResult::new_err(e.to_string())
                 }
             }
         },
@@ -314,8 +314,8 @@ pub async fn handle_load_config(
     debug_targeted!(HTTP, "Loading clearcore config from disk");
 
     let config = match ClearcoreConfig::load_config().await {
-        Ok(Some(config)) => config,
-        Ok(None) => {
+        Ok(config) => config,
+        Err(crate::file_io::FileIoError::NotFound { .. }) => {
             return FeedbackResult::new_err("No clearcore configuration found on disk".to_string());
         }
         Err(e) => {

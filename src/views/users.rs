@@ -8,6 +8,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 use crate::auth::{self, AuthLevel, UserRecord};
+use crate::file_io::FileIoError;
 use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::{debug_targeted, error_targeted, info_targeted, AppState};
 
@@ -105,12 +106,20 @@ pub async fn show_users(State(state): State<AppState>) -> impl IntoResponse {
             users,
             load_error: None,
         },
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; showing empty list");
+            UsersTemplate {
+                header,
+                users: HashMap::new(),
+                load_error: None,
+            }
+        }
         Err(err) => {
             error_targeted!(HTTP, "Failed to load users: {}", err);
             UsersTemplate {
                 header,
                 users: HashMap::new(),
-                load_error: Some(err),
+                load_error: Some(err.to_string()),
             }
         }
     }
@@ -121,13 +130,33 @@ pub async fn add_modal() -> impl IntoResponse {
 }
 
 pub async fn edit_modal(Query(query): Query<EditQuery>) -> impl IntoResponse {
-    let users = auth::load_users().await.unwrap_or_default();
+    let users = match auth::load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; edit modal will be empty");
+            HashMap::new()
+        }
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to load users for edit modal: {}", err);
+            HashMap::new()
+        }
+    };
     let user = users.get(&query.username).cloned();
     UserModalTemplate { user }
 }
 
 pub async fn user_rows() -> impl IntoResponse {
-    let users = auth::load_users().await.unwrap_or_default();
+    let users = match auth::load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; rendering empty rows");
+            HashMap::new()
+        }
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to load users for rows: {}", err);
+            HashMap::new()
+        }
+    };
     let mut list: Vec<_> = users.into_values().collect();
     list.sort_by(|a, b| a.username.cmp(&b.username));
     UserRowsTemplate { users: list }
@@ -135,7 +164,20 @@ pub async fn user_rows() -> impl IntoResponse {
 
 pub async fn add_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Adding user: {:?}", form);
-    let mut users = auth::load_users().await.unwrap_or_default();
+    let mut users = match auth::load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; starting empty list for add");
+            HashMap::new()
+        }
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to load users during add: {}", err);
+            return ActionStatusTemplate {
+                result: Err(format!("Server error: Could not load users ({})", err)),
+            }
+            .into_response();
+        }
+    };
 
     let username = form.username.trim().to_string();
     if users.contains_key(&username) {
@@ -172,7 +214,20 @@ pub async fn add_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
 
 pub async fn edit_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Editing user: {:?}", form);
-    let mut users = auth::load_users().await.unwrap_or_default();
+    let mut users = match auth::load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; starting empty list for edit");
+            HashMap::new()
+        }
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to load users during edit: {}", err);
+            return ActionStatusTemplate {
+                result: Err(format!("Server error: Could not load users ({})", err)),
+            }
+            .into_response();
+        }
+    };
 
     let username = form.username.trim().to_string();
     let original = form.original_username.unwrap_or_default();
@@ -212,7 +267,20 @@ pub async fn edit_user(Form(form): Form<UserActionForm>) -> impl IntoResponse {
 
 pub async fn delete_user(Query(query): Query<DeleteQuery>) -> impl IntoResponse {
     debug_targeted!(HTTP, "Deleting user: {:?}", query);
-    let mut users = auth::load_users().await.unwrap_or_default();
+    let mut users = match auth::load_users().await {
+        Ok(users) => users,
+        Err(FileIoError::NotFound { .. }) => {
+            info_targeted!(HTTP, "Users file not found; starting empty list for delete");
+            HashMap::new()
+        }
+        Err(err) => {
+            error_targeted!(HTTP, "Failed to load users during delete: {}", err);
+            return ActionStatusTemplate {
+                result: Err(format!("Server error: Could not load users ({})", err)),
+            }
+            .into_response();
+        }
+    };
     users.remove(&query.username);
 
     // Properly handle the Result

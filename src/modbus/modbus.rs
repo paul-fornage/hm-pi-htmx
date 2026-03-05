@@ -9,8 +9,10 @@ use tokio_modbus::client::{Client, Context, Reader, Writer};
 use serde::{Deserialize, Serialize};
 use tokio_modbus::prelude::SlaveContext;
 use crate::error::{HmPiError, Result};
+use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
 use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted, debug_targeted};
 use crate::modbus::modbus_transaction_types::*;
+use crate::paths::subdirs::Subdir;
 
 const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);
@@ -104,8 +106,10 @@ mod duration_as_millis {
     }
 }
 
-pub const CLEARCORE_CONFIG_PATH: &str = "clearcore_modbus_config.json";
-pub const WELDER_CONFIG_PATH: &str = "welder_modbus_config.json";
+pub const CLEARCORE_CONFIG_NAME: &str = "clearcore_modbus_config";
+pub const WELDER_CONFIG_NAME: &str = "welder_modbus_config";
+
+const CONNECTION_CONFIG_EXTENSION: &str = "json";
 
 impl ConnectionConfig {
     pub fn new_with_timeout(socket_addr: SocketAddr, unit_id: u8, timeout_duration: Duration) -> Self {
@@ -125,68 +129,18 @@ impl ConnectionConfig {
         }
     }
 
-    pub fn save_to_path_blocking(&self, path: &str) -> std::result::Result<(), std::io::Error> {
-        let json = serde_json::to_string_pretty(self)?;
-        std::fs::write(path, json)?;
-        info_targeted!(MODBUS, "Saved config to {}", path);
-        Ok(())
+}
+
+impl NamedDiskFile for ConnectionConfig {
+    const SUBDIR: Subdir = Subdir::ConnectionProfiles;
+    const EXT: &'static str = CONNECTION_CONFIG_EXTENSION;
+
+    fn serialize_value(value: &Self, path: &std::path::Path) -> std::result::Result<String, FileIoError> {
+        serialize_json(value, path)
     }
 
-    pub async fn save_to_path(&self, path: &str) -> std::result::Result<(), std::io::Error> {
-        let json = serde_json::to_string_pretty(self)?;
-        tokio::fs::write(path, json).await?;
-        info_targeted!(MODBUS, "Saved config to {}", path);
-        Ok(())
-    }
-
-    pub fn load_from_path_blocking(path: &str) -> Option<Self> {
-        let path_obj = std::path::Path::new(path);
-        if !path_obj.exists() {
-            info_targeted!(MODBUS, "Config file {} does not exist", path);
-            return None;
-        }
-
-        match std::fs::read_to_string(path_obj) {
-            Ok(contents) => match serde_json::from_str(&contents) {
-                Ok(config) => {
-                    info_targeted!(MODBUS, "Loaded config from {}", path);
-                    Some(config)
-                }
-                Err(e) => {
-                    warn_targeted!(MODBUS, "Failed to parse config from {}: {}", path, e);
-                    None
-                }
-            },
-            Err(e) => {
-                warn_targeted!(MODBUS, "Failed to read config from {}: {}", path, e);
-                None
-            }
-        }
-    }
-
-    pub async fn load_from_path(path: &str) -> Option<Self> {
-        let path_obj = std::path::Path::new(path);
-        if !path_obj.exists() {
-            warn_targeted!(MODBUS, "Config file {} does not exist", path);
-            return None;
-        }
-
-        match tokio::fs::read_to_string(path_obj).await {
-            Ok(contents) => match serde_json::from_str(&contents) {
-                Ok(config) => {
-                    debug_targeted!(MODBUS, "Loaded config from {}", path);
-                    Some(config)
-                }
-                Err(e) => {
-                    warn_targeted!(MODBUS, "Failed to parse config from {}: {}", path, e);
-                    None
-                }
-            },
-            Err(e) => {
-                warn_targeted!(MODBUS, "Failed to read config from {}: {}", path, e);
-                None
-            }
-        }
+    fn deserialize_value(path: &std::path::Path, contents: &str) -> std::result::Result<Self, FileIoError> {
+        deserialize_json(contents, path)
     }
 }
 
@@ -466,5 +420,3 @@ impl ModbusManager{
         Ok(())
     }
 }
-
-

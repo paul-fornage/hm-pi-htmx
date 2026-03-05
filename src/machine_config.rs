@@ -1,10 +1,11 @@
-use crate::miller::miller_register_types::WelderModel;
-use crate::error::{Result, HmPiError};
-
 use std::path::Path;
-use std::fs;
+use crate::file_io::{FileIoError, FixedDiskFile, serialize_json};
+use crate::miller::miller_register_types::WelderModel;
+use crate::paths::subdirs::Subdir;
 
 pub const MACHINE_CONFIG_PATH: &str = "machine_config.json";
+const CONFIG_VERSION_MISMATCH_MSG: &str = "Configuration file version mismatch. Expected fields may not match. \
+        This may indicate the file was created with a different version of the software.";
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct MachineConfig {
@@ -24,24 +25,29 @@ impl Default for MachineConfig {
     }
 }
 
-impl MachineConfig {
-    pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
-        let json = serde_json::to_string_pretty(self)?;
-        fs::write(path, json)?;
-        Ok(())
+impl FixedDiskFile for MachineConfig {
+    const SUBDIR: Subdir = Subdir::Config;
+    const FILE_NAME: &'static str = MACHINE_CONFIG_PATH;
+
+    fn serialize_value(&self, path: &Path) -> Result<String, FileIoError> {
+        serialize_json(self, path)
     }
 
-    pub fn load(path: impl AsRef<Path>) -> Result<Self> {
-        let contents = fs::read_to_string(path)?;
-        let config: MachineConfig = serde_json::from_str(&contents)
-            .map_err(|e| {
-                // Check if it's a missing field error, which indicates version mismatch
+    fn deserialize_value(path: &Path, contents: &str) -> Result<Self, FileIoError> {
+        match serde_json::from_str::<MachineConfig>(contents) {
+            Ok(config) => Ok(config),
+            Err(e) => {
                 if e.classify() == serde_json::error::Category::Data {
-                    HmPiError::ConfigVersionMismatch
+                    Err(FileIoError::Validation {
+                        message: CONFIG_VERSION_MISMATCH_MSG.to_string(),
+                    })
                 } else {
-                    HmPiError::JsonError(e)
+                    Err(FileIoError::Serde {
+                        path: path.to_path_buf(),
+                        source: e,
+                    })
                 }
-            })?;
-        Ok(config)
+            }
+        }
     }
 }

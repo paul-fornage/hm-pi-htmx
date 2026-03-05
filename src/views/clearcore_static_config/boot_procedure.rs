@@ -1,4 +1,5 @@
 use crate::error::HmPiError;
+use crate::file_io::FileIoError;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 use crate::{error_targeted, info_targeted, warn_targeted};
@@ -6,7 +7,11 @@ use crate::plc::plc_register_definitions::CONFIG_READY;
 
 impl ClearcoreConfig {
     pub async fn on_boot(clearcore_registers: &CachedModbus) -> Result<bool, HmPiError> {
-        let clearcore_config = ClearcoreConfig::load_config().await?;
+        let clearcore_config = match ClearcoreConfig::load_config().await {
+            Ok(config) => Some(config),
+            Err(FileIoError::NotFound { .. }) => None,
+            Err(err) => return Err(err.into()),
+        };
         match clearcore_config {
             Some(config) => {
                 info_targeted!(FS, "Clearcore config found, loading...");

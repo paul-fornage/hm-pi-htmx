@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::sync::atomic::Ordering;
 use askama::Template;
 use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState, trace_targeted};
+use crate::file_io::NamedDiskFile;
 use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
 
 #[derive(Template)]
@@ -85,7 +86,7 @@ async fn get_connection_template(
 async fn handle_connect(
     manager: &ModbusManager,
     name: &str,
-    config_path: &str,
+    config_name: &str,
     form: ConnectForm,
     auto_connect: bool,
 ) -> ConnectionTemplate {
@@ -108,7 +109,7 @@ async fn handle_connect(
             };
 
             // Save config before attempting connection
-            if let Err(e) = config.save_to_path(config_path).await {
+            if let Err(e) = ConnectionConfig::save(config_name, &config).await {
                 warn_targeted!(MODBUS, "Failed to save {} config: {}", name, e);
             }
 
@@ -240,7 +241,7 @@ pub async fn connect_clearcore(
     let template = handle_connect(
         &state.clearcore_registers.manager,
         "clearcore",
-        crate::modbus::CLEARCORE_CONFIG_PATH,
+        crate::modbus::CLEARCORE_CONFIG_NAME,
         form,
         auto_connect,
     ).await;
@@ -271,7 +272,7 @@ pub async fn connect_welder(
     let template = handle_connect(
         &state.miller_registers.manager,
         "welder",
-        crate::modbus::WELDER_CONFIG_PATH,
+        crate::modbus::WELDER_CONFIG_NAME,
         form,
         auto_connect,
     ).await;

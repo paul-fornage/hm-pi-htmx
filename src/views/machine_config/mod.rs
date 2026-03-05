@@ -2,6 +2,7 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
 use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
+use crate::file_io::FixedDiskFile;
 use crate::{AppState, error_targeted, info_targeted, warn_targeted};
 use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::PS_UI_DISABLE;
@@ -85,12 +86,12 @@ pub async fn save_machine_config(
     };
 
     // Save to disk
-    let result = match new_config.save(crate::machine_config::MACHINE_CONFIG_PATH) {
+    let result = match new_config.save().await {
         Ok(_) => {
             info_targeted!(HTTP, "Config saved to disk");
 
             // Reload from disk to verify
-            match crate::machine_config::MachineConfig::load(crate::machine_config::MACHINE_CONFIG_PATH) {
+            match crate::machine_config::MachineConfig::load().await {
                 Ok(loaded_config) => {
                     // Update in-memory state
                     *state.machine_config.write().await = loaded_config.clone();
@@ -122,17 +123,19 @@ pub async fn save_machine_config(
                     }
                 }
                 Err(e) => {
-                    error_targeted!(HTTP, "Failed to reload config: {:?}", e);
+                    let err = crate::error::HmPiError::from(e);
+                    error_targeted!(HTTP, "Failed to reload config: {:?}", err);
                     StatusMessageTemplate {
-                        save_status: Some(Err(e)),
+                        save_status: Some(Err(err)),
                     }
                 }
             }
         }
         Err(e) => {
-            error_targeted!(HTTP, "Failed to save config: {:?}", e);
+            let err = crate::error::HmPiError::from(e);
+            error_targeted!(HTTP, "Failed to save config: {:?}", err);
             StatusMessageTemplate {
-                save_status: Some(Err(e)),
+                save_status: Some(Err(err)),
             }
         }
     };

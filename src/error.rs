@@ -1,4 +1,5 @@
 use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress};
+use crate::file_io::FileIoError;
 use crate::views::clearcore_static_config::json_serde::CcConfigParseError;
 
 pub type Result<T> = std::result::Result<T, HmPiError>;
@@ -41,6 +42,8 @@ pub enum HmPiError {
     ReadUnpopulatedRegister(RegisterAddress),
     #[error("Failed to parse JSON: {0}")]
     JsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    FileIo(#[from] FileIoError),
     #[error("Configuration file version mismatch. Expected fields may not match. \
         This may indicate the file was created with a different version of the software.")]
     ConfigVersionMismatch,
@@ -61,6 +64,5 @@ pub enum HmPiError {
     #[error("Failed to read back registers with the same value that was written to them.")]
     ModbusFailToReadBackWrites(),
 }
-
 
 
