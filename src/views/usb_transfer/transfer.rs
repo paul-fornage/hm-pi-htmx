@@ -11,8 +11,6 @@ use crate::{debug_targeted, warn_targeted, error_targeted, LOCAL_SUBDIR_PATHS};
 
 use super::types::{ReloadTarget, TransferDirection, UsbTransferForm};
 
-pub const ALLOWED_EXTENSION: &str = "json";
-
 #[derive(Debug, Clone)]
 pub struct SubdirSection {
     pub subdir: Subdir,
@@ -31,6 +29,8 @@ pub enum TransferError {
     InvalidFilename(String),
     #[error("Invalid directory selection: {0}")]
     InvalidSubdir(String),
+    #[error("No files to copy in {label}.")]
+    EmptySource { label: String },
     #[error("I/O error at {path}: {source}")]
     Io { path: PathBuf, source: io::Error },
     #[error("Failed to read directory {path}: {source}")]
@@ -46,6 +46,7 @@ impl TransferError {
             TransferError::InvalidMountpoint => "Invalid or missing USB mountpoint.".to_string(),
             TransferError::InvalidFilename(msg) => format!("Invalid file name: {msg}"),
             TransferError::InvalidSubdir(msg) => format!("Invalid directory selection: {msg}"),
+            TransferError::EmptySource { label } => format!("No files to copy in {label}."),
             TransferError::Io { source, .. } => format!("I/O error: {source}"),
             TransferError::ReadDir { source, .. } => format!("Failed to read directory: {source}"),
             TransferError::Copy { source, .. } => format!("Failed to copy file: {source}"),
@@ -60,6 +61,14 @@ pub struct PreparedCopy {
     pub reload_target: ReloadTarget,
 }
 
+pub struct PreparedBulkCopy {
+    pub pairs: Vec<(PathBuf, PathBuf)>,
+    pub reload_target: ReloadTarget,
+    pub subdir: Subdir,
+    pub source_count: usize,
+    pub conflict_count: usize,
+}
+
 pub async fn list_local_sections() -> Vec<SubdirSection> {
     let mut sections = Vec::with_capacity(Subdir::VARIANTS.len());
 
@@ -67,7 +76,7 @@ pub async fn list_local_sections() -> Vec<SubdirSection> {
         let dir = LOCAL_SUBDIR_PATHS.get(*subdir).clone();
 
         let (files, error) = match ensure_local_dir(&dir).await {
-            Ok(()) => match list_files_in_dir(&dir).await {
+            Ok(()) => match list_files_in_dir(&dir, *subdir).await {
                 Ok(files) => (files, None),
                 Err(err) => {
                     error_targeted!(FS, "Failed to list local files for {}: {}", dir.display(), err);
@@ -109,7 +118,7 @@ pub async fn list_usb_sections(mountpoint: &Path) -> Vec<SubdirSection> {
             }
         };
 
-        let (files, error) = match list_files_in_dir(&dir).await {
+        let (files, error) = match list_files_in_dir(&dir, *subdir).await {
             Ok(files) => (files, None),
             Err(err) => {
                 error_targeted!(FS, "Failed to list USB files for {}: {}", dir.display(), err);
@@ -129,7 +138,12 @@ pub async fn list_usb_sections(mountpoint: &Path) -> Vec<SubdirSection> {
 }
 
 pub async fn prepare_copy(form: &UsbTransferForm) -> Result<PreparedCopy, TransferError> {
-    validate_filename(&form.file_name)
+    let file_name = form
+        .file_name
+        .as_deref()
+        .unwrap_or_default();
+
+    validate_filename(file_name)
         .map_err(|err| TransferError::InvalidFilename(err.to_string()))?;
 
     let subdir = parse_subdir(&form.subdir)?;
@@ -142,8 +156,8 @@ pub async fn prepare_copy(form: &UsbTransferForm) -> Result<PreparedCopy, Transf
 
             let destination_dir = ensure_usb_subdir(&mountpoint, subdir).await?;
             Ok(PreparedCopy {
-                source: source_dir.join(file_name_with_ext(&form.file_name)),
-                destination: destination_dir.join(file_name_with_ext(&form.file_name)),
+                source: source_dir.join(file_name_with_ext(subdir, file_name)),
+                destination: destination_dir.join(file_name_with_ext(subdir, file_name)),
                 reload_target: ReloadTarget::Usb,
             })
         }
@@ -153,12 +167,66 @@ pub async fn prepare_copy(form: &UsbTransferForm) -> Result<PreparedCopy, Transf
             ensure_local_dir(&destination_dir).await?;
 
             Ok(PreparedCopy {
-                source: source_dir.join(file_name_with_ext(&form.file_name)),
-                destination: destination_dir.join(file_name_with_ext(&form.file_name)),
+                source: source_dir.join(file_name_with_ext(subdir, file_name)),
+                destination: destination_dir.join(file_name_with_ext(subdir, file_name)),
                 reload_target: ReloadTarget::Local,
             })
         }
     }
+}
+
+pub async fn prepare_bulk_copy(form: &UsbTransferForm) -> Result<PreparedBulkCopy, TransferError> {
+    let subdir = parse_subdir(&form.subdir)?;
+    let mountpoint = parse_mountpoint(&form.usb_mountpoint)?;
+
+    let (source_dir, destination_dir, reload_target) = match form.direction {
+        TransferDirection::LocalToUsb => {
+            let source_dir = LOCAL_SUBDIR_PATHS.get(subdir).clone();
+            ensure_local_dir(&source_dir).await?;
+            let destination_dir = ensure_usb_subdir(&mountpoint, subdir).await?;
+            (source_dir, destination_dir, ReloadTarget::Usb)
+        }
+        TransferDirection::UsbToLocal => {
+            let source_dir = ensure_usb_subdir(&mountpoint, subdir).await?;
+            let destination_dir = LOCAL_SUBDIR_PATHS.get(subdir).clone();
+            ensure_local_dir(&destination_dir).await?;
+            (source_dir, destination_dir, ReloadTarget::Local)
+        }
+    };
+
+    let source_files = list_files_in_dir(&source_dir, subdir).await?;
+    if source_files.is_empty() {
+        return Err(TransferError::EmptySource {
+            label: subdir_label(subdir).to_string(),
+        });
+    }
+
+    let destination_files = list_files_in_dir(&destination_dir, subdir).await?;
+
+    let conflict_count = if destination_files.is_empty() {
+        0
+    } else {
+        let destination_set: std::collections::HashSet<_> = destination_files.into_iter().collect();
+        source_files.iter().filter(|name| destination_set.contains(*name)).count()
+    };
+
+    let pairs = source_files
+        .iter()
+        .map(|name| {
+            (
+                source_dir.join(file_name_with_ext(subdir, name)),
+                destination_dir.join(file_name_with_ext(subdir, name)),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    Ok(PreparedBulkCopy {
+        pairs,
+        reload_target,
+        subdir,
+        source_count: source_files.len(),
+        conflict_count,
+    })
 }
 
 pub async fn destination_exists(path: &Path) -> Result<bool, TransferError> {
@@ -179,8 +247,22 @@ pub async fn execute_copy(plan: &PreparedCopy) -> Result<(), TransferError> {
         })
 }
 
-fn file_name_with_ext(name: &str) -> String {
-    format!("{}.{}", name, ALLOWED_EXTENSION)
+pub async fn execute_bulk_copy(plan: &PreparedBulkCopy) -> Result<(), TransferError> {
+    for (source, destination) in &plan.pairs {
+        debug_targeted!(FS, "Copying file from {} to {}", source.display(), destination.display());
+        fs::copy(source, destination)
+            .await
+            .map_err(|e| TransferError::Copy {
+                from: source.clone(),
+                to: destination.clone(),
+                source: e,
+            })?;
+    }
+    Ok(())
+}
+
+fn file_name_with_ext(subdir: Subdir, name: &str) -> String {
+    format!("{}.{}", name, extension_for_subdir(subdir))
 }
 
 fn parse_subdir(value: &str) -> Result<Subdir, TransferError> {
@@ -191,7 +273,7 @@ fn parse_subdir(value: &str) -> Result<Subdir, TransferError> {
         .ok_or_else(|| TransferError::InvalidSubdir(value.to_string()))
 }
 
-fn subdir_label(subdir: Subdir) -> &'static str {
+pub fn subdir_label(subdir: Subdir) -> &'static str {
     match subdir {
         Subdir::MotionProfiles => "Motion profiles",
         Subdir::WeldProfiles => "Weld profiles",
@@ -286,7 +368,7 @@ async fn create_dir_step(path: &Path, mountpoint: &Path) -> Result<(), TransferE
     }
 }
 
-async fn list_files_in_dir(dir: &Path) -> Result<Vec<String>, TransferError> {
+async fn list_files_in_dir(dir: &Path, subdir: Subdir) -> Result<Vec<String>, TransferError> {
     let mut entries = fs::read_dir(dir)
         .await
         .map_err(|e| TransferError::ReadDir { path: dir.to_path_buf(), source: e })?;
@@ -302,7 +384,15 @@ async fn list_files_in_dir(dir: &Path) -> Result<Vec<String>, TransferError> {
             Ok(Some(entry)) => {
                 let path = entry.path();
 
-                if path.extension().and_then(|s| s.to_str()) != Some(ALLOWED_EXTENSION) {
+                let file_name = match path.file_name().and_then(|s| s.to_str()) {
+                    Some(name) => name,
+                    None => {
+                        skipped_non_utf8 += 1;
+                        continue;
+                    }
+                };
+
+                if !is_allowed_file(subdir, file_name) {
                     continue;
                 }
 
@@ -354,4 +444,19 @@ async fn list_files_in_dir(dir: &Path) -> Result<Vec<String>, TransferError> {
 
     names.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
     Ok(names)
+}
+
+fn extension_for_subdir(subdir: Subdir) -> &'static str {
+    match subdir {
+        Subdir::Logs => "txt",
+        _ => "json",
+    }
+}
+
+fn is_allowed_file(subdir: Subdir, file_name: &str) -> bool {
+    let mut split = file_name.split('.');
+    if split.next().is_none() { return false; };
+    let ext = split.last();
+
+    ext == Some(extension_for_subdir(subdir))
 }

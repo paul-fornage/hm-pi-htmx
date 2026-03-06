@@ -498,6 +498,9 @@
   .min-h-\[1rem\] {
     min-height: 1rem;
   }
+  .min-h-\[3\.25rem\] {
+    min-height: 3.25rem;
+  }
   .w-2\.5 {
     width: calc(var(--spacing) * 2.5);
   }
@@ -1464,6 +1467,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-blue-700);
+      }
+    }
+  }
+  .hover\:bg-emerald-50 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-emerald-50);
       }
     }
   }

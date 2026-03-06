@@ -89,5 +89,5 @@ pub struct UsbTransferToastTemplate {
 #[template(path = "components/usb-transfer/confirm-overwrite-modal.html")]
 pub struct UsbTransferConfirmModalTemplate {
     pub form: UsbTransferForm,
-    pub destination_label: &'static str,
+    pub detail: String,
 }

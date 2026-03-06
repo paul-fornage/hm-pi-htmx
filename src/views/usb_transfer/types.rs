@@ -25,12 +25,14 @@ impl TransferDirection {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UsbTransferForm {
-    pub file_name: String,
+    pub file_name: Option<String>,
     pub subdir: String,
     pub direction: TransferDirection,
     pub usb_mountpoint: String,
     #[serde(default)]
     pub force: bool,
+    #[serde(default)]
+    pub copy_all: bool,
 }
 
 impl UsbTransferForm {

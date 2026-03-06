@@ -19,10 +19,13 @@ use super::templates::{
 };
 use super::transfer::{
     destination_exists,
+    execute_bulk_copy,
     execute_copy,
     list_local_sections,
     list_usb_sections,
+    prepare_bulk_copy,
     prepare_copy,
+    subdir_label,
 };
 use super::types::{ReloadTarget, UsbTransferForm};
 
@@ -108,7 +111,7 @@ async fn usb_list() -> impl IntoResponse {
 pub enum UsbTransferResponse {
     Success { reload_target: ReloadTarget, message: String },
     Error { message: String },
-    Confirm { form: UsbTransferForm },
+    Confirm { form: UsbTransferForm, detail: String },
 }
 
 impl IntoResponse for UsbTransferResponse {
@@ -138,9 +141,9 @@ impl IntoResponse for UsbTransferResponse {
                 };
                 render_template(template, headers)
             }
-            UsbTransferResponse::Confirm { form } => {
+            UsbTransferResponse::Confirm { form, detail } => {
                 let template = UsbTransferConfirmModalTemplate {
-                    destination_label: form.direction.destination_label(),
+                    detail,
                     form: form.with_force(true),
                 };
                 render_template(template, headers)
@@ -179,50 +182,103 @@ fn render_template<T: askama::Template>(template: T, headers: HeaderMap) -> axum
 async fn copy_file(Form(form): Form<UsbTransferForm>) -> impl IntoResponse {
     info_targeted!(
         HTTP,
-        "USB transfer requested: file='{}' subdir='{}' direction='{:?}' force={}",
+        "USB transfer requested: file='{:?}' subdir='{}' direction='{:?}' force={} copy_all={}",
         form.file_name,
         form.subdir,
         form.direction,
-        form.force
+        form.force,
+        form.copy_all
     );
 
-    let plan = match prepare_copy(&form).await {
-        Ok(plan) => plan,
-        Err(err) => {
-            error_targeted!(HTTP, "Failed to prepare USB transfer: {}", err);
-            return UsbTransferResponse::Error { message: err.user_message() };
-        }
-    };
-
-    if !form.force {
-        match destination_exists(&plan.destination).await {
-            Ok(true) => {
-                warn_targeted!(HTTP, "Destination exists; requesting overwrite confirmation");
-                return UsbTransferResponse::Confirm { form };
-            }
-            Ok(false) => {}
+    if form.copy_all {
+        let plan = match prepare_bulk_copy(&form).await {
+            Ok(plan) => plan,
             Err(err) => {
-                error_targeted!(HTTP, "Failed to check destination path: {}", err);
+                error_targeted!(HTTP, "Failed to prepare bulk USB transfer: {}", err);
                 return UsbTransferResponse::Error { message: err.user_message() };
             }
-        }
-    }
+        };
 
-    match execute_copy(&plan).await {
-        Ok(_) => {
-            info_targeted!(HTTP, "USB transfer completed successfully");
-            UsbTransferResponse::Success {
-                reload_target: plan.reload_target,
-                message: format!(
-                    "Copied '{}' to {}",
-                    form.file_name,
-                    form.direction.destination_label()
-                ),
+        if plan.conflict_count > 0 && !form.force {
+            warn_targeted!(HTTP, "Bulk transfer destination has collisions; requesting overwrite confirmation");
+            let detail = format!(
+                "{} existing file(s) found in {}. Overwriting will replace them.",
+                plan.conflict_count,
+                form.direction.destination_label()
+            );
+            return UsbTransferResponse::Confirm { form, detail };
+        }
+
+        match execute_bulk_copy(&plan).await {
+            Ok(_) => {
+                info_targeted!(HTTP, "Bulk USB transfer completed successfully");
+                UsbTransferResponse::Success {
+                    reload_target: plan.reload_target,
+                    message: format!(
+                        "Copied {} file(s) from {} to {}",
+                        plan.source_count,
+                        subdir_label(plan.subdir),
+                        form.direction.destination_label()
+                    ),
+                }
+            }
+            Err(err) => {
+                error_targeted!(HTTP, "Bulk USB transfer failed: {}", err);
+                UsbTransferResponse::Error { message: err.user_message() }
             }
         }
-        Err(err) => {
-            error_targeted!(HTTP, "USB transfer failed: {}", err);
-            UsbTransferResponse::Error { message: err.user_message() }
+    } else {
+        let file_name = match form.file_name.as_deref() {
+            Some(name) if !name.is_empty() => name,
+            _ => {
+                warn_targeted!(HTTP, "Missing file name for USB transfer");
+                return UsbTransferResponse::Error { message: "Missing file name.".to_string() };
+            }
+        };
+
+        let plan = match prepare_copy(&form).await {
+            Ok(plan) => plan,
+            Err(err) => {
+                error_targeted!(HTTP, "Failed to prepare USB transfer: {}", err);
+                return UsbTransferResponse::Error { message: err.user_message() };
+            }
+        };
+
+        if !form.force {
+            match destination_exists(&plan.destination).await {
+                Ok(true) => {
+                    warn_targeted!(HTTP, "Destination exists; requesting overwrite confirmation");
+                    let detail = format!(
+                        "The file '{}' already exists on {}.",
+                        file_name,
+                        form.direction.destination_label()
+                    );
+                    return UsbTransferResponse::Confirm { form, detail };
+                }
+                Ok(false) => {}
+                Err(err) => {
+                    error_targeted!(HTTP, "Failed to check destination path: {}", err);
+                    return UsbTransferResponse::Error { message: err.user_message() };
+                }
+            }
+        }
+
+        match execute_copy(&plan).await {
+            Ok(_) => {
+                info_targeted!(HTTP, "USB transfer completed successfully");
+                UsbTransferResponse::Success {
+                    reload_target: plan.reload_target,
+                    message: format!(
+                        "Copied '{}' to {}",
+                        file_name,
+                        form.direction.destination_label()
+                    ),
+                }
+            }
+            Err(err) => {
+                error_targeted!(HTTP, "USB transfer failed: {}", err);
+                UsbTransferResponse::Error { message: err.user_message() }
+            }
         }
     }
 }
