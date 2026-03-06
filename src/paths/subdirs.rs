@@ -1,9 +1,10 @@
+use std::fs;
 use std::future::Future;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use futures::future::join_all;
 use num_enum::{IntoPrimitive};
 use strum::VariantArray;
-use crate::paths::{full_path_for_subdir, full_path_for_subdir_verified, local_data_root_ensuring_exists};
+use crate::paths::{local_data_root_ensuring_exists, DEFAULT_ROOT_FOLDER};
 
 #[derive(Debug, Clone, Copy, IntoPrimitive, VariantArray)]
 #[repr(u8)]
@@ -64,11 +65,21 @@ impl Subdir {
         }
     }
 
-    pub fn full_local_path(&self) -> PathBuf {
-        full_path_for_subdir(*self)
+    pub fn full_local_path_ensuring_exists(&self) -> Result<PathBuf, std::io::Error> {
+        let path = local_data_root_ensuring_exists()?.join(self.path());
+        fs::create_dir_all(&path).inspect_err( |err| {
+            log::warn!(
+            "Failed to create default data directory {}: {}",
+            path.display(),
+            err);
+        })?;
+        Ok(path)
     }
 
-    pub fn full_local_path_ensuring_exists(&self) -> Result<PathBuf, std::io::Error> {
-        full_path_for_subdir_verified(*self)
+    pub fn path_in_usb_root(&self, usb_root: &Path) -> PathBuf {
+        let mut path = usb_root.to_owned();
+        path.push(DEFAULT_ROOT_FOLDER);
+        path.push(self.path());
+        path
     }
 }

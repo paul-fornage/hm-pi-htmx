@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use tokio::fs;
 
 use crate::paths::subdirs::Subdir;
-use crate::warn_targeted;
+use crate::{warn_targeted, LOCAL_SUBDIR_PATHS};
 
 #[derive(Debug, thiserror::Error)]
 pub enum FileIoError {
@@ -132,7 +132,8 @@ pub trait FixedDiskFile: Sized + Send + Sync {
     fn deserialize_value(path: &Path, contents: &str) -> Result<Self, FileIoError>;
 
     async fn save(&self) -> Result<(), FileIoError> {
-        let dir = Self::SUBDIR.full_local_path();
+        
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         ensure_dir(&dir).await?;
 
         let path = dir.join(Self::FILE_NAME);
@@ -142,7 +143,7 @@ pub trait FixedDiskFile: Sized + Send + Sync {
     }
 
     async fn load() -> Result<Self, FileIoError> {
-        let dir = Self::SUBDIR.full_local_path();
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         let path = dir.join(Self::FILE_NAME);
         let contents = read_to_string(&path).await?;
         Self::deserialize_value(&path, &contents)
@@ -159,7 +160,7 @@ pub trait NamedDiskFile: Sized + Send + Sync {
 
     async fn save(name: &str, value: &Self) -> Result<(), FileIoError> {
         validate_filename(name)?;
-        let dir = Self::SUBDIR.full_local_path();
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         ensure_dir(&dir).await?;
 
         let path = dir.join(format!("{}.{}", name, Self::EXT));
@@ -170,7 +171,7 @@ pub trait NamedDiskFile: Sized + Send + Sync {
 
     async fn load(name: &str) -> Result<Self, FileIoError> {
         validate_filename(name)?;
-        let dir = Self::SUBDIR.full_local_path();
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         let path = dir.join(format!("{}.{}", name, Self::EXT));
         let contents = read_to_string(&path).await?;
         Self::deserialize_value(&path, &contents)
@@ -178,7 +179,7 @@ pub trait NamedDiskFile: Sized + Send + Sync {
 
     async fn delete(name: &str) -> Result<(), FileIoError> {
         validate_filename(name)?;
-        let dir = Self::SUBDIR.full_local_path();
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         let path = dir.join(format!("{}.{}", name, Self::EXT));
         fs::remove_file(&path)
             .await
@@ -186,13 +187,13 @@ pub trait NamedDiskFile: Sized + Send + Sync {
     }
 
     async fn list() -> Result<Vec<String>, FileIoError> {
-        let dir = Self::SUBDIR.full_local_path();
+        let dir = LOCAL_SUBDIR_PATHS.get(Self::SUBDIR);
         let mut entries = match fs::read_dir(&dir).await {
             Ok(entries) => entries,
             Err(e) if e.kind() == ErrorKind::NotFound => return Ok(Vec::new()),
             Err(e) => {
                 return Err(FileIoError::Io {
-                    path: dir,
+                    path: dir.clone(),
                     source: e,
                 })
             }

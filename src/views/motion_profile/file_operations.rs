@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
 use log::{info, warn};
 use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
+use crate::LOCAL_SUBDIR_PATHS;
 use crate::paths::subdirs::Subdir;
 use super::motion_profile::{MotionProfile, ProfileListEntry};
 
-pub fn profile_path() -> PathBuf {
-    Subdir::MotionProfiles.full_local_path()
+pub fn profile_path() -> &'static Path {
+    LOCAL_SUBDIR_PATHS.get(Subdir::MotionProfiles)
 }
 const PROFILE_EXTENSION: &str = "json";
 

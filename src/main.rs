@@ -18,6 +18,7 @@ pub mod hmi_logic;
 mod paths;
 mod file_io;
 
+use std::path::PathBuf;
 use tokio::sync::{broadcast};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
@@ -34,6 +35,7 @@ use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusState};
 use crate::hmi_logic::mb_watcher::{cc_mb_watcher_task};
 use crate::hmi_logic::watched_registers;
+use crate::paths::local_data_root_ensuring_exists;
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
 use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
@@ -43,8 +45,10 @@ use crate::paths::subdirs::{Subdir, SubdirPaths};
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
-pub static SUBDIR_PATHS: LazyLock<SubdirPaths> = LazyLock::new(|| {
-    SubdirPaths::new_mapped(|subdir| subdir.full_local_path())
+
+
+pub static LOCAL_SUBDIR_PATHS: LazyLock<SubdirPaths> = LazyLock::new(|| {
+    SubdirPaths::new_mapped(|subdir| subdir.full_local_path_ensuring_exists().unwrap())
 });
 
 #[derive(Clone)]
@@ -102,7 +106,7 @@ fn emit_connection_change(
 
 #[tokio::main]
 async fn main() {
-    logging::init_logger(SUBDIR_PATHS.get(Subdir::Logs))
+    logging::init_logger(LOCAL_SUBDIR_PATHS.get(Subdir::Logs))
         .expect("Failed to initialize logger");
 
     info_targeted!(HTTP, "Starting Modbus HTMX application");

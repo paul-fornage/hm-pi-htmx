@@ -1,6 +1,7 @@
 use std::path::Path;
 use log::info;
 use crate::file_io::{FileIoError, FixedDiskFile, serialize_json};
+use crate::LOCAL_SUBDIR_PATHS;
 use crate::paths::subdirs::Subdir;
 use super::config_data::ClearcoreConfig;
 
@@ -26,7 +27,7 @@ impl ClearcoreConfig {
     /// saved to a single file that gets overwritten on each save.
     pub async fn save_to_file(&self) -> Result<(), FileIoError> {
         self.save().await?;
-        let path = Subdir::Config.full_local_path().join(<Self as FixedDiskFile>::FILE_NAME);
+        let path = LOCAL_SUBDIR_PATHS.get(Subdir::Config).join(<Self as FixedDiskFile>::FILE_NAME);
         info!("Saved clearcore config to {}", path.display());
         Ok(())
     }
@@ -36,7 +37,7 @@ impl ClearcoreConfig {
     /// Returns a FileIoError::NotFound if the file doesn't exist (first-time setup).
     pub async fn load_config() -> Result<Self, FileIoError> {
         let config = Self::load().await?;
-        let path = Subdir::Config.full_local_path().join(<Self as FixedDiskFile>::FILE_NAME);
+        let path = LOCAL_SUBDIR_PATHS.get(Subdir::Config).join(<Self as FixedDiskFile>::FILE_NAME);
         info!("Loaded clearcore config from {}", path.display());
         Ok(config)
     }
