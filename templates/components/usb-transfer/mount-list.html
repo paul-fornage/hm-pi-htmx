@@ -1,0 +1,13 @@
+{% if drives.is_empty() %}
+none
+{% else %}
+<ul class="list-disc pl-5 space-y-1">
+    {% for drive in drives %}
+    <li class="text-sm text-slate-700 font-mono">
+        <span class="font-semibold text-slate-900">{{ drive.name }}</span>
+        <span class="text-slate-600">({{ drive.size_display() }})</span>
+        <span class="text-slate-500">— {{ drive.mountpoint_display() }}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}

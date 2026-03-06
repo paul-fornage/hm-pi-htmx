@@ -11,6 +11,7 @@ pub mod run_cycle;
 mod clearcore_logs;
 mod auth;
 mod users;
+mod usb_transfer;
 
 use axum::Router;
 use crate::AppState;
@@ -27,6 +28,7 @@ pub use clearcore_manual_control::ManualControlTemplate;
 pub use run_cycle::RunCycleTemplate;
 pub use clearcore_logs::ClearcoreLogsTemplate;
 pub use users::UsersTemplate;
+pub use usb_transfer::UsbTransferTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -41,6 +43,7 @@ pub enum AppView {
     ClearcoreManualControl,
     ClearcoreLogs,
     RunCycle,
+    UsbTransfer,
     Users,
 }
 
@@ -57,6 +60,7 @@ impl AppView {
             AppView::MillerInfo,
             AppView::Connections,
             AppView::MachineConfig,
+            AppView::UsbTransfer,
             AppView::Users,
         ]
     }
@@ -74,6 +78,7 @@ impl AppView {
             AppView::ClearcoreManualControl => "Manual Control",
             AppView::ClearcoreLogs => "ClearCore Logs",
             AppView::RunCycle => "Run Cycle",
+            AppView::UsbTransfer => "USB transfer",
             AppView::Users => "Users",
         }
     }
@@ -91,6 +96,7 @@ impl AppView {
             AppView::ClearcoreManualControl => "/clearcore-manual-control",
             AppView::ClearcoreLogs => "/clearcore-logs",
             AppView::RunCycle => "/run-cycle",
+            AppView::UsbTransfer => "/usb-transfer",
             AppView::Users => "/users",
         }
     }
@@ -111,6 +117,7 @@ impl AppView {
             AppView::MillerInfo => AuthLevel::Manager,
             AppView::Connections => AuthLevel::Admin,
             AppView::MachineConfig => AuthLevel::Admin,
+            AppView::UsbTransfer => AuthLevel::Admin,
             // TODO: Confirm Users page auth level (defaulting to Admin).
             AppView::Users => AuthLevel::Admin,
         }
@@ -183,5 +190,6 @@ pub fn routes() -> Router<AppState> {
         .merge(clearcore_manual_control::routes())
         .merge(run_cycle::routes())
         .merge(clearcore_logs::routes())
+        .merge(usb_transfer::routes())
         .merge(users::routes())
 }

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block header %}
+<div id="app-header"
+     hx-get="/ui/header?tab={{ Self::get_view().url() }}"
+     hx-trigger="auth-changed"
+     hx-swap="innerHTML">
+    {% include "components/header.html" %}
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+<div id="auth-modal"></div>
+
+<div id="view-usb-transfer" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <div class="flex justify-between mb-4">
+        <h2 class="text-2xl font-bold text-slate-700 align-middle my-auto">USB transfer</h2>
+        <button
+            type="button"
+            hx-get="/usb-transfer/list"
+            hx-target="#usb-mount-list"
+            hx-swap="innerHTML"
+            class="px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">
+            Refresh
+        </button>
+    </div>
+
+    <div id="usb-mount-list"
+         hx-get="/usb-transfer/list"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        Loading...
+    </div>
+</div>
+{% endblock %}

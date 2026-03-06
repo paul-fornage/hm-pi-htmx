@@ -5,3 +5,4 @@ pnpm-lock.yaml
 weld_profiles
 motion_profiles
 *.json
+arm-compile
