@@ -1,0 +1,9 @@
+<div class="pointer-events-auto cursor-pointer rounded border px-4 py-3 shadow-sm {{ toast.kind.classes() }}"
+     role="alert"
+     onclick="this.remove()">
+    <div class="text-xs font-semibold uppercase tracking-wide">{{ toast.kind.label() }}</div>
+    <div class="text-sm">{{ toast.message }}</div>
+</div>
+{% if toast.close_modal %}
+<div id="usb-transfer-modal" hx-swap-oob="innerHTML"></div>
+{% endif %}

@@ -1,0 +1,46 @@
+{% if sections.is_empty() %}
+<div class="text-sm text-slate-500">No local folders found.</div>
+{% else %}
+<div class="space-y-3">
+    {% for section in sections %}
+    <div class="rounded border border-slate-200 bg-white">
+        <div class="px-3 py-2 border-b border-slate-200 text-sm font-semibold
+            {% if section.error.is_some() %}text-red-600{% elif section.files.is_empty() %}text-slate-400{% else %}text-slate-700{% endif %}">
+            {{ section.label }}
+        </div>
+        <div class="p-3 text-sm">
+            {% if let Some(error) = section.error %}
+            <div class="text-red-600">{{ error }}</div>
+            {% elif section.files.is_empty() %}
+            <div class="text-slate-400">No files</div>
+            {% else %}
+            <ul class="space-y-2">
+                {% for file in section.files %}
+                <li class="flex items-center justify-between gap-3">
+                    <span class="text-slate-700">{{ file }}</span>
+                    <form
+                        hx-post="/usb-transfer/copy"
+                        hx-target="#usb-transfer-toast"
+                        hx-swap="innerHTML"
+                        hx-include="#usb-selected-mountpoint">
+                        <input type="hidden" name="file_name" value="{{ file }}" />
+                        <input type="hidden" name="subdir" value="{{ section.subdir.path() }}" />
+                        <input type="hidden" name="direction" value="local-to-usb" />
+                        <button
+                            type="submit"
+                            hx-indicator="this"
+                            hx-disabled-elt="this"
+                            class="group px-3 py-1.5 text-xs font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="group-[.htmx-request]:hidden">Copy to USB</span>
+                            <span class="hidden group-[.htmx-request]:inline">Copying...</span>
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

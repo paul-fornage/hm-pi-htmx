@@ -1,0 +1,85 @@
+{% if let Some(toast) = toast %}
+<div id="usb-transfer-toast" hx-swap-oob="innerHTML">
+    <div class="pointer-events-auto cursor-pointer rounded border px-4 py-3 shadow-sm {{ toast.kind.classes() }}"
+         role="alert"
+         onclick="this.remove()">
+        <div class="text-xs font-semibold uppercase tracking-wide">{{ toast.kind.label() }}</div>
+        <div class="text-sm">{{ toast.message }}</div>
+    </div>
+</div>
+{% endif %}
+
+{% if let Some(drive) = selected_drive %}
+<input type="hidden" id="usb-selected-mountpoint" name="usb_mountpoint" value="{{ drive.mountpoint_display() }}" />
+
+<div class="mb-3 rounded border border-slate-200 bg-white px-3 py-2">
+    <div class="text-sm font-semibold text-slate-800">{{ drive.name }}</div>
+    <div class="text-xs text-slate-500">{{ drive.mountpoint_display() }} • {{ drive.size_display() }}</div>
+    {% if drive_count > 1 %}
+    <div class="text-xs text-amber-700 mt-1">Showing first of {{ drive_count }} drives.</div>
+    {% endif %}
+</div>
+
+<div class="space-y-3">
+    {% for section in sections %}
+    <div class="rounded border border-slate-200 bg-white">
+        <div class="px-3 py-2 border-b border-slate-200 text-sm font-semibold
+            {% if section.error.is_some() %}text-red-600{% elif section.files.is_empty() %}text-slate-400{% else %}text-slate-700{% endif %}">
+            {{ section.label }}
+        </div>
+        <div class="p-3 text-sm">
+            {% if let Some(error) = section.error %}
+            <div class="text-red-600">{{ error }}</div>
+            {% elif section.files.is_empty() %}
+            <div class="text-slate-400">No files</div>
+            {% else %}
+            <ul class="space-y-2">
+                {% for file in section.files %}
+                <li class="flex items-center justify-between gap-3">
+                    <span class="text-slate-700">{{ file }}</span>
+                    <form
+                        hx-post="/usb-transfer/copy"
+                        hx-target="#usb-transfer-toast"
+                        hx-swap="innerHTML">
+                        <input type="hidden" name="file_name" value="{{ file }}" />
+                        <input type="hidden" name="subdir" value="{{ section.subdir.path() }}" />
+                        <input type="hidden" name="direction" value="usb-to-local" />
+                        <input type="hidden" name="usb_mountpoint" value="{{ drive.mountpoint_display() }}" />
+                        <button
+                            type="submit"
+                            hx-indicator="this"
+                            hx-disabled-elt="this"
+                            class="group px-3 py-1.5 text-xs font-semibold rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span class="group-[.htmx-request]:hidden">Copy to Local</span>
+                            <span class="hidden group-[.htmx-request]:inline">Copying...</span>
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="rounded border border-dashed border-slate-300 bg-white p-4 text-center">
+    <div class="text-sm font-semibold text-slate-700">No USB drive detected</div>
+    {% if let Some(error) = error_message %}
+    <div class="mt-1 text-xs text-red-600">{{ error }}</div>
+    {% else %}
+    <div class="mt-1 text-xs text-slate-500">Insert a drive and refresh to scan again.</div>
+    {% endif %}
+    <button
+        type="button"
+        hx-get="/usb-transfer/usb-list"
+        hx-target="#usb-drive-list"
+        hx-swap="innerHTML"
+        hx-indicator="this"
+        hx-disabled-elt="this"
+        class="group mt-4 w-full px-4 py-2.5 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="group-[.htmx-request]:hidden">Scan for USB drives</span>
+        <span class="hidden group-[.htmx-request]:inline">Scanning...</span>
+    </button>
+</div>
+{% endif %}
