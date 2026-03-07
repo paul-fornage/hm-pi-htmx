@@ -1,5 +1,4 @@
 mod connections;
-mod operations;
 pub mod miller_info;
 pub mod machine_config;
 pub mod welder_profile;
@@ -12,13 +11,13 @@ mod clearcore_logs;
 mod auth;
 mod users;
 mod usb_transfer;
+mod schedule_adjustments;
 
 use axum::Router;
 use crate::AppState;
 use crate::auth::AuthLevel;
 
 pub use connections::ConnectionsTemplate;
-pub use operations::OperationsTemplate;
 pub use miller_info::MillerInfoTemplate;
 pub use machine_config::MachineConfigTemplate;
 pub use welder_profile::WelderProfileTemplate;
@@ -33,7 +32,6 @@ pub use usb_transfer::UsbTransferTemplate;
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum AppView {
-    Operations,
     MillerInfo,
     Connections,
     MachineConfig,
@@ -68,7 +66,6 @@ impl AppView {
     // The text displayed on the tab
     pub fn label(&self) -> &'static str {
         match self {
-            AppView::Operations => "Operations",
             AppView::MillerInfo => "Miller Info",
             AppView::Connections => "Connections",
             AppView::MachineConfig => "Config",
@@ -86,7 +83,6 @@ impl AppView {
     // The URL the tab links to
     pub const fn url(&self) -> &'static str {
         match self {
-            AppView::Operations => "/",
             AppView::MillerInfo => "/miller-info",
             AppView::Connections => "/connections",
             AppView::MachineConfig => "/machine-config",
@@ -107,7 +103,6 @@ impl AppView {
 
     pub fn required_auth(&self) -> AuthLevel {
         match self {
-            AppView::Operations => AuthLevel::Operator,
             AppView::RunCycle => AuthLevel::Operator,
             AppView::ClearcoreManualControl => AuthLevel::Operator,
             AppView::ClearcoreLogs => AuthLevel::Manager,
@@ -118,15 +113,11 @@ impl AppView {
             AppView::Connections => AuthLevel::Admin,
             AppView::MachineConfig => AuthLevel::Admin,
             AppView::UsbTransfer => AuthLevel::Admin,
-            // TODO: Confirm Users page auth level (defaulting to Admin).
             AppView::Users => AuthLevel::Admin,
         }
     }
 
     pub fn from_url(url: &str) -> Option<AppView> {
-        if url == AppView::Operations.url() {
-            return Some(AppView::Operations);
-        }
         AppView::all().iter().copied().find(|v| v.url() == url)
     }
 }
@@ -180,7 +171,6 @@ pub trait ViewTemplate{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .merge(auth::routes())
-        .merge(operations::routes())
         .merge(connections::routes())
         .merge(miller_info::routes())
         .merge(machine_config::routes())

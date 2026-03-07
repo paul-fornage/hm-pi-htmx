@@ -67,7 +67,7 @@ pub async fn header_handler(
         .tab
         .as_deref()
         .and_then(AppView::from_url)
-        .unwrap_or(AppView::Operations);
+        .unwrap_or(AppView::ClearcoreManualControl);
 
     let header = build_header_context(&state, active_tab).await;
     HeaderTemplate {

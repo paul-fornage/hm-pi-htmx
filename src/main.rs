@@ -26,6 +26,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use axum::response::{IntoResponse, Redirect};
 use tower_http::services::ServeDir;
 use crate::error::HmPiError;
 use crate::file_io::{FileIoError, FixedDiskFile, NamedDiskFile};
@@ -42,6 +43,7 @@ use crate::sse::error_toast::ErrorToast;
 use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 use crate::paths::subdirs::{Subdir, SubdirPaths};
+use crate::views::AppView;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);
@@ -487,6 +489,8 @@ async fn main() {
         .merge(views::routes())
         .merge(estop_component::routes())
 
+        .route("/", get(redirect))
+
         .route("/sse", get(sse::sse_handler))
 
         // --- Modbus Management Routes - ClearCore ---
@@ -520,4 +524,9 @@ async fn main() {
 
     info_targeted!(HTTP, "Server running on http://0.0.0.0:3000");
     axum::serve(listener, app).await.unwrap();
+}
+
+
+pub async fn redirect() -> impl IntoResponse {
+    Redirect::to(AppView::ClearcoreManualControl.url())
 }
