@@ -15,10 +15,9 @@ pub fn local_data_root_ensuring_exists() -> Result<PathBuf, std::io::Error> {
     let root = match std::env::var_os("HOME").map(PathBuf::from) {
         Some(home) => home.join(DEFAULT_ROOT_FOLDER),
         None => {
-            log::error!("$HOME is not set; falling back to relative path ./{DEFAULT_ROOT_FOLDER}");
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound, 
-                "HOME environment variable not set"));
+            let fallback = PathBuf::from("/var/lib").join(DEFAULT_ROOT_FOLDER);
+            log::error!("$HOME is not set; falling back to {}", fallback.display());
+            fallback
         }
     };
 
