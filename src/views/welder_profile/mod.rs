@@ -71,7 +71,7 @@ const WELD_PROFILE_ENUM_REGISTERS: [&'static RegisterMetadata; 4] = [
 
 
 
-const WELD_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 22] = [
+pub(crate) const WELD_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 22] = [
     // Preset Amperage Minimum: Power Source AC / DC Amperage Minimum -25A(Tungsten General) Or 63A(Tungsten Disabled), Res 1A
     AnalogRegisterInfo::new_bounded(&miller_register_definitions::PRESET_MIN_AMPERAGE, "A", 0, 0, 63, 1),
     // Arc Start Amperage: 5A - 200A, Res: 1A

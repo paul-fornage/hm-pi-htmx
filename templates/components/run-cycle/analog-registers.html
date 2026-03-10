@@ -1,0 +1,43 @@
+<div class="rounded-lg border border-slate-200 bg-white/70 p-3">
+    <div class="flex items-center justify-between mb-2">
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Analog register preset values</div>
+        <div class="text-xs text-slate-400">Selected profiles</div>
+    </div>
+
+    {% if let Some(error_message) = error_message %}
+    <div class="mb-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+        {{ error_message }}
+    </div>
+    {% else %}
+    {% if let Some(preview) = missing_preview %}
+    <div class="mb-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        {{ preview }}
+    </div>
+    {% endif %}
+
+    <div class="max-h-[50vh] overflow-y-auto border border-slate-200 rounded">
+        <table class="w-full text-left border-collapse">
+            <thead class="sticky top-0 bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+                <th class="p-2 border-b border-slate-200">Source</th>
+                <th class="p-2 border-b border-slate-200">Register</th>
+                <th class="p-2 border-b border-slate-200">Value</th>
+                <th class="p-2 border-b border-slate-200">Unit</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+            {% for row in rows %}
+            <tr class="text-sm">
+                <td class="p-2 text-xs font-semibold text-slate-500">{{ row.source }}</td>
+                <td class="p-2 font-medium text-slate-700">{{ row.name() }}</td>
+                <td class="p-2 font-mono {% if row.has_value() %}text-slate-800{% else %}text-slate-400{% endif %}">
+                    {{ row.formatted_value() }}
+                </td>
+                <td class="p-2 text-slate-500">{{ row.unit() }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>

@@ -1,16 +1,22 @@
+mod adjustments;
+
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
 use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Form, Router};
+use axum::http::{HeaderMap, HeaderValue};
 use serde::Deserialize;
 use tokio::time::{Duration, Instant};
 
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use crate::error::HmPiError;
+use crate::hx_trigger::HxTrigger;
+use crate::miller::miller_register_definitions;
 use crate::plc::plc_register_definitions;
 use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
+use crate::views::miller_info::register_view::AnalogRegisterTemplate;
 use crate::views::motion_profile::file_operations as motion_file_ops;
 use crate::views::motion_profile::motion_profile::{MotionProfile, ProfileListEntry as MotionProfileListEntry};
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
@@ -19,9 +25,16 @@ use crate::views::shared::finger_status::finger_status_handler;
 use crate::views::welder_profile::file_operations as weld_file_ops;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::welder_profile::weld_profile::{ProfileListEntry as WeldProfileListEntry, WeldProfile};
+use crate::views::{motion_profile, welder_profile};
+use adjustments::run_cycle_analog_registers;
+use crate::views::run_cycle::adjustments::feedback_ok_with_triggers;
 
 const PROFILE_VERIFY_TIMEOUT: Duration = Duration::from_secs(5);
 const JOB_ACTIVE_TIMEOUT: Duration = Duration::from_secs(5);
+const PRESET_VALUES_LOADED_EVENT: HxTrigger = HxTrigger {
+    event: "run-cycle-presets-loaded",
+    target: "#run-cycle-analog-registers",
+};
 
 pub fn routes() -> Router<AppState> {
     let page = AppView::RunCycle;
@@ -34,7 +47,7 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/finger-status/{side}"), get(finger_status_handler))
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
         .route(&page.url_with_path("/status"), get(run_cycle_status))
-        .route(&page.url_with_path("/status-feedback"), get(run_cycle_status_feedback))
+        .route(&page.url_with_path("/analog-registers"), get(run_cycle_analog_registers))
 }
 
 pub async fn show_run_cycle(
@@ -290,7 +303,7 @@ async fn start_cycle(
 pub async fn load_profiles(
     State(state): State<AppState>,
     Form(form): Form<RunCycleForm>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
     debug_targeted!(
         HTTP,
         "Load profiles requested: weld='{:?}', motion='{:?}'",
@@ -300,27 +313,27 @@ pub async fn load_profiles(
 
     let weld_name = match form.weld_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
         Some(name) => name,
-        None => return feedback_err("Select both profiles before loading".to_string()),
+        None => return feedback_err("Select both profiles before loading".to_string()).into_response(),
     };
     let motion_name = match form.motion_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
         Some(name) => name,
-        None => return feedback_err("Select both profiles before loading".to_string()),
+        None => return feedback_err("Select both profiles before loading".to_string()).into_response(),
     };
 
     if matches!(
         mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address).await,
         Some(true)
     ) {
-        return feedback_err("Job already active".to_string());
+        return feedback_err("Job already active".to_string()).into_response();
     }
 
     let weld_profile = match weld_file_ops::load_profile(weld_name).await {
         Ok(profile) => profile,
-        Err(err) => return feedback_err(format!("Failed to load weld profile: {}", err)),
+        Err(err) => return feedback_err(format!("Failed to load weld profile: {}", err)).into_response(),
     };
     let motion_profile = match motion_file_ops::load_profile(motion_name).await {
         Ok(profile) => profile,
-        Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)),
+        Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)).into_response(),
     };
 
     let weld_profile_diff = weld_profile.raw_profile.modbus_diff(&state.miller_registers).await;
@@ -336,22 +349,25 @@ pub async fn load_profiles(
     if let Err(err) = RawWeldProfile::apply_diff(&state.miller_registers, weld_profile_diff)
         .await
     {
-        return feedback_err(format!("Failed to upload weld profile: {}", err));
+        return feedback_err(format!("Failed to upload weld profile: {}", err)).into_response();
     }
 
     if let Err(err) = RawMotionProfile::apply_diff(&state.clearcore_registers, motion_profile_diff)
         .await
     {
-        return feedback_err(format!("Failed to upload motion profile: {}", err));
+        return feedback_err(format!("Failed to upload motion profile: {}", err)).into_response();
     }
 
     if let Err(err) = wait_for_profiles(&state, &weld_profile, &motion_profile).await {
-        return feedback_err(err.to_string());
+        return feedback_err(err.to_string()).into_response();
     }
 
     set_selected_profiles(&state, &weld_profile, &motion_profile).await;
 
-    feedback_ok("Profiles loaded".to_string())
+    feedback_ok_with_triggers(
+        "Profiles loaded".to_string(),
+        &[PRESET_VALUES_LOADED_EVENT],
+    )
 }
 
 pub async fn run_cycle_status(
@@ -368,6 +384,13 @@ pub async fn run_cycle_status(
         .await;
     let right_fingers_clamped = mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::RF_COMMANDED_DOWN.address)
         .await;
+
+    let mandrel_latch_closed = mb_read_bool_helper(
+        &state.clearcore_registers,
+        &plc_register_definitions::MANDREL_LATCH_CLOSED.address,
+    )
+        .await;
+
 
     let arc_commanded = mb_read_bool_helper(
         &state.clearcore_registers,
@@ -398,6 +421,7 @@ pub async fn run_cycle_status(
         at_start,
         arc_commanded,
         arc_valid,
+        mandrel_latch_closed,
         left_fingers_clamped,
         right_fingers_clamped,
         progress_label,
@@ -405,19 +429,21 @@ pub async fn run_cycle_status(
     }
 }
 
-pub async fn run_cycle_status_feedback(
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    let mandrel_latch_closed = mb_read_bool_helper(
-        &state.clearcore_registers,
-        &plc_register_definitions::MANDREL_LATCH_CLOSED.address,
-    )
-    .await;
+// pub async fn run_cycle_status_feedback(
+//     State(state): State<AppState>,
+// ) -> impl IntoResponse {
+//     let mandrel_latch_closed = mb_read_bool_helper(
+//         &state.clearcore_registers,
+//         &plc_register_definitions::MANDREL_LATCH_CLOSED.address,
+//     )
+//     .await;
+//
+//     StatusFeedbackTemplate {
+//         mandrel_latch_closed,
+//     }
+// }
 
-    StatusFeedbackTemplate {
-        mandrel_latch_closed,
-    }
-}
+
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/run-cycle/status.html")]
@@ -427,6 +453,7 @@ pub struct RunCycleStatusTemplate {
     pub at_start: Option<bool>,
     pub arc_commanded: Option<bool>,
     pub arc_valid: Option<bool>,
+    pub mandrel_latch_closed: Option<bool>,
     pub left_fingers_clamped: Option<bool>,
     pub right_fingers_clamped: Option<bool>,
     pub progress_label: String,
@@ -441,6 +468,7 @@ pub struct RunCycleSelectedProfilesTemplate {
     pub motion_name: Option<String>,
     pub motion_description: Option<String>,
 }
+
 
 pub async fn go_to_start(
     State(state): State<AppState>,
@@ -591,3 +619,4 @@ fn feedback_err(message: String) -> Html<String> {
         .unwrap(),
     )
 }
+

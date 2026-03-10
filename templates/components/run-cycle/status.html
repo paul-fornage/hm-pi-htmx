@@ -45,6 +45,16 @@
             </div>
         </div>
         <div class="rounded-md border border-slate-200 px-3 py-2 flex-1">
+            <div class="text-[11px] uppercase tracking-wide text-slate-500">Mandrel latch</div>
+            <div class="text-sm {% if let Some(val) = mandrel_latch_closed %}{% if val %}text-slate-600{% else %}font-semibold text-amber-700{% endif %}{% else %}text-slate-400{% endif %}">
+                {% if let Some(val) = mandrel_latch_closed %}
+                {% if val %}Closed{% else %}Open{% endif %}
+                {% else %}
+                Unknown
+                {% endif %}
+            </div>
+        </div>
+        <div class="rounded-md border border-slate-200 px-3 py-2 flex-1">
             <div class="text-[11px] uppercase tracking-wide text-slate-500">Homing</div>
             <div class="text-sm {% if let Some(val) = is_homed %}{% if val %}text-slate-600{% else %}font-semibold text-amber-700{% endif %}{% else %}text-slate-400{% endif %}">
                 {% if let Some(val) = is_homed %}
