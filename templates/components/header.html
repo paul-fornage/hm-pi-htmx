@@ -23,7 +23,7 @@
                 hx-target="this"
                 hx-swap="none"
                 hx-vals='{"current_url":"{{ header.active_tab.url() }}"}'
-                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit cursor-pointer"
+                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit"
             >
                 Sign Out
             </button>
@@ -31,7 +31,7 @@
             <button
                 hx-get="/auth/sign-in"
                 hx-target="#auth-modal"
-                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit cursor-pointer"
+                class="bg-transparent border-0 p-0 m-0 text-inherit font-inherit"
             >
                 Sign In
             </button>
@@ -53,7 +53,11 @@
 <nav class="flex border-b-2 border-gray-300 mb-3 gap-1">
     {% for tab in header.tabs %}
     <a href="{{ tab.url() }}"
-       class="flex-1 px-5 text-center py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300 border-b-0 rounded-t hover:bg-white hover:text-blue-600 transition-colors{% if *tab == header.active_tab %} !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5{% endif %}">
+       class="flex-1 px-5 text-center py-2.5 text-sm font-medium text-slate-600 bg-gray-100 border border-gray-300
+            border-b-0 rounded-t
+            {% if *tab == header.active_tab %}
+            !bg-white !text-blue-600 !border-gray-300 !border-b-white !font-bold -mb-0.5
+            {% endif %}">
         {{ tab.label() }}
     </a>
     {% endfor %}
