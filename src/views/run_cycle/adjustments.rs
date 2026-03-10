@@ -10,25 +10,26 @@ use crate::views::miller_info::register_view::AnalogRegisterTemplate;
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
 use crate::views::run_cycle::{profiles_match, RunCycleFeedbackTemplate};
 use crate::views::{motion_profile, welder_profile};
-use crate::{debug_targeted, error_targeted, warn_targeted, AppState};
+use crate::{error_targeted, warn_targeted, AppState};
 use crate::miller::miller_register_definitions;
 use crate::plc::plc_register_definitions;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 
 pub async fn run_cycle_analog_registers(
     State(state): State<AppState>,
-) -> axum::response::Response {
+) -> RunCycleAnalogRegistersTemplate {
     let (selected_weld, selected_motion) = {
         let weld_metadata = state.weld_profile_metadata.lock().await;
         let motion_metadata = state.motion_profile_metadata.lock().await;
         (weld_metadata.name.clone(), motion_metadata.name.clone())
     };
 
-    let Some(weld_name) = selected_weld else {
-        return Html(String::new()).into_response();
-    };
-    let Some(motion_name) = selected_motion else {
-        return Html(String::new()).into_response();
+    let (Some(weld_name), Some(motion_name)) = (selected_weld, selected_motion) else {
+        return RunCycleAnalogRegistersTemplate {
+            rows: Vec::new(),
+            missing_preview: None,
+            error_message: Some("Adjustments are unavailable until you load both profiles.".to_string()),
+        };
     };
 
     let weld_profile = match weld_file_ops::load_profile(&weld_name).await {
@@ -39,7 +40,7 @@ pub async fn run_cycle_analog_registers(
                 rows: Vec::new(),
                 missing_preview: None,
                 error_message: Some(format!("Failed to load weld profile '{weld_name}'.")),
-            }.into_response();
+            };
         }
     };
 
@@ -51,7 +52,7 @@ pub async fn run_cycle_analog_registers(
                 rows: Vec::new(),
                 missing_preview: None,
                 error_message: Some(format!("Failed to load motion profile '{motion_name}'.")),
-            }.into_response();
+            };
         }
     };
 
@@ -63,13 +64,19 @@ pub async fn run_cycle_analog_registers(
                 rows: Vec::new(),
                 missing_preview: None,
                 error_message: Some("Unable to verify loaded profiles.".to_string()),
-            }.into_response();
+            };
         }
     };
 
     if !weld_matches || !motion_matches {
-        debug_targeted!(MODBUS, "Run cycle presets not loaded yet (weld_loaded={weld_matches}, motion_loaded={motion_matches})");
-        return Html(String::new()).into_response();
+        warn_targeted!(HTTP,
+            "Run cycle presets not loaded yet (weld_loaded={weld_matches}, motion_loaded={motion_matches})"
+        );
+        return RunCycleAnalogRegistersTemplate {
+            rows: Vec::new(),
+            missing_preview: None,
+            error_message: Some("Adjustments are unavailable because the selected profiles are not loaded yet.".to_string()),
+        };
     }
 
     let mut rows = Vec::with_capacity(
@@ -133,7 +140,6 @@ pub async fn run_cycle_analog_registers(
         missing_preview,
         error_message: None,
     }
-        .into_response()
 }
 
 pub struct RunCycleAnalogRegisterRow {
