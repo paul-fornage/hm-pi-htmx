@@ -11,7 +11,7 @@ use log4rs::config::{Appender, Config, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 const MAX_LOG_FILE_SIZE_BYTES: u64 = 1 * 1024 * 1024;
-const MAX_LOG_FILES: u32 = 1000;
+const MAX_LOG_FILES: u32 = 100;
 
 pub enum LogTarget {
     HTTP,

@@ -278,7 +278,6 @@ pub fn subdir_label(subdir: Subdir) -> &'static str {
         Subdir::MotionProfiles => "Motion profiles",
         Subdir::WeldProfiles => "Weld profiles",
         Subdir::Logs => "Logs",
-        Subdir::Users => "Users",
         Subdir::Config => "Config",
         Subdir::ConnectionProfiles => "Connection profiles",
     }

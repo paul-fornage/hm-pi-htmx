@@ -12,7 +12,6 @@ pub enum Subdir {
     MotionProfiles = 0,
     WeldProfiles,
     Logs,
-    Users,
     Config,
     ConnectionProfiles
 }
@@ -59,7 +58,6 @@ impl Subdir {
             Self::MotionProfiles => "motion-profiles",
             Self::WeldProfiles => "weld-profiles",
             Self::Logs => "logs",
-            Self::Users => "users",
             Self::Config => "config",
             Self::ConnectionProfiles => "connection-profiles"
         }

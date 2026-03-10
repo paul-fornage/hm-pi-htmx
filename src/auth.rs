@@ -77,7 +77,7 @@ pub const USERS_PATH: &str = "users.json";
 struct UserStore(pub HashMap<String, UserRecord>);
 
 impl FixedDiskFile for UserStore {
-    const SUBDIR: Subdir = Subdir::Users;
+    const SUBDIR: Subdir = Subdir::Config;
     const FILE_NAME: &'static str = USERS_PATH;
 
     fn serialize_value(&self, path: &Path) -> Result<String, FileIoError> {
