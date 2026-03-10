@@ -10,3 +10,5 @@ TODO:
 - [ ] text inputs with numeric min and max and step
 - [ ] `autocomplete="off"` for inputs - maybe combine with above for a custom input component?
 - [ ] When overwriting existing profiles, it should not use the browser pop up. It should use the same idea as the delete button in the list of 'load' profiles
+- [ ] UDP port in CC static config was moved.
+- [ ] trailing hover effect in header. Remove all hover: selectors?

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+{% import "components/clearcore-manual-control/jog-button.html" as jog_button %}
 {% import "components/clearcore-manual-control/finger-control-cluster.html" as cluster %}
 
 {% block header %}
@@ -107,34 +107,8 @@
         <span class="text-gray-400 text-sm">Loading...</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/x/negative"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-x"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/x/negative', {target: '#jog-feedback-x', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Negative
-        </button>
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/x/positive"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-x"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/x/positive', {target: '#jog-feedback-x', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Positive
-        </button>
+        {{ jog_button::render("x", "negative") }}
+        {{ jog_button::render("x", "positive") }}
       </div>
       <div id="jog-feedback-x" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
     </div>
@@ -150,34 +124,8 @@
         <span class="text-gray-400 text-sm">Loading...</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/y/negative"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-y"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/y/negative', {target: '#jog-feedback-y', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Negative
-        </button>
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/y/positive"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-y"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/y/positive', {target: '#jog-feedback-y', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Positive
-        </button>
+        {{ jog_button::render("y", "negative") }}
+        {{ jog_button::render("y", "positive") }}
       </div>
       <div id="jog-feedback-y" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
     </div>
@@ -193,34 +141,8 @@
         <span class="text-gray-400 text-sm">Loading...</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/z/negative"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-z"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/z/negative', {target: '#jog-feedback-z', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Negative
-        </button>
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/z/positive"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-z"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/z/positive', {target: '#jog-feedback-z', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Positive
-        </button>
+        {{ jog_button::render("z", "negative") }}
+        {{ jog_button::render("z", "positive") }}
       </div>
       <div id="jog-feedback-z" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
     </div>
@@ -236,34 +158,8 @@
         <span class="text-gray-400 text-sm">Loading...</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/w/negative"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-w"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/w/negative', {target: '#jog-feedback-w', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Negative
-        </button>
-        <button
-            type="button"
-            hx-post="/clearcore-manual-control/jog/w/positive"
-            hx-trigger="mousedown touchstart"
-            hx-vals='{"active": true}'
-            hx-target="#jog-feedback-w"
-            hx-swap="innerHTML"
-            hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
-            hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/w/positive', {target: '#jog-feedback-w', values: {active: false}})"
-            class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-          Positive
-        </button>
+        {{ jog_button::render("w", "negative") }}
+        {{ jog_button::render("w", "positive") }}
       </div>
       <div id="jog-feedback-w" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
     </div>
