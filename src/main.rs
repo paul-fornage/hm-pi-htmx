@@ -57,7 +57,6 @@ pub struct AppState {
     pub clearcore_registers: CachedModbus,
     pub miller_registers: CachedModbus,
     pub machine_config: std::sync::Arc<tokio::sync::RwLock<machine_config::MachineConfig>>,
-    pub ps_ui_disable: std::sync::Arc<AtomicBool>,
     pub weld_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::welder_profile::profile_metadata::WeldProfileMetadata>>,
     pub motion_profile_metadata: std::sync::Arc<tokio::sync::Mutex<views::motion_profile::profile_metadata::MotionProfileMetadata>>,
     pub auth_state: std::sync::Arc<tokio::sync::RwLock<auth::AuthState>>,
@@ -121,7 +120,6 @@ async fn main() {
         }
     };
     let upd_log_port = machine_config.udp_logging_port;
-    let ps_ui_disable = std::sync::Arc::new(AtomicBool::new(machine_config.ps_ui_disable));
     let machine_config = std::sync::Arc::new(tokio::sync::RwLock::new(machine_config));
 
     // Initialize Modbus Managers - load from saved config or use defaults
@@ -305,7 +303,7 @@ async fn main() {
     let thread_copy_welder_auto_connect = welder_auto_connect.clone();
     let thread_copy_welder_sse = sse_tx.clone();
     let thread_copy_welder_registers = miller_registers.clone();
-    let thread_copy_ps_ui_disable = ps_ui_disable.clone();
+    let thread_copy_machine_config = machine_config.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
         let mut last_state = ModbusState::Disconnected;
@@ -363,12 +361,12 @@ async fn main() {
                                 warn_targeted!(MODBUS, "Error initializing Welder registers: {:?}", e);
                             }
                         }
-                        let disable_ui = thread_copy_ps_ui_disable.load(Ordering::Acquire);
+                        let welder_ui_disable = thread_copy_machine_config.read().await.ps_ui_disable;
                         match thread_copy_welder_registers
-                            .diff_write_coil(PS_UI_DISABLE.address.address, disable_ui)
+                            .diff_write_coil(PS_UI_DISABLE.address.address, welder_ui_disable)
                             .await {
                             Ok(()) => {
-                                info_targeted!(MODBUS, "Applied PS_UI_DISABLE on connect: {}", disable_ui);
+                                info_targeted!(MODBUS, "Applied PS_UI_DISABLE on connect: {}", welder_ui_disable);
                             }
                             Err(e) => {
                                 warn_targeted!(MODBUS, "Failed to apply PS_UI_DISABLE on connect: {:?}", e);
@@ -471,7 +469,6 @@ async fn main() {
         clearcore_registers,
         miller_registers,
         machine_config,
-        ps_ui_disable,
         weld_profile_metadata,
         motion_profile_metadata,
         auth_state,

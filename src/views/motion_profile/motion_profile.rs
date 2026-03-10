@@ -31,6 +31,7 @@ impl MotionProfile {
                 cycle_reposition_speed_z: 0,
                 cycle_wire_feed_speed: 0,
                 cycle_avc_vref: 0,
+                cycle_axis_z_torch_up_offset: 0,
                 cycle_z_static_offset: 0,
                 cycle_touch_retract_reposition_distance: 0,
                 cycle_touch_retract_probe_speed: 0,

@@ -16,6 +16,7 @@ pub struct RawMotionProfile {
     pub cycle_reposition_speed_z: u16,
     pub cycle_wire_feed_speed: u16,
     pub cycle_avc_vref: u16,
+    pub cycle_axis_z_torch_up_offset: u16,
     pub cycle_z_static_offset: u16,
     pub cycle_touch_retract_reposition_distance: u16,
     pub cycle_touch_retract_probe_speed: u16,
@@ -59,6 +60,7 @@ impl RawMotionProfile {
         let cycle_reposition_speed_z = pull_hreg_from_mb!(CYCLE_REPOSITION_SPEED_Z);
         let cycle_wire_feed_speed = pull_hreg_from_mb!(CYCLE_WIRE_FEED_SPEED);
         let cycle_avc_vref = pull_hreg_from_mb!(CYCLE_AVC_VREF);
+        let cycle_axis_z_torch_up_offset = pull_hreg_from_mb!(CYCLE_AXIS_Z_TORCH_UP_OFFSET);
         let cycle_z_static_offset = pull_hreg_from_mb!(CYCLE_Z_STATIC_OFFSET);
         let cycle_touch_retract_reposition_distance = pull_hreg_from_mb!(CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
         let cycle_touch_retract_probe_speed = pull_hreg_from_mb!(CYCLE_TOUCH_RETRACT_PROBE_SPEED);
@@ -76,6 +78,7 @@ impl RawMotionProfile {
             cycle_reposition_speed_z,
             cycle_wire_feed_speed,
             cycle_avc_vref,
+            cycle_axis_z_torch_up_offset,
             cycle_z_static_offset,
             cycle_touch_retract_reposition_distance,
             cycle_touch_retract_probe_speed,
@@ -123,6 +126,7 @@ impl RawMotionProfile {
         diff_hreg!(cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         diff_hreg!(cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         diff_hreg!(cycle_avc_vref, CYCLE_AVC_VREF);
+        diff_hreg!(cycle_axis_z_torch_up_offset, CYCLE_AXIS_Z_TORCH_UP_OFFSET);
         diff_hreg!(cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
         diff_hreg!(cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
         diff_hreg!(cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);
@@ -159,6 +163,7 @@ impl RawMotionProfile {
         write_hreg_to_mb!(self.cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
+        write_hreg_to_mb!(self.cycle_axis_z_torch_up_offset, CYCLE_AXIS_Z_TORCH_UP_OFFSET);
         write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
         write_hreg_to_mb!(self.cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
         write_hreg_to_mb!(self.cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);
@@ -205,6 +210,7 @@ impl RawMotionProfile {
         write_hreg_to_mb!(self.cycle_reposition_speed_z, CYCLE_REPOSITION_SPEED_Z);
         write_hreg_to_mb!(self.cycle_wire_feed_speed, CYCLE_WIRE_FEED_SPEED);
         write_hreg_to_mb!(self.cycle_avc_vref, CYCLE_AVC_VREF);
+        write_hreg_to_mb!(self.cycle_axis_z_torch_up_offset, CYCLE_AXIS_Z_TORCH_UP_OFFSET);
         write_hreg_to_mb!(self.cycle_z_static_offset, CYCLE_Z_STATIC_OFFSET);
         write_hreg_to_mb!(self.cycle_touch_retract_reposition_distance, CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE);
         write_hreg_to_mb!(self.cycle_touch_retract_probe_speed, CYCLE_TOUCH_RETRACT_PROBE_SPEED);

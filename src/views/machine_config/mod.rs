@@ -4,11 +4,9 @@ use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, po
 use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::file_io::FixedDiskFile;
 use crate::{AppState, error_targeted, info_targeted, warn_targeted};
-use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::PS_UI_DISABLE;
 use crate::miller::miller_register_types::WelderModel;
 use crate::modbus::ModbusState;
-use std::sync::atomic::Ordering;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/machine-config.html")]
@@ -94,9 +92,8 @@ pub async fn save_machine_config(
             match crate::machine_config::MachineConfig::load().await {
                 Ok(loaded_config) => {
                     // Update in-memory state
-                    *state.machine_config.write().await = loaded_config.clone();
-                    let ui_disabled = loaded_config.ps_ui_disable;
-                    state.ps_ui_disable.store(ui_disabled, Ordering::Release);
+                    let welder_ui_disable = loaded_config.ps_ui_disable;
+                    *state.machine_config.write().await = loaded_config;
                     info_targeted!(HTTP, "Config reloaded from disk and updated in memory");
 
                     let connection_state = state.miller_registers
@@ -105,10 +102,10 @@ pub async fn save_machine_config(
                         .unwrap_or(ModbusState::Disconnected);
                     if connection_state == ModbusState::Connected {
                         match state.miller_registers
-                            .write_coil(PS_UI_DISABLE.address.address, ui_disabled)
+                            .write_coil(PS_UI_DISABLE.address.address, welder_ui_disable)
                             .await {
                             Ok(()) => {
-                                info_targeted!(HTTP, "Applied PS_UI_DISABLE {ui_disabled} to connected welder");
+                                info_targeted!(HTTP, "Applied PS_UI_DISABLE={welder_ui_disable} to connected welder");
                             }
                             Err(e) => {
                                 warn_targeted!(HTTP, "Failed to apply PS_UI_DISABLE to welder: {:?}", e);
