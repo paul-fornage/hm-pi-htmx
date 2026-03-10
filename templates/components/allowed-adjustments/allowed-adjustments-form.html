@@ -1,18 +1,51 @@
 <div id="adjustments-form-feedback"></div>
 <form id="allowed-adjustments-form"
-  hx-post="/schedule-adjustments/allowed-adjustments-data"
-  hx-target="#adjustments-form-feedback"
-  hx-swap="innerHTML">
-  <button type="submit" class="">Save</button>
-  <table>
-    <tr>
-      <th>Attribute</th>
-      <th>Percent over</th>
-      <th>Percent under</th>
-    </tr>
-    {% for (name, adjustment) in adjustments %}
-    {% include "components/allowed-adjustments/adjustment-row.html" %}
-    {% endfor %}
+      hx-post="/schedule-adjustments/allowed-adjustments-data"
+      hx-target="#adjustments-form-feedback"
+      hx-swap="innerHTML"
+      class="flex flex-col gap-4">
 
-  </table>
+  <div>
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors">
+      Save Adjustments
+    </button>
+  </div>
+
+  <div class="max-h-[75vh] overflow-y-auto border border-gray-300 rounded shadow-sm">
+    <table class="w-full text-left border-collapse">
+      <thead class="sticky top-0 bg-gray-200 z-10 shadow-sm">
+      <tr>
+        <th class="p-3 border-b border-gray-300">Attribute</th>
+        <th class="p-3 border-b border-gray-300 w-1/3">Percent under</th>
+        <th class="p-3 border-b border-gray-300 w-1/3">Percent over</th>
+      </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-100">
+      {% for (name, adjustment) in adjustments %}
+      {% include "components/allowed-adjustments/adjustment-row.html" %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </form>
+
+<script>
+    const inputs = document.querySelectorAll("#allowed-adjustments-form input");
+
+    inputs.forEach(input => {
+        // Define the logic to check the value and toggle the class
+        const updateOpacity = () => {
+            if (parseFloat(input.value) === 0) {
+                input.classList.add("opacity-50");
+            } else {
+                input.classList.remove("opacity-50");
+            }
+        };
+
+        // 1. Run on initial load
+        updateOpacity();
+
+        // 2. Listen for any changes (typing, buttons, pasting) and run again
+        input.addEventListener("input", updateOpacity);
+    });
+</script>

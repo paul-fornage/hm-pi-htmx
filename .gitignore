@@ -6,3 +6,4 @@ weld_profiles
 motion_profiles
 *.json
 arm-compile
+.idea

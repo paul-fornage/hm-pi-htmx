@@ -28,6 +28,16 @@ async fn main_page(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 // /allowed-adjustments-data
+/*
+TODO Actually returns:
+    FINAL SLOPE TIME-percent-less	"0"
+    FINAL SLOPE TIME-percent-over	"0"
+    CYCLE WELD SPEED-percent-less	"0"
+    CYCLE WELD SPEED-percent-over	"0"
+    TOUCH RETRACT PROBE SPEED-percent-less	"0"
+    ...
+
+ */
 async fn post_form(Form(form): Form<AllowedAdjustments>) -> impl IntoResponse {
     debug_targeted!(HTTP, "received new adjustment form");
     if !form.verify_schema() {
