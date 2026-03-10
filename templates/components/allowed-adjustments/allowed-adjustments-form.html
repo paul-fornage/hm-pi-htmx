@@ -1,15 +1,18 @@
-<div id="adjustments-form-feedback"></div>
 <form id="allowed-adjustments-form"
+      hx-ext="form-json"
       hx-post="/schedule-adjustments/allowed-adjustments-data"
       hx-target="#adjustments-form-feedback"
       hx-swap="innerHTML"
+      hx-disabled-elt="find button[type='submit']"
       class="flex flex-col gap-4">
 
-  <div>
-    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors">
+  <div class="flex flex-row items-center gap-4">
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       Save Adjustments
     </button>
+    <div id="adjustments-form-feedback"></div>
   </div>
+
 
   <div class="max-h-[75vh] overflow-y-auto border border-gray-300 rounded shadow-sm">
     <table class="w-full text-left border-collapse">
@@ -21,7 +24,7 @@
       </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-100">
-      {% for (name, adjustment) in adjustments %}
+      {% for (name, adjustment) in as_list() %}
       {% include "components/allowed-adjustments/adjustment-row.html" %}
       {% endfor %}
       </tbody>

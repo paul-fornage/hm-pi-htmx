@@ -112,5 +112,13 @@ impl AllowedAdjustments {
         return true;
     }
 
+    pub fn as_list(&self) -> Vec<(&String, &AdjustmentRowDisplay)> {
+        let mut list: Vec<(&String, &AdjustmentRowDisplay)> = self.adjustments.iter().collect();
+        list.sort_by(|a, b| {
+            a.0.cmp(b.0)
+        });
+        list
+    }
+
 }
 

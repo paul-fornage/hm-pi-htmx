@@ -5,7 +5,7 @@ use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum::{Form, Router};
+use axum::{Json, Router};
 use axum::routing::{get, post};
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use crate::file_io::{FileIoError, FixedDiskFile};
@@ -38,7 +38,7 @@ TODO Actually returns:
     ...
 
  */
-async fn post_form(Form(form): Form<AllowedAdjustments>) -> impl IntoResponse {
+async fn post_form(Json(form): Json<AllowedAdjustments>) -> impl IntoResponse {
     debug_targeted!(HTTP, "received new adjustment form");
     if !form.verify_schema() {
         return FeedbackResult::new_err("Internal error: Adjustments form does not match schema".to_string());

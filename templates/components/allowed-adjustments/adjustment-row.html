@@ -5,42 +5,69 @@
 
   <td class="p-3">
     <div class="flex items-center gap-2">
-      <button type="button" onclick="let i=this.nextElementSibling; let v=parseFloat(i.value)||0; let min=parseFloat(i.min)||0; if(v>min){i.value=v-parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
+      <button type="button" onclick="let i=this.nextElementSibling.querySelector('input'); let v=parseFloat(i.value)||0; let min=parseFloat(i.min)||0; if(v>min){i.value=v-parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
               class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold w-8 h-8 rounded flex items-center justify-center">-</button>
-      <input id="{{name}}-percent-less"
-             value="{{adjustment.percent_less()}}"
-             name="{{name}}-percent-less"
-             autocomplete="off"
-             inputmode="numeric"
-             data-keyboard="float"
-             step="1"
-             min="0"
-             max="100"
-             required
-             class="w-20 text-center px-2 py-1 border border-slate-300 rounded font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
-      />
-      <button type="button" onclick="let i=this.previousElementSibling; let v=parseFloat(i.value)||0; let max=parseFloat(i.max)||100; if(v<max){i.value=v+parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
+
+      <div class="relative w-24 text-gray-700">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-lg font-mono">
+          -
+        </div>
+        <input id="{{name}}-percent-less"
+               value="{{adjustment.percent_less()}}"
+               name="adjustments[{{name}}][percent_less]"
+               autocomplete="off"
+               inputmode="numeric"
+               data-keyboard="float"
+               type="number"
+               step="1"
+               min="0"
+               max="100"
+               required
+               class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0
+                  [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0
+                  w-full text-center pr-4 pl-4 py-1 border border-slate-300 rounded font-mono text-lg
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
+        />
+        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-lg font-mono">
+          %
+        </div>
+      </div>
+
+      <button type="button" onclick="let i=this.previousElementSibling.querySelector('input'); let v=parseFloat(i.value)||0; let max=parseFloat(i.max)||100; if(v<max){i.value=v+parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
               class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold w-8 h-8 rounded flex items-center justify-center">+</button>
     </div>
   </td>
 
   <td class="p-3">
     <div class="flex items-center gap-2">
-      <button type="button" onclick="let i=this.nextElementSibling; let v=parseFloat(i.value)||0; let min=parseFloat(i.min)||0; if(v>min){i.value=v-parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
+      <button type="button" onclick="let i=this.nextElementSibling.querySelector('input'); let v=parseFloat(i.value)||0; let min=parseFloat(i.min)||0; if(v>min){i.value=v-parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
               class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold w-8 h-8 rounded flex items-center justify-center">-</button>
-      <input id="{{name}}-percent-over"
-             value="{{adjustment.percent_over()}}"
-             name="{{name}}-percent-over"
-             autocomplete="off"
-             inputmode="numeric"
-             data-keyboard="float"
-             step="1"
-             min="0"
-             max="255"
-             required
-             class="w-20 text-center px-2 py-1 border border-slate-300 rounded font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
-      />
-      <button type="button" onclick="let i=this.previousElementSibling; let v=parseFloat(i.value)||0; let max=parseFloat(i.max)||255; if(v<max){i.value=v+parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
+      <div class="relative w-24 text-gray-700">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-lg font-mono">
+          +
+        </div>
+        <input id="{{name}}-percent-over"
+               value="{{adjustment.percent_over()}}"
+               name="adjustments[{{name}}][percent_over]"
+               autocomplete="off"
+               inputmode="numeric"
+               data-keyboard="float"
+               type="number"
+               step="1"
+               min="0"
+               max="255"
+               required
+               class="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0
+                  [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0
+                  w-full text-center pr-4 pl-4 py-1 border border-slate-300 rounded font-mono text-lg
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
+        />
+        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-lg font-mono">
+          %
+        </div>
+      </div>
+
+      <button type="button" onclick="let i=this.previousElementSibling.querySelector('input'); let v=parseFloat(i.value)||0; let max=parseFloat(i.max)||255; if(v<max){i.value=v+parseFloat(i.step||1); i.dispatchEvent(new Event('input'))}"
               class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold w-8 h-8 rounded flex items-center justify-center">+</button>
     </div>
   </td>
