@@ -1,0 +1,34 @@
+<td>
+  {{name}}
+</td>
+<!--TODO: grayed out when 0-->
+<td>
+  <div> Percent under </div>
+  <input id="{{name}}-percent-less"
+         value="{{adjustment.percent_less()}}"
+         name="value"
+         autocomplete="off"
+         inputmode="numeric"
+         data-keyboard="float"
+         step="1"
+         min="0"
+         max="100"
+         required
+         class="flex-1 px-3 py-2 border border-slate-300 rounded font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
+  />
+</td>
+<td>
+  <div> Percent over </div>
+  <input id="{{name}}-percent-over"
+         value="{{adjustment.percent_over()}}"
+         name="value"
+         autocomplete="off"
+         inputmode="numeric"
+         data-keyboard="float"
+         step="1"
+         min="0"
+         max="255"
+         required
+         class="flex-1 px-3 py-2 border border-slate-300 rounded font-mono text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 invalid:border-red-500"
+  />
+</td>

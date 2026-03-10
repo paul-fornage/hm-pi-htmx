@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block header %}
+<div id="app-header"
+     hx-get="/ui/header?tab={{ Self::get_view().url() }}"
+     hx-trigger="auth-changed"
+     hx-swap="innerHTML">
+    {% include "components/header.html" %}
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+
+<div id="adjustment-manager" class="bg-gray-100 p-5 rounded-lg mb-5 border border-gray-300">
+    <h2 class="text-xl font-bold mb-3">Operator Schedule Adjustment Manager</h2>
+    <p class="mb-4">Manage adjustment ranges operators can make here.</p>
+    <div hx-get="/schedule-adjustments/allowed-adjustments-data" hx-trigger="load" hx-swap="innerHTML"></div>
+</div>
+{% endblock %}

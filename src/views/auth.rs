@@ -63,6 +63,7 @@ pub async fn header_handler(
     State(state): State<AppState>,
     Query(query): Query<HeaderQuery>,
 ) -> impl IntoResponse {
+    // TODO: Header should encode this better
     let active_tab = query
         .tab
         .as_deref()
@@ -130,6 +131,7 @@ pub async fn sign_out(
     let should_redirect = form
         .current_url
         .as_deref()
+        // TODO: Header should encode this better
         .and_then(AppView::from_url)
         .map(|view| view.required_auth() > auth::AuthLevel::Operator)
         .unwrap_or(false);

@@ -3,7 +3,6 @@ mod logging;
 
 mod modbus_http;
 pub mod error;
-mod clearcore_registers;
 mod miller;
 mod connection_management;
 mod views;

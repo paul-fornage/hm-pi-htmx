@@ -14,6 +14,7 @@ mod usb_transfer;
 mod schedule_adjustments;
 
 use axum::Router;
+use strum::VariantArray;
 use crate::AppState;
 use crate::auth::AuthLevel;
 
@@ -30,7 +31,7 @@ pub use users::UsersTemplate;
 pub use usb_transfer::UsbTransferTemplate;
 
 // Define the available views (tabs) in the application
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, strum::VariantArray)]
 pub enum AppView {
     MillerInfo,
     Connections,
@@ -40,6 +41,7 @@ pub enum AppView {
     ClearcoreConfig,
     ClearcoreManualControl,
     ClearcoreLogs,
+    ScheduleAdjustments,
     RunCycle,
     UsbTransfer,
     Users,
@@ -48,19 +50,7 @@ pub enum AppView {
 impl AppView {
     // Returns a slice of all views to iterate over in the template
     pub fn all() -> &'static [AppView] {
-        &[
-            AppView::RunCycle,
-            AppView::ClearcoreManualControl,
-            AppView::ClearcoreLogs,
-            AppView::WelderProfile,
-            AppView::MotionProfile,
-            AppView::ClearcoreConfig,
-            AppView::MillerInfo,
-            AppView::Connections,
-            AppView::MachineConfig,
-            AppView::UsbTransfer,
-            AppView::Users,
-        ]
+        Self::VARIANTS
     }
 
     // The text displayed on the tab
@@ -74,6 +64,7 @@ impl AppView {
             AppView::ClearcoreConfig => "ClearCore Config",
             AppView::ClearcoreManualControl => "Manual Control",
             AppView::ClearcoreLogs => "ClearCore Logs",
+            AppView::ScheduleAdjustments => "Operator Adjustments",
             AppView::RunCycle => "Run Cycle",
             AppView::UsbTransfer => "USB transfer",
             AppView::Users => "Users",
@@ -91,6 +82,7 @@ impl AppView {
             AppView::ClearcoreConfig => "/clearcore-config",
             AppView::ClearcoreManualControl => "/clearcore-manual-control",
             AppView::ClearcoreLogs => "/clearcore-logs",
+            AppView::ScheduleAdjustments => "/schedule-adjustments",
             AppView::RunCycle => "/run-cycle",
             AppView::UsbTransfer => "/usb-transfer",
             AppView::Users => "/users",
@@ -103,15 +95,16 @@ impl AppView {
 
     pub fn required_auth(&self) -> AuthLevel {
         match self {
-            AppView::RunCycle => AuthLevel::Operator,
-            AppView::ClearcoreManualControl => AuthLevel::Operator,
-            AppView::ClearcoreLogs => AuthLevel::Manager,
-            AppView::WelderProfile => AuthLevel::Manager,
-            AppView::MotionProfile => AuthLevel::Manager,
-            AppView::ClearcoreConfig => AuthLevel::Manager,
-            AppView::MillerInfo => AuthLevel::Manager,
+            AppView::MillerInfo => AuthLevel::Operator,
             AppView::Connections => AuthLevel::Admin,
             AppView::MachineConfig => AuthLevel::Admin,
+            AppView::WelderProfile => AuthLevel::Manager,
+            AppView::MotionProfile => AuthLevel::Manager,
+            AppView::ClearcoreConfig => AuthLevel::Admin,
+            AppView::ClearcoreManualControl => AuthLevel::Operator,
+            AppView::ClearcoreLogs => AuthLevel::Manager,
+            AppView::ScheduleAdjustments => AuthLevel::Admin,
+            AppView::RunCycle => AuthLevel::Operator,
             AppView::UsbTransfer => AuthLevel::Admin,
             AppView::Users => AuthLevel::Admin,
         }
@@ -181,5 +174,6 @@ pub fn routes() -> Router<AppState> {
         .merge(run_cycle::routes())
         .merge(clearcore_logs::routes())
         .merge(usb_transfer::routes())
+        .merge(schedule_adjustments::routes())
         .merge(users::routes())
 }

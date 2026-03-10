@@ -1,0 +1,18 @@
+<div id="adjustments-form-feedback"></div>
+<form id="allowed-adjustments-form"
+  hx-post="/schedule-adjustments/allowed-adjustments-data"
+  hx-target="#adjustments-form-feedback"
+  hx-swap="innerHTML">
+  <button type="submit" class="">Save</button>
+  <table>
+    <tr>
+      <th>Attribute</th>
+      <th>Percent over</th>
+      <th>Percent under</th>
+    </tr>
+    {% for (name, adjustment) in adjustments %}
+    {% include "components/allowed-adjustments/adjustment-row.html" %}
+    {% endfor %}
+
+  </table>
+</form>
