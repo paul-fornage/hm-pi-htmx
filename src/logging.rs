@@ -77,6 +77,8 @@ pub fn init_logger(log_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
 
     if cfg!(debug_assertions) {
         config_builder = config_builder
+            .logger(Logger::builder().build(LogTarget::FS.to_str(), LevelFilter::Debug))
+            .logger(Logger::builder().build(LogTarget::Clearcore.to_str(), LevelFilter::Debug))
             .logger(Logger::builder().build(LogTarget::MODBUS.to_str(), LevelFilter::Debug))
             .logger(Logger::builder().build(LogTarget::HTTP.to_str(), LevelFilter::Debug))
             .logger(Logger::builder().build("tokio_modbus::service::tcp", LevelFilter::Info));

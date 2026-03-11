@@ -274,27 +274,29 @@ async fn start_cycle(
         Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)),
     };
 
-    let (weld_matches, motion_matches) = match profiles_match(&state, &weld_profile, &motion_profile).await {
-        Ok(result) => result,
-        Err(err) => return feedback_err(format!("Failed to read back profiles: {}", err)),
-    };
+    if !use_adjusted {
+        let (weld_matches, motion_matches) = match profiles_match(&state, &weld_profile, &motion_profile).await {
+            Ok(result) => result,
+            Err(err) => return feedback_err(format!("Failed to read back profiles: {}", err)),
+        };
 
-    if !weld_matches || !motion_matches {
-        if !weld_matches {
-            let diff_regs = weld_profile
-                .raw_profile
-                .modbus_diff(&state.miller_registers)
-                .await;
-            error_targeted!(MODBUS, "Weld profile mismatch: {:#?}", diff_regs);
+        if !weld_matches || !motion_matches {
+            if !weld_matches {
+                let diff_regs = weld_profile
+                    .raw_profile
+                    .modbus_diff(&state.miller_registers)
+                    .await;
+                error_targeted!(MODBUS, "Weld profile mismatch: {:#?}", diff_regs);
+            }
+            if !motion_matches {
+                let diff_regs = motion_profile
+                    .raw_profile
+                    .modbus_diff(&state.clearcore_registers)
+                    .await;
+                error_targeted!(MODBUS, "Motion profile mismatch: {:#?}", diff_regs);
+            }
+            return feedback_err("Profiles are not loaded".to_string());
         }
-        if !motion_matches {
-            let diff_regs = motion_profile
-                .raw_profile
-                .modbus_diff(&state.clearcore_registers)
-                .await;
-            error_targeted!(MODBUS, "Motion profile mismatch: {:#?}", diff_regs);
-        }
-        return feedback_err("Profiles are not loaded".to_string());
     }
 
     match mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address).await {

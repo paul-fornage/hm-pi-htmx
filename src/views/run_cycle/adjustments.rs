@@ -355,7 +355,6 @@ pub struct AdjustedStartPos {
     pub base_raw: u16,
     pub adjusted_raw: u16,
 }
-
 fn motion_register_info_for(
     meta: &'static crate::modbus::RegisterMetadata,
 ) -> Option<&'static crate::views::shared::analog_register::AnalogRegisterInfo> {
