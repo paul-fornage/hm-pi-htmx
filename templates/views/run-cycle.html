@@ -141,6 +141,9 @@
                 <button id="run-cycle-go-to-start-button"
                         type="button"
                         hx-post="/run-cycle/go-to-start"
+                        hx-vals="js:{
+                            use_adjusted_presets: document.querySelector('#run-cycle-use-adjustments')?.checked ? 'true' : 'false',
+                            'adjustments[{{ cycle_start_register_name }}]': (document.querySelector('[data-adjustment-key=&quot;{{ cycle_start_register_name }}&quot;]')?.value ?? 'None')}"
                         hx-target="#run-cycle-feedback"
                         hx-swap="innerHTML"
                         hx-disabled-elt=".run-cycle-action"

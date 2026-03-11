@@ -183,6 +183,10 @@ impl RunCycleAnalogRegisterRow {
         self.register.register_info.meta.name
     }
 
+    pub fn adjustment_input_id(&self) -> String {
+        super::adjustment_input_id(self.name())
+    }
+
     pub fn unit(&self) -> &'static str {
         self.register.register_info.unit_string()
     }
@@ -345,6 +349,57 @@ pub struct RunCycleAdjustedProfiles {
     pub weld_profile: WeldProfile,
     pub motion_profile: MotionProfile,
     pub adjusted_registers: Vec<String>,
+}
+
+pub struct AdjustedStartPos {
+    pub base_raw: u16,
+    pub adjusted_raw: u16,
+}
+
+fn motion_register_info_for(
+    meta: &'static crate::modbus::RegisterMetadata,
+) -> Option<&'static crate::views::shared::analog_register::AnalogRegisterInfo> {
+    motion_profile::MOTION_PROFILE_ANALOG_REGISTERS
+        .iter()
+        .find(|info| std::ptr::eq(info.meta, meta))
+}
+
+pub fn adjusted_cycle_start_pos(
+    motion_profile: &MotionProfile,
+    allowed_adjustments: &AllowedAdjustments,
+    input: &str,
+) -> Result<AdjustedStartPos, String> {
+    let info = motion_register_info_for(&plc_register_definitions::CYCLE_START_POS)
+        .ok_or_else(|| "Missing start position register mapping.".to_string())?;
+    let name = info.meta.name;
+    let Some(range_row) = allowed_adjustments.get(name) else {
+        return Err(format!("Register '{name}' is not adjustable."));
+    };
+
+    let base_raw = motion_profile_analog_value(&motion_profile.raw_profile, info)
+        .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+    let range = compute_adjustment_range(info, Some(base_raw), range_row)
+        .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+
+    if !range.is_adjustable() {
+        return Err(format!("Register '{name}' is fixed and cannot be adjusted."));
+    }
+
+    let semantic_value = parse_adjustment_value(input, name)?;
+    let adjusted_raw = info.convert_to_raw(semantic_value);
+
+    if adjusted_raw < range.min_raw || adjusted_raw > range.max_raw {
+        let min_label = info.formatted_value(Some(range.min_raw));
+        let max_label = info.formatted_value(Some(range.max_raw));
+        return Err(format!(
+            "Adjustment for '{name}' must be between {min_label} and {max_label}."
+        ));
+    }
+
+    Ok(AdjustedStartPos {
+        base_raw,
+        adjusted_raw,
+    })
 }
 
 pub fn apply_adjustments_to_profiles(
@@ -564,6 +619,8 @@ fn motion_profile_analog_value(
     profile: &RawMotionProfile,
     info: &'static crate::views::shared::analog_register::AnalogRegisterInfo,
 ) -> Option<u16> {
+    // TODO: Should really just make motion profile a hashmap like the adjustments this and 
+    //  RawMotionProfile impls are so stupid
     let meta = info.meta;
     if std::ptr::eq(meta, &plc_register_definitions::CYCLE_START_POS) {
         Some(profile.cycle_start_pos)

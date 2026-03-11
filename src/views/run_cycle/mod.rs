@@ -28,15 +28,40 @@ use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::welder_profile::weld_profile::{ProfileListEntry as WeldProfileListEntry, WeldProfile};
 use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
 use crate::views::{motion_profile, welder_profile};
-use adjustments::{run_cycle_analog_registers, apply_adjustments_to_profiles};
+use adjustments::{run_cycle_analog_registers, apply_adjustments_to_profiles, adjusted_cycle_start_pos, AdjustedStartPos};
 use crate::views::run_cycle::adjustments::feedback_ok_with_triggers;
 
 const PROFILE_VERIFY_TIMEOUT: Duration = Duration::from_secs(5);
 const JOB_ACTIVE_TIMEOUT: Duration = Duration::from_secs(5);
+const START_POS_VERIFY_TIMEOUT: Duration = Duration::from_secs(5);
 const PRESET_VALUES_LOADED_EVENT: HxTrigger = HxTrigger {
     event: "run-cycle-presets-loaded",
     target: "#run-cycle-analog-registers",
 };
+const CYCLE_START_REGISTER_NAME: &str = plc_register_definitions::CYCLE_START_POS.name;
+
+fn adjustment_input_id(name: &str) -> String {
+    let mut output = String::with_capacity(name.len());
+    let mut last_dash = false;
+    for ch in name.chars() {
+        let lower = ch.to_ascii_lowercase();
+        if lower.is_ascii_alphanumeric() {
+            output.push(lower);
+            last_dash = false;
+        } else if !last_dash {
+            output.push('-');
+            last_dash = true;
+        }
+    }
+    while output.ends_with('-') {
+        output.pop();
+    }
+    if output.is_empty() {
+        "unknown".to_string()
+    } else {
+        output
+    }
+}
 
 pub fn routes() -> Router<AppState> {
     let page = AppView::RunCycle;
@@ -92,6 +117,7 @@ pub async fn show_run_cycle(
         motion_profiles,
         selected_weld,
         selected_motion,
+        cycle_start_register_name: CYCLE_START_REGISTER_NAME,
     }
 }
 
@@ -103,6 +129,7 @@ pub struct RunCycleTemplate {
     pub motion_profiles: Vec<MotionProfileListEntry>,
     pub selected_weld: Option<String>,
     pub selected_motion: Option<String>,
+    pub cycle_start_register_name: &'static str,
 }
 
 impl RunCycleTemplate {
@@ -569,7 +596,11 @@ pub struct RunCycleSelectedProfilesTemplate {
 
 pub async fn go_to_start(
     State(state): State<AppState>,
+    Form(form): Form<HashMap<String, String>>,
 ) -> impl IntoResponse {
+    let use_adjusted = use_adjusted_presets(&form);
+    debug_targeted!(HTTP, "Go to start requested (use_adjusted={})", use_adjusted);
+
     if matches!(
         mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::JOB_ACTIVE.address).await,
         Some(true)
@@ -583,11 +614,99 @@ pub async fn go_to_start(
         None => return feedback_err("Unable to read homed state".to_string()),
     }
 
+    let mut adjusted_note: Option<String> = None;
+    if use_adjusted {
+        let adjustments = extract_adjustments(&form);
+        let raw_input = adjustments
+            .get(CYCLE_START_REGISTER_NAME)
+            .map(|value| value.trim().to_string());
+        let adjusted_input = match raw_input.as_deref() {
+            Some(value) if !value.is_empty() && !value.eq_ignore_ascii_case("none") => Some(value.to_string()),
+            _ => None,
+        };
+
+        if let Some(input) = adjusted_input {
+            let allowed_adjustments = match AllowedAdjustments::load().await {
+                Ok(mut form) => {
+                    form.conform_to_schema();
+                    form
+                }
+                Err(err) => {
+                    warn_targeted!(HTTP, "Failed to load allowed adjustments: {}", err);
+                    return feedback_err("Adjusted start position unavailable because adjustment limits failed to load.".to_string());
+                }
+            };
+
+            let (selected_weld, selected_motion) = {
+                let weld_metadata = state.weld_profile_metadata.lock().await;
+                let motion_metadata = state.motion_profile_metadata.lock().await;
+                (weld_metadata.name.clone(), motion_metadata.name.clone())
+            };
+            let (Some(weld_name), Some(motion_name)) = (selected_weld, selected_motion) else {
+                return feedback_err("Adjusted start position unavailable until both profiles are loaded.".to_string());
+            };
+
+            let weld_profile = match weld_file_ops::load_profile(&weld_name).await {
+                Ok(profile) => profile,
+                Err(err) => {
+                    error_targeted!(HTTP, "Failed to load selected weld profile '{weld_name}': {err}");
+                    return feedback_err(format!("Failed to load weld profile '{weld_name}'."));
+                }
+            };
+            let motion_profile = match motion_file_ops::load_profile(&motion_name).await {
+                Ok(profile) => profile,
+                Err(err) => {
+                    error_targeted!(HTTP, "Failed to load selected motion profile '{motion_name}': {err}");
+                    return feedback_err(format!("Failed to load motion profile '{motion_name}'."));
+                }
+            };
+
+            let (weld_matches, motion_matches) = match profiles_match(&state, &weld_profile, &motion_profile).await {
+                Ok(result) => result,
+                Err(err) => return feedback_err(format!("Failed to read back profiles: {}", err)),
+            };
+            if !weld_matches || !motion_matches {
+                return feedback_err("Profiles are not loaded. Reload before using adjustments.".to_string());
+            }
+
+            let AdjustedStartPos { base_raw, adjusted_raw } =
+                match adjusted_cycle_start_pos(&motion_profile, &allowed_adjustments, &input) {
+                    Ok(result) => result,
+                    Err(err) => return feedback_err(err),
+                };
+
+            if adjusted_raw == base_raw {
+                adjusted_note = Some("adjusted start position matches preset".to_string());
+                info_targeted!(HTTP, "Adjusted start position matches preset");
+            } else {
+                if let Err(err) = state
+                    .clearcore_registers
+                    .write_hreg(plc_register_definitions::CYCLE_START_POS.address.address, adjusted_raw)
+                    .await
+                {
+                    return feedback_err(format!("Failed to apply adjusted start position: {}", err));
+                }
+                if let Err(err) = wait_for_start_pos_readback(&state, adjusted_raw).await {
+                    warn_targeted!(HTTP, "Adjusted start position readback failed: {}", err);
+                    return feedback_err(err);
+                }
+                adjusted_note = Some("adjusted start position applied".to_string());
+            }
+        } else {
+            adjusted_note = Some("adjusted start position unavailable".to_string());
+            info_targeted!(HTTP, "Adjusted start position requested but no adjustable value provided");
+        }
+    }
+
     if matches!(
         mb_read_bool_helper(&state.clearcore_registers, &plc_register_definitions::AT_START.address).await,
         Some(true)
     ) {
-        return feedback_ok("Already at start position".to_string());
+        let message = match adjusted_note {
+            Some(note) => format!("Already at start position ({note})"),
+            None => "Already at start position".to_string(),
+        };
+        return feedback_ok(message);
     }
 
     if let Err(err) = state
@@ -598,7 +717,41 @@ pub async fn go_to_start(
         return feedback_err(format!("Failed to go to start: {}", err));
     }
 
-    feedback_ok("Going to start position".to_string())
+    let message = match adjusted_note {
+        Some(note) => format!("Going to start position ({note})"),
+        None => "Going to start position".to_string(),
+    };
+    feedback_ok(message)
+}
+
+async fn wait_for_start_pos_readback(state: &AppState, expected: u16) -> Result<(), String> {
+    let started = Instant::now();
+    let mut last_read: Option<u16> = None;
+
+    loop {
+        if let Some(value) = mb_read_word_helper(
+            &state.clearcore_registers,
+            &plc_register_definitions::CYCLE_START_POS.address,
+        )
+        .await
+        {
+            last_read = Some(value);
+            if value == expected {
+                return Ok(());
+            }
+        }
+
+        if started.elapsed() >= START_POS_VERIFY_TIMEOUT {
+            let last_label = last_read
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "unreadable".to_string());
+            return Err(format!(
+                "Timed out waiting for start position readback (expected {expected}, got {last_label})."
+            ));
+        }
+
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
 }
 
 async fn profiles_match(

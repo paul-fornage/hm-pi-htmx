@@ -33,7 +33,11 @@
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
             {% for row in rows %}
-            <tr class="group text-sm" data-adjustable="{% if row.is_adjustable() %}true{% else %}false{% endif %}" data-adjustment-row="true">
+            <tr class="group text-sm" 
+                data-adjustable="{% if row.is_adjustable() %}true{% else %}false{% endif %}" 
+                data-adjustment-row="true"
+                id=""
+            >
                 <td class="p-2 text-xs font-semibold text-slate-500">{{ row.source }}</td>
                 <td class="p-2 font-medium text-slate-700">
                     <button type="button"
@@ -50,11 +54,13 @@
                 <td class="p-2">
                     {% if row.is_adjustable() %}
                     <input type="text"
+                           id="run-cycle-adjustment-input-{{ row.adjustment_input_id() }}"
                            name="adjustments[{{ row.name() }}]"
                            value="{% if let Some(val) = row.preset_input_value() %}{{ val }}{% endif %}"
                            autocomplete="off"
                            inputmode="decimal"
                            data-keyboard="float"
+                           data-adjustment-key="{{ row.name() }}"
                            data-base-value="{% if let Some(val) = row.preset_input_value() %}{{ val }}{% endif %}"
                            data-min="{% if let Some(val) = row.adjustment_min_value() %}{{ val }}{% endif %}"
                            data-max="{% if let Some(val) = row.adjustment_max_value() %}{{ val }}{% endif %}"
