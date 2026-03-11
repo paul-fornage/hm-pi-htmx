@@ -109,8 +109,13 @@
       if (checkNonNullAndConnected(activeInput)) {
         console.debug("has active input: ", activeInput);
         if(activeInput.form) {
-          console.debug("submitting form");
-          activeInput.form.requestSubmit();
+          const allowSubmit = activeInput.form.dataset.keyboardSubmit !== "false";
+          if (allowSubmit) {
+            console.debug("submitting form");
+            activeInput.form.requestSubmit();
+          } else {
+            console.warn("submitting form disabled for this form");
+          }
           activeInput.blur();
         }
       } else {

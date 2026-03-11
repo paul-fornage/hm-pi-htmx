@@ -1,5 +1,6 @@
 <form id="run-cycle-adjustments-form"
       hx-ext="form-json"
+      data-keyboard-submit="false"
       class="rounded-lg border border-slate-200 bg-white/70 p-3 h-full flex flex-col">
     <div class="flex items-center justify-between mb-2">
         <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Analog register adjustments</div>
@@ -32,7 +33,7 @@
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
             {% for row in rows %}
-            <tr class="text-sm" data-adjustable="{% if row.is_adjustable() %}true{% else %}false{% endif %}">
+            <tr class="group text-sm" data-adjustable="{% if row.is_adjustable() %}true{% else %}false{% endif %}" data-adjustment-row="true">
                 <td class="p-2 text-xs font-semibold text-slate-500">{{ row.source }}</td>
                 <td class="p-2 font-medium text-slate-700">
                     <button type="button"
@@ -57,7 +58,23 @@
                            data-base-value="{% if let Some(val) = row.preset_input_value() %}{{ val }}{% endif %}"
                            data-min="{% if let Some(val) = row.adjustment_min_value() %}{{ val }}{% endif %}"
                            data-max="{% if let Some(val) = row.adjustment_max_value() %}{{ val }}{% endif %}"
-                           class="run-cycle-adjustment-input w-full min-w-[7rem] rounded border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                           class="run-cycle-adjustment-input w-[12ch] min-w-[12ch] max-w-[12ch] rounded border
+                           bg-white px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2
+                           focus:ring-blue-500 group-[.op-adjustment-unchanged]:bg-white
+                           group-[.op-adjustment-unchanged]:border-slate-300
+                           group-[.op-adjustment-unchanged]:text-slate-800
+                           group-[.op-adjustment-changed]:bg-amber-50
+                           group-[.op-adjustment-changed]:border-amber-400
+                           group-[.op-adjustment-changed]:text-slate-900
+                           group-[.op-adjustment-changed]:font-semibold
+                           group-[.op-adjustment-over-max]:bg-red-50
+                           group-[.op-adjustment-over-max]:border-red-400
+                           group-[.op-adjustment-over-max]:text-red-800
+                           group-[.op-adjustment-over-max]:font-semibold
+                           group-[.op-adjustment-under-min]:bg-red-50
+                           group-[.op-adjustment-under-min]:border-red-400
+                           group-[.op-adjustment-under-min]:text-red-800
+                           group-[.op-adjustment-under-min]:font-semibold" />
                     {% else %}
                     <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Fixed
@@ -68,11 +85,11 @@
                     {% if row.is_adjustable() %}
                     <div class="font-mono text-[11px] text-slate-600">
                         {% if let Some(min_label) = row.adjustment_min_value() %}
-                        {{ min_label }}
+                        <span class="adjustment-min-label group-[.op-adjustment-under-min]:text-red-700 group-[.op-adjustment-under-min]:font-semibold">{{ min_label }}</span>
                         {% endif %}
                         <span class="text-slate-400">..</span>
                         {% if let Some(max_label) = row.adjustment_max_value() %}
-                        {{ max_label }}
+                        <span class="adjustment-max-label group-[.op-adjustment-over-max]:text-red-700 group-[.op-adjustment-over-max]:font-semibold">{{ max_label }}</span>
                         {% endif %}
                     </div>
                     <div class="text-[10px] uppercase tracking-wide text-slate-400">Full: {{ row.full_range_label() }}</div>
@@ -97,26 +114,73 @@
         const form = document.querySelector("#run-cycle-adjustments-form");
         if (!form) return;
 
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        form.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") return;
+            const target = event.target;
+            if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        }, true);
+
         const updateInputState = (input) => {
+            const row = input.closest("[data-adjustment-row]");
             const base = (input.dataset.baseValue || "").trim();
             const current = input.value.trim();
             const min = (input.dataset.min || "").trim();
             const max = (input.dataset.max || "").trim();
 
+            input.setCustomValidity("");
+            const currentNum = current === "" ? NaN : Number(current);
+            const minNum = min === "" ? NaN : Number(min);
+            const maxNum = max === "" ? NaN : Number(max);
+
+            let stateClass = "op-adjustment-unchanged";
             if (base && current !== base) {
-                input.classList.add("bg-amber-50", "border-amber-400", "text-slate-900", "font-semibold");
-            } else {
-                input.classList.remove("bg-amber-50", "border-amber-400", "text-slate-900", "font-semibold");
+                stateClass = "op-adjustment-changed";
             }
 
-            input.setCustomValidity("");
-            const currentNum = Number(current);
-            const minNum = Number(min);
-            const maxNum = Number(max);
-            if (!Number.isNaN(currentNum) && !Number.isNaN(minNum) && !Number.isNaN(maxNum)) {
-                if (currentNum < minNum || currentNum > maxNum) {
+            let overClass = false;
+            let underClass = false;
+            if (Number.isFinite(currentNum) && Number.isFinite(minNum) && Number.isFinite(maxNum)) {
+                if (currentNum < minNum) {
+                    underClass = true;
+                    input.setCustomValidity(`Value must be between ${min} and ${max}.`);
+                } else if (currentNum > maxNum) {
+                    overClass = true;
                     input.setCustomValidity(`Value must be between ${min} and ${max}.`);
                 }
+            }
+
+            if (row) {
+                row.classList.remove(
+                    "op-adjustment-unchanged",
+                    "op-adjustment-changed",
+                    "op-adjustment-over-max",
+                    "op-adjustment-under-min"
+                );
+                if (overClass) {
+                    row.classList.add("op-adjustment-over-max");
+                } else if (underClass) {
+                    row.classList.add("op-adjustment-under-min");
+                } else {
+                    row.classList.add(stateClass);
+                }
+            }
+
+            const isValid = form.checkValidity();
+            form.dataset.adjustmentsValid = isValid ? "true" : "false";
+            form.classList.toggle("op-adjustments-invalid", !isValid);
+            form.classList.toggle("op-adjustments-valid", isValid);
+            const useAdjustedToggle = document.querySelector("#run-cycle-use-adjustments");
+            if (useAdjustedToggle) {
+                useAdjustedToggle.dataset.adjustmentsValid = isValid ? "true" : "false";
+                useAdjustedToggle.setAttribute("aria-invalid", isValid ? "false" : "true");
             }
         };
 
