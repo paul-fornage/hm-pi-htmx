@@ -15,6 +15,7 @@ use crate::modbus::RegisterMetadata;
 #[template(path = "components/register-info-modal.html")]
 pub struct RegisterModalTemplate {
     pub meta: &'static RegisterMetadata,
+    pub preset_value: Option<String>,
 }
 
 pub async fn modal_handler(Path(name): Path<String>) -> impl IntoResponse {
@@ -23,7 +24,7 @@ pub async fn modal_handler(Path(name): Path<String>) -> impl IntoResponse {
     match get_miller_register_metadata(&name) {
         Some(meta) => {
             debug_targeted!(HTTP, "Found metadata for register: {}", name);
-            let template = RegisterModalTemplate { meta };
+            let template = RegisterModalTemplate { meta, preset_value: None };
             Html(template.render().unwrap())
         }
         None => {

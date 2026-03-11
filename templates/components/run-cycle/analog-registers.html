@@ -1,6 +1,8 @@
-<div class="rounded-lg border border-slate-200 bg-white/70 p-3">
+<form id="run-cycle-adjustments-form"
+      hx-ext="form-json"
+      class="rounded-lg border border-slate-200 bg-white/70 p-3 h-full flex flex-col">
     <div class="flex items-center justify-between mb-2">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Analog register preset values</div>
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Analog register adjustments</div>
         <div class="text-xs text-slate-400">Selected profiles</div>
     </div>
 
@@ -15,33 +17,112 @@
     </div>
     {% endif %}
 
-    <div class="max-h-[50vh] overflow-y-auto border border-slate-200 rounded">
+    <div class="flex-1 min-h-0 border border-slate-200 rounded overflow-hidden">
+        <div class="h-full overflow-y-auto">
         <table class="w-full text-left border-collapse">
-            <thead class="sticky top-0 bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
+            <thead class="sticky top-0 bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
                 <th class="p-2 border-b border-slate-200">Source</th>
                 <th class="p-2 border-b border-slate-200">Register</th>
-                <th class="p-2 border-b border-slate-200">Value</th>
-                <th class="p-2 border-b border-slate-200">Adjustment Range</th>
+                <th class="p-2 border-b border-slate-200">Preset</th>
+                <th class="p-2 border-b border-slate-200">Adjust</th>
+                <th class="p-2 border-b border-slate-200">Range</th>
                 <th class="p-2 border-b border-slate-200">Unit</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
             {% for row in rows %}
-            <tr class="text-sm">
+            <tr class="text-sm" data-adjustable="{% if row.is_adjustable() %}true{% else %}false{% endif %}">
                 <td class="p-2 text-xs font-semibold text-slate-500">{{ row.source }}</td>
-                <td class="p-2 font-medium text-slate-700">{{ row.name() }}</td>
+                <td class="p-2 font-medium text-slate-700">
+                    <button type="button"
+                            class="text-left text-slate-700 hover:text-blue-600 hover:underline"
+                            hx-get="/run-cycle/register-info/{{ row.source_slug() }}/{{ row.name() }}"
+                            hx-target="#global-modal-layer"
+                            hx-swap="innerHTML">
+                        {{ row.name() }}
+                    </button>
+                </td>
                 <td class="p-2 font-mono {% if row.has_value() %}text-slate-800{% else %}text-slate-400{% endif %}">
                     {{ row.formatted_value() }}
                 </td>
-                <td class="p-2 font-mono text-xs {% if row.is_adjustable() %}text-slate-700{% else %}text-slate-400{% endif %}">
-                    {{ row.range_label() }}
+                <td class="p-2">
+                    {% if row.is_adjustable() %}
+                    <input type="text"
+                           name="adjustments[{{ row.name() }}]"
+                           value="{% if let Some(val) = row.preset_input_value() %}{{ val }}{% endif %}"
+                           autocomplete="off"
+                           inputmode="decimal"
+                           data-keyboard="float"
+                           data-base-value="{% if let Some(val) = row.preset_input_value() %}{{ val }}{% endif %}"
+                           data-min="{% if let Some(val) = row.adjustment_min_value() %}{{ val }}{% endif %}"
+                           data-max="{% if let Some(val) = row.adjustment_max_value() %}{{ val }}{% endif %}"
+                           class="run-cycle-adjustment-input w-full min-w-[7rem] rounded border border-slate-300 bg-white px-2 py-1 text-right font-mono text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    {% else %}
+                    <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Fixed
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="p-2">
+                    {% if row.is_adjustable() %}
+                    <div class="font-mono text-[11px] text-slate-600">
+                        {% if let Some(min_label) = row.adjustment_min_value() %}
+                        {{ min_label }}
+                        {% endif %}
+                        <span class="text-slate-400">..</span>
+                        {% if let Some(max_label) = row.adjustment_max_value() %}
+                        {{ max_label }}
+                        {% endif %}
+                    </div>
+                    <div class="text-[10px] uppercase tracking-wide text-slate-400">Full: {{ row.full_range_label() }}</div>
+                    {% else %}
+                    <div class="text-[11px] text-slate-400">Not adjustable</div>
+                    <div class="text-[10px] uppercase tracking-wide text-slate-400">Full: {{ row.full_range_label() }}</div>
+                    {% endif %}
                 </td>
                 <td class="p-2 text-slate-500">{{ row.unit() }}</td>
             </tr>
             {% endfor %}
             </tbody>
         </table>
+        <div class="h-[30vh]"></div>
+        </div>
     </div>
     {% endif %}
-</div>
+</form>
+
+<script>
+    (() => {
+        const form = document.querySelector("#run-cycle-adjustments-form");
+        if (!form) return;
+
+        const updateInputState = (input) => {
+            const base = (input.dataset.baseValue || "").trim();
+            const current = input.value.trim();
+            const min = (input.dataset.min || "").trim();
+            const max = (input.dataset.max || "").trim();
+
+            if (base && current !== base) {
+                input.classList.add("bg-amber-50", "border-amber-400", "text-slate-900", "font-semibold");
+            } else {
+                input.classList.remove("bg-amber-50", "border-amber-400", "text-slate-900", "font-semibold");
+            }
+
+            input.setCustomValidity("");
+            const currentNum = Number(current);
+            const minNum = Number(min);
+            const maxNum = Number(max);
+            if (!Number.isNaN(currentNum) && !Number.isNaN(minNum) && !Number.isNaN(maxNum)) {
+                if (currentNum < minNum || currentNum > maxNum) {
+                    input.setCustomValidity(`Value must be between ${min} and ${max}.`);
+                }
+            }
+        };
+
+        form.querySelectorAll(".run-cycle-adjustment-input").forEach((input) => {
+            updateInputState(input);
+            input.addEventListener("input", () => updateInputState(input));
+        });
+    })();
+</script>

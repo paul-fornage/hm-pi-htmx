@@ -2,18 +2,24 @@ use crate::views::run_cycle::weld_file_ops;
 use crate::views::run_cycle::motion_file_ops;
 use askama::Template;
 use askama_web::WebTemplate;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{Html, IntoResponse};
+use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use crate::hx_trigger::HxTrigger;
+use crate::views::miller_info::register_details_modal::RegisterModalTemplate;
 use crate::views::miller_info::register_view::AnalogRegisterTemplate;
+use crate::views::motion_profile::motion_profile::MotionProfile;
 use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
 use crate::views::run_cycle::{profiles_match, RunCycleFeedbackTemplate};
+use crate::views::shared::WriteErrorModalTemplate;
 use crate::views::{motion_profile, welder_profile};
 use crate::{error_targeted, warn_targeted, AppState};
 use crate::file_io::FixedDiskFile;
 use crate::miller::miller_register_definitions;
 use crate::plc::plc_register_definitions;
+use crate::views::welder_profile::weld_profile::WeldProfile;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
 use crate::views::schedule_adjustments::allowed_adjustments::AdjustmentRowDisplay;
@@ -181,8 +187,22 @@ impl RunCycleAnalogRegisterRow {
         self.register.register_info.unit_string()
     }
 
+    pub fn source_slug(&self) -> &'static str {
+        match self.source {
+            "ClearCore" => "clearcore",
+            "Welder" => "welder",
+            _ => "unknown",
+        }
+    }
+
     pub fn formatted_value(&self) -> String {
         self.register.formatted_value()
+    }
+
+    pub fn preset_input_value(&self) -> Option<String> {
+        self.register
+            .raw_value
+            .map(|raw| self.register.register_info.formatted_value(Some(raw)))
     }
 
     pub fn has_value(&self) -> bool {
@@ -204,6 +224,27 @@ impl RunCycleAnalogRegisterRow {
         }
     }
 
+    pub fn adjustment_min_value(&self) -> Option<String> {
+        self.adjustment
+            .map(|range| self.register.register_info.formatted_value(Some(range.min_raw)))
+    }
+
+    pub fn adjustment_max_value(&self) -> Option<String> {
+        self.adjustment
+            .map(|range| self.register.register_info.formatted_value(Some(range.max_raw)))
+    }
+
+    pub fn full_range_label(&self) -> String {
+        let info = self.register.register_info;
+        let min_label = info.formatted_value(Some(info.min_value));
+        let max_label = info.formatted_value(Some(info.max_value));
+        if info.min_value == info.max_value {
+            min_label
+        } else {
+            format!("{min_label}..{max_label}")
+        }
+    }
+
     pub fn is_adjustable(&self) -> bool {
         match &self.adjustment {
             Some(range) => range.is_adjustable(),
@@ -220,6 +261,71 @@ pub struct RunCycleAnalogRegistersTemplate {
     pub error_message: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct RunCycleRegisterInfoPath {
+    source: String,
+    register_name: String,
+}
+
+pub async fn run_cycle_register_info_modal(
+    State(state): State<AppState>,
+    Path(path): Path<RunCycleRegisterInfoPath>,
+) -> impl IntoResponse {
+    let source = path.source.trim().to_ascii_lowercase();
+    let register_name = path.register_name.trim().to_string();
+
+    let register_rows = run_cycle_analog_registers(State(state)).await;
+    if let Some(error_message) = &register_rows.error_message {
+        warn_targeted!(HTTP, "Run cycle register info unavailable: {}", error_message);
+        return info_modal_error(error_message.clone());
+    }
+
+    let row = register_rows.rows.iter().find(|row| {
+        row.name() == register_name && row.source_slug() == source
+    });
+
+    let Some(row) = row else {
+        warn_targeted!(
+            HTTP,
+            "Run cycle register info not found: source='{}', name='{}'",
+            source,
+            register_name
+        );
+        return info_modal_error(format!("Register '{register_name}' not found."));
+    };
+
+    if !row.has_value() {
+        warn_targeted!(
+            HTTP,
+            "Run cycle register info missing preset value for '{}'",
+            register_name
+        );
+        return info_modal_error(format!("Preset value missing for '{register_name}'."));
+    }
+
+    let value = row.formatted_value();
+    let preset_value = if row.unit().is_empty() {
+        value
+    } else {
+        format!("{} {}", value, row.unit())
+    };
+
+    let template = RegisterModalTemplate {
+        meta: row.register.register_info.meta,
+        preset_value: Some(preset_value),
+    };
+
+    Html(template.render().unwrap())
+}
+
+fn info_modal_error(message: String) -> Html<String> {
+    let template = WriteErrorModalTemplate {
+        title: "Info Unavailable".to_string(),
+        message,
+    };
+    Html(template.render().unwrap())
+}
+
 #[derive(Clone, Copy)]
 pub struct RunCycleAdjustmentRange {
     pub min_semantic: f32,
@@ -233,6 +339,140 @@ impl RunCycleAdjustmentRange {
     pub fn is_adjustable(&self) -> bool {
         self.min_semantic != self.max_semantic
     }
+}
+
+pub struct RunCycleAdjustedProfiles {
+    pub weld_profile: WeldProfile,
+    pub motion_profile: MotionProfile,
+    pub adjusted_registers: Vec<String>,
+}
+
+pub fn apply_adjustments_to_profiles(
+    weld_profile: &WeldProfile,
+    motion_profile_data: &MotionProfile,
+    allowed_adjustments: &AllowedAdjustments,
+    adjustments: &HashMap<String, String>,
+) -> Result<RunCycleAdjustedProfiles, String> {
+    let mut adjusted_weld = weld_profile.clone();
+    let mut adjusted_motion = motion_profile_data.clone();
+    let mut seen_adjustments: HashSet<String> = HashSet::new();
+    let mut adjusted_registers: Vec<String> = Vec::new();
+
+    for info in motion_profile::MOTION_PROFILE_ANALOG_REGISTERS.iter() {
+        let name = info.meta.name;
+        let Some(range_row) = allowed_adjustments.get(name) else {
+            if adjustments.contains_key(name) {
+                return Err(format!("Register '{name}' is not adjustable."));
+            }
+            continue;
+        };
+
+        let base_raw = motion_profile_analog_value(&motion_profile_data.raw_profile, info)
+            .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+        let range = compute_adjustment_range(info, Some(base_raw), range_row)
+            .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+
+        if !range.is_adjustable() {
+            if adjustments.contains_key(name) {
+                return Err(format!("Register '{name}' is fixed and cannot be adjusted."));
+            }
+            continue;
+        }
+
+        let input = adjustments
+            .get(name)
+            .ok_or_else(|| format!("Missing adjustment for '{name}'."))?;
+        let semantic_value = parse_adjustment_value(input, name)?;
+        let adjusted_raw = info.convert_to_raw(semantic_value);
+
+        if adjusted_raw < range.min_raw || adjusted_raw > range.max_raw {
+            let min_label = info.formatted_value(Some(range.min_raw));
+            let max_label = info.formatted_value(Some(range.max_raw));
+            return Err(format!(
+                "Adjustment for '{name}' must be between {min_label} and {max_label}."
+            ));
+        }
+
+        if !set_motion_profile_analog_value(&mut adjusted_motion.raw_profile, info, adjusted_raw) {
+            return Err(format!("Failed to apply adjustment for '{name}'."));
+        }
+
+        seen_adjustments.insert(name.to_string());
+        if adjusted_raw != base_raw {
+            adjusted_registers.push(name.to_string());
+        }
+    }
+
+    for info in welder_profile::WELD_PROFILE_ANALOG_REGISTERS.iter() {
+        let name = info.meta.name;
+        let Some(range_row) = allowed_adjustments.get(name) else {
+            if adjustments.contains_key(name) {
+                return Err(format!("Register '{name}' is not adjustable."));
+            }
+            continue;
+        };
+
+        let base_raw = weld_profile_analog_value(&weld_profile.raw_profile, info)
+            .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+        let range = compute_adjustment_range(info, Some(base_raw), range_row)
+            .ok_or_else(|| format!("Missing preset value for '{name}'."))?;
+
+        if !range.is_adjustable() {
+            if adjustments.contains_key(name) {
+                return Err(format!("Register '{name}' is fixed and cannot be adjusted."));
+            }
+            continue;
+        }
+
+        let input = adjustments
+            .get(name)
+            .ok_or_else(|| format!("Missing adjustment for '{name}'."))?;
+        let semantic_value = parse_adjustment_value(input, name)?;
+        let adjusted_raw = info.convert_to_raw(semantic_value);
+
+        if adjusted_raw < range.min_raw || adjusted_raw > range.max_raw {
+            let min_label = info.formatted_value(Some(range.min_raw));
+            let max_label = info.formatted_value(Some(range.max_raw));
+            return Err(format!(
+                "Adjustment for '{name}' must be between {min_label} and {max_label}."
+            ));
+        }
+
+        if !set_weld_profile_analog_value(&mut adjusted_weld.raw_profile, info, adjusted_raw) {
+            return Err(format!("Failed to apply adjustment for '{name}'."));
+        }
+
+        seen_adjustments.insert(name.to_string());
+        if adjusted_raw != base_raw {
+            adjusted_registers.push(name.to_string());
+        }
+    }
+
+    for name in adjustments.keys() {
+        if !seen_adjustments.contains(name) {
+            return Err(format!("Register '{name}' is not adjustable."));
+        }
+    }
+
+    Ok(RunCycleAdjustedProfiles {
+        weld_profile: adjusted_weld,
+        motion_profile: adjusted_motion,
+        adjusted_registers,
+    })
+}
+
+fn parse_adjustment_value(value: &str, name: &str) -> Result<f32, String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(format!("Adjusted value for '{name}' is empty."));
+    }
+    let parsed: f32 = trimmed
+        .parse()
+        .map_err(|_| format!("Adjusted value for '{name}' is not a number."))?;
+    if !parsed.is_finite() {
+        return Err(format!("Adjusted value for '{name}' is not a valid number."));
+    }
+    Ok(parsed)
 }
 
 
@@ -358,6 +598,47 @@ fn motion_profile_analog_value(
     }
 }
 
+fn set_motion_profile_analog_value(
+    profile: &mut RawMotionProfile,
+    info: &'static crate::views::shared::analog_register::AnalogRegisterInfo,
+    raw_value: u16,
+) -> bool {
+    // TODO: consolidate with motion_profile_analog_value mapping to avoid duplication.
+    let meta = info.meta;
+    if std::ptr::eq(meta, &plc_register_definitions::CYCLE_START_POS) {
+        profile.cycle_start_pos = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_END_POS) {
+        profile.cycle_end_pos = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_PARK_POS) {
+        profile.cycle_park_pos = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_WELD_SPEED) {
+        profile.cycle_weld_speed = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_REPOSITION_SPEED_X) {
+        profile.cycle_reposition_speed_x = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_REPOSITION_SPEED_Y) {
+        profile.cycle_reposition_speed_y = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_REPOSITION_SPEED_Z) {
+        profile.cycle_reposition_speed_z = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_WIRE_FEED_SPEED) {
+        profile.cycle_wire_feed_speed = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_VREF) {
+        profile.cycle_avc_vref = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_Z_STATIC_OFFSET) {
+        profile.cycle_z_static_offset = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AXIS_Z_TORCH_UP_OFFSET) {
+        profile.cycle_axis_z_torch_up_offset = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE) {
+        profile.cycle_touch_retract_reposition_distance = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_TOUCH_RETRACT_PROBE_SPEED) {
+        profile.cycle_touch_retract_probe_speed = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_TOUCH_RETRACT_FINAL_HEIGHT) {
+        profile.cycle_touch_retract_final_height = raw_value;
+    } else {
+        return false;
+    }
+    true
+}
+
 fn weld_profile_analog_value(
     profile: &RawWeldProfile,
     info: &'static crate::views::shared::analog_register::AnalogRegisterInfo,
@@ -410,4 +691,61 @@ fn weld_profile_analog_value(
     } else {
         None
     }
+}
+
+fn set_weld_profile_analog_value(
+    profile: &mut RawWeldProfile,
+    info: &'static crate::views::shared::analog_register::AnalogRegisterInfo,
+    raw_value: u16,
+) -> bool {
+    // TODO: consolidate with weld_profile_analog_value mapping to avoid duplication.
+    let meta = info.meta;
+    if std::ptr::eq(meta, &miller_register_definitions::PRESET_MIN_AMPERAGE) {
+        profile.preset_min_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::ARC_START_AMPERAGE) {
+        profile.arc_start_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::ARC_START_TIME) {
+        profile.arc_start_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::ARC_START_SLOPE_TIME) {
+        profile.arc_start_slope_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::ARC_START_AC_TIME) {
+        profile.arc_start_ac_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::HOT_START_TIME) {
+        profile.hot_start_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::AC_EN_AMPERAGE) {
+        profile.ac_en_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::AC_EP_AMPERAGE) {
+        profile.ac_ep_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::AC_BALANCE) {
+        profile.ac_balance = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::AC_FREQUENCY) {
+        profile.ac_frequency = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::WELD_AMPERAGE) {
+        profile.weld_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::PULSER_PPS) {
+        profile.pulser_pps = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::PULSER_PEAK_TIME) {
+        profile.pulser_peak_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::PREFLOW_TIME) {
+        profile.preflow_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::INITIAL_AMPERAGE) {
+        profile.initial_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::INITIAL_TIME) {
+        profile.initial_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::INITIAL_SLOPE_TIME) {
+        profile.initial_slope_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::MAIN_TIME) {
+        profile.main_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::FINAL_SLOPE_TIME) {
+        profile.final_slope_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::FINAL_AMPERAGE) {
+        profile.final_amperage = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::FINAL_TIME) {
+        profile.final_time = raw_value;
+    } else if std::ptr::eq(meta, &miller_register_definitions::HOT_WIRE_VOLTAGE) {
+        profile.hot_wire_voltage = raw_value;
+    } else {
+        return false;
+    }
+    true
 }

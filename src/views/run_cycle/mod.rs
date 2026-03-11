@@ -6,12 +6,13 @@ use axum::extract::State;
 use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use axum::http::{HeaderMap, HeaderValue};
 use serde::Deserialize;
+use std::collections::HashMap;
 use tokio::time::{Duration, Instant};
 
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use crate::error::HmPiError;
+use crate::file_io::FixedDiskFile;
 use crate::hx_trigger::HxTrigger;
 use crate::miller::miller_register_definitions;
 use crate::plc::plc_register_definitions;
@@ -25,8 +26,9 @@ use crate::views::shared::finger_status::finger_status_handler;
 use crate::views::welder_profile::file_operations as weld_file_ops;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
 use crate::views::welder_profile::weld_profile::{ProfileListEntry as WeldProfileListEntry, WeldProfile};
+use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
 use crate::views::{motion_profile, welder_profile};
-use adjustments::run_cycle_analog_registers;
+use adjustments::{run_cycle_analog_registers, apply_adjustments_to_profiles};
 use crate::views::run_cycle::adjustments::feedback_ok_with_triggers;
 
 const PROFILE_VERIFY_TIMEOUT: Duration = Duration::from_secs(5);
@@ -48,6 +50,7 @@ pub fn routes() -> Router<AppState> {
         .route(&page.url_with_path("/go-to-start"), post(go_to_start))
         .route(&page.url_with_path("/status"), get(run_cycle_status))
         .route(&page.url_with_path("/analog-registers"), get(run_cycle_analog_registers))
+        .route(&page.url_with_path("/register-info/{source}/{register_name}"), get(adjustments::run_cycle_register_info_modal))
 }
 
 pub async fn show_run_cycle(
@@ -188,36 +191,38 @@ pub async fn selected_profiles(
 
 pub async fn start_cycle_real(
     State(state): State<AppState>,
-    Form(form): Form<RunCycleForm>,
+    Form(form): Form<HashMap<String, String>>,
 ) -> impl IntoResponse {
     start_cycle(&state, &form, false).await
 }
 
 pub async fn start_cycle_simulate(
     State(state): State<AppState>,
-    Form(form): Form<RunCycleForm>,
+    Form(form): Form<HashMap<String, String>>,
 ) -> impl IntoResponse {
     start_cycle(&state, &form, true).await
 }
 
 async fn start_cycle(
     state: &AppState,
-    form: &RunCycleForm,
+    form: &HashMap<String, String>,
     simulate_weld: bool,
 ) -> impl IntoResponse {
+    let use_adjusted = use_adjusted_presets(form);
     debug_targeted!(
         HTTP,
-        "Run cycle start requested: weld='{:?}', motion='{:?}', simulate={}",
-        form.weld_profile,
-        form.motion_profile,
-        simulate_weld
+        "Run cycle start requested: weld='{:?}', motion='{:?}', simulate={}, use_adjusted={}",
+        form.get("weld_profile"),
+        form.get("motion_profile"),
+        simulate_weld,
+        use_adjusted
     );
 
-    let weld_name = match form.weld_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+    let weld_name = match extract_profile_name(form, "weld_profile") {
         Some(name) => name,
         None => return feedback_err("Select both profiles before starting".to_string()),
     };
-    let motion_name = match form.motion_profile.as_deref().map(str::trim).filter(|name| !name.is_empty()) {
+    let motion_name = match extract_profile_name(form, "motion_profile") {
         Some(name) => name,
         None => return feedback_err("Select both profiles before starting".to_string()),
     };
@@ -236,11 +241,11 @@ async fn start_cycle(
         return feedback_err("ClearCore not homed".to_string());
     }
 
-    let weld_profile = match weld_file_ops::load_profile(weld_name).await {
+    let weld_profile = match weld_file_ops::load_profile(&weld_name).await {
         Ok(profile) => profile,
         Err(err) => return feedback_err(format!("Failed to load weld profile: {}", err)),
     };
-    let motion_profile = match motion_file_ops::load_profile(motion_name).await {
+    let motion_profile = match motion_file_ops::load_profile(&motion_name).await {
         Ok(profile) => profile,
         Err(err) => return feedback_err(format!("Failed to load motion profile: {}", err)),
     };
@@ -272,6 +277,98 @@ async fn start_cycle(
         Some(true) => {}
         Some(false) => return feedback_err("Machine is not at the start position".to_string()),
         None => return feedback_err("Unable to read start position".to_string()),
+    }
+
+    if use_adjusted {
+        let adjustments = extract_adjustments(form);
+        if adjustments.is_empty() {
+            return feedback_err("Adjusted presets requested, but no values were provided.".to_string());
+        }
+
+        let allowed_adjustments = match AllowedAdjustments::load().await {
+            Ok(mut form) => {
+                form.conform_to_schema();
+                form
+            }
+            Err(err) => {
+                warn_targeted!(HTTP, "Failed to load allowed adjustments: {}", err);
+                return feedback_err("Adjusted presets are unavailable because adjustment limits failed to load.".to_string());
+            }
+        };
+
+        let adjusted_profiles = match apply_adjustments_to_profiles(
+            &weld_profile,
+            &motion_profile,
+            &allowed_adjustments,
+            &adjustments,
+        ) {
+            Ok(profiles) => profiles,
+            Err(err) => {
+                warn_targeted!(HTTP, "Adjusted preset validation failed: {}", err);
+                return feedback_err(err);
+            }
+        };
+
+        if adjusted_profiles.adjusted_registers.is_empty() {
+            info_targeted!(HTTP, "Adjusted presets enabled with no value changes");
+        } else {
+            info_targeted!(
+                HTTP,
+                "Applying {} adjusted preset values",
+                adjusted_profiles.adjusted_registers.len()
+            );
+        }
+
+        let weld_diff = adjusted_profiles
+            .weld_profile
+            .raw_profile
+            .modbus_diff(&state.miller_registers)
+            .await;
+        let motion_diff = adjusted_profiles
+            .motion_profile
+            .raw_profile
+            .modbus_diff(&state.clearcore_registers)
+            .await;
+
+        if let Err(err) = RawWeldProfile::apply_diff(&state.miller_registers, weld_diff).await {
+            error_targeted!(MODBUS, "Failed to apply adjusted weld profile: {}", err);
+            return feedback_err(format!("Failed to apply adjusted weld presets: {}", err));
+        }
+
+        if let Err(err) = RawMotionProfile::apply_diff(&state.clearcore_registers, motion_diff).await {
+            error_targeted!(MODBUS, "Failed to apply adjusted motion profile: {}", err);
+            return feedback_err(format!("Failed to apply adjusted motion presets: {}", err));
+        }
+
+        if let Err(err) = wait_for_profiles(
+            &state,
+            &adjusted_profiles.weld_profile,
+            &adjusted_profiles.motion_profile,
+        )
+        .await
+        {
+            let weld_diff = adjusted_profiles
+                .weld_profile
+                .raw_profile
+                .modbus_diff(&state.miller_registers)
+                .await;
+            let motion_diff = adjusted_profiles
+                .motion_profile
+                .raw_profile
+                .modbus_diff(&state.clearcore_registers)
+                .await;
+            if !weld_diff.is_empty() {
+                error_targeted!(MODBUS, "Adjusted weld profile mismatch: {:#?}", weld_diff);
+            }
+            if !motion_diff.is_empty() {
+                error_targeted!(MODBUS, "Adjusted motion profile mismatch: {:#?}", motion_diff);
+            }
+            warn_targeted!(HTTP, "Adjusted presets failed readback: {}", err);
+            return feedback_err(
+                "Adjusted presets failed to apply. Verify controller limits and try again."
+                    .to_string(),
+            );
+        }
     }
 
     if let Err(err) = state
@@ -620,3 +717,43 @@ fn feedback_err(message: String) -> Html<String> {
     )
 }
 
+fn extract_profile_name(form: &HashMap<String, String>, key: &str) -> Option<String> {
+    form.get(key)
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+fn use_adjusted_presets(form: &HashMap<String, String>) -> bool {
+    match form.get("use_adjusted_presets") {
+        Some(value) => {
+            let normalized = value.trim().to_ascii_lowercase();
+            matches!(normalized.as_str(), "true" | "on" | "1" | "yes")
+        }
+        None => false,
+    }
+}
+
+fn extract_adjustments(form: &HashMap<String, String>) -> HashMap<String, String> {
+    let mut adjustments = HashMap::new();
+    for (key, value) in form.iter() {
+        if let Some(name) = parse_adjustment_key(key) {
+            adjustments.insert(name, value.trim().to_string());
+        }
+    }
+    adjustments
+}
+
+fn parse_adjustment_key(key: &str) -> Option<String> {
+    const PREFIX: &str = "adjustments[";
+    if key.starts_with(PREFIX) && key.ends_with(']') {
+        let name = &key[PREFIX.len()..key.len() - 1];
+        if name.trim().is_empty() {
+            None
+        } else {
+            Some(name.to_string())
+        }
+    } else {
+        None
+    }
+}

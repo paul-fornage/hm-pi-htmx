@@ -13,7 +13,7 @@
 {% block content %}
 
 
-<div id="view-run-cycle" class="bg-gray-100 p-4 rounded-lg mb-5 border border-gray-300">
+<div id="view-run-cycle" class="bg-gray-100 p-4 rounded-lg mb-5 border border-gray-300 h-[70vh] overflow-hidden flex flex-col gap-4">
     <div class="flex justify-between mb-4">
         <h2 class="text-2xl font-bold text-slate-700 align-middle my-auto">Run Cycle</h2>
     </div>
@@ -108,29 +108,41 @@
         </div>
         <div id="run-cycle-controls" class="h-full rounded-lg border border-slate-200 bg-white/70 p-3">
             <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Cycle actions</div>
-            <div class="mt-2 grid gap-2">
+            <label class="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                <input id="run-cycle-use-adjustments"
+                       type="checkbox"
+                       name="use_adjusted_presets"
+                       value="true"
+                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <span>Use adjusted presets</span>
+            </label>
+            <div id="run-cycle-run-actions" class="mt-2 grid gap-2 group">
                 <button id="run-cycle-start-button"
                         type="button"
                         hx-post="/run-cycle/start"
-                        hx-include="#run-cycle-form"
+                        hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
                         hx-target="#run-cycle-feedback"
                         hx-swap="innerHTML"
                         hx-disabled-elt=".run-cycle-action"
-                        hx-indicator="#run-cycle-action-indicator"
-                        class="run-cycle-action w-full px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                    Run Cycle
+                        hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
+                        class="run-cycle-action run-cycle-run-action w-full px-4 py-2 bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-70 group-[.htmx-request]:cursor-wait">
+                    <span class="group-[.htmx-request]:hidden">Run Cycle</span>
+                    <span class="hidden group-[.htmx-request]:inline">Starting...</span>
                 </button>
                 <button id="run-cycle-simulate-button"
                         type="button"
                         hx-post="/run-cycle/start-simulate"
-                        hx-include="#run-cycle-form"
+                        hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
                         hx-target="#run-cycle-feedback"
                         hx-swap="innerHTML"
                         hx-disabled-elt=".run-cycle-action"
-                        hx-indicator="#run-cycle-action-indicator"
-                        class="run-cycle-action w-full px-4 py-2 bg-slate-600 text-white border-none cursor-pointer rounded hover:bg-slate-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                    Simulate Motion
+                        hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
+                        class="run-cycle-action run-cycle-run-action w-full px-4 py-2 bg-slate-600 text-white border-none cursor-pointer rounded hover:bg-slate-700 font-bold disabled:opacity-50 disabled:cursor-not-allowed group-[.htmx-request]:opacity-70 group-[.htmx-request]:cursor-wait">
+                    <span class="group-[.htmx-request]:hidden">Simulate Motion</span>
+                    <span class="hidden group-[.htmx-request]:inline">Simulating...</span>
                 </button>
+            </div>
+            <div class="mt-2 grid gap-2">
                 <button id="run-cycle-go-to-start-button"
                         type="button"
                         hx-post="/run-cycle/go-to-start"
@@ -146,10 +158,12 @@
     </div>
 
     <div id="run-cycle-analog-registers"
-         class="mt-4"
+         class="flex-1 min-h-0"
          hx-get="/run-cycle/analog-registers"
          hx-trigger="load, run-cycle-presets-loaded"
          hx-swap="morph:innerHTML">
     </div>
 </div>
+
+<div id="global-modal-layer" hx-on:close-modal="this.innerHTML = ''"></div>
 {% endblock %}

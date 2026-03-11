@@ -25,6 +25,13 @@
                 </p>
             </div>
 
+            {% if let Some(preset_value) = preset_value %}
+            <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                <span class="text-xs font-bold uppercase text-slate-400">Preset value</span>
+                <div class="font-mono text-sm text-slate-700">{{ preset_value }}</div>
+            </div>
+            {% endif %}
+
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 p-2 rounded border border-slate-200">
                     <span class="text-xs font-bold uppercase text-slate-400">Type</span>

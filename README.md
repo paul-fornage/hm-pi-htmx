@@ -43,7 +43,7 @@ TODO:
 
 I'm adding a new feature to my firmware, when a user is on the 'run cycle' page, at the bottom should be a form that lets them apply 'adjustments' within ranges laid out by admins in the 'operator adjustment' view. Idea being, an admin can decide what parameters can be tweaked by operators, and by how much, and then when an operator goes to run a cycle, they can choose a preset and apply their adjustments.
 
-Step 1 should be done already, so get started on step 2.
+Step 1, 2, and 3 should be done already, so get started on step 4.
 
 ## Step 1
 In the run-cycles page, add a view at the bottom that displays the preset value of all the analog registers in a table. Please re-use Rust from where they are edited, e.g. the code that defines the conversions and whatnot, not the html. For now, skip special case registers like 'post flow time', that is an enum and a scalar. When there is no preset selected, do not display anything. Create an event that is triggered when loading presets is successful that triggers this endpoint. On the first load, check if selected presets are already loaded, but also make sure I didn't already write this functionality. If I did, and the page already pre-loads something showing if the preset is already loaded, just add the event to the response. I already have an HxTrigger struct that I can use to trigger events. Please use that.
