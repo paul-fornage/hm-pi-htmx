@@ -254,7 +254,7 @@ impl RunCycleAnalogRegisterRow {
 }
 
 #[derive(Template, WebTemplate)]
-#[template(path = "components/run-cycle/analog-registers.html")]
+#[template(path = "components/run-cycle/register-adjustments.html")]
 pub struct RunCycleAnalogRegistersTemplate {
     pub rows: Vec<RunCycleAnalogRegisterRow>,
     pub missing_preview: Option<String>,
