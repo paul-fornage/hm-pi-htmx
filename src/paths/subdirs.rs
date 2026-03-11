@@ -1,10 +1,10 @@
+use crate::paths::{local_data_root_ensuring_exists, DEFAULT_ROOT_FOLDER};
+use futures::future::join_all;
+use num_enum::IntoPrimitive;
 use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
-use futures::future::join_all;
-use num_enum::{IntoPrimitive};
 use strum::VariantArray;
-use crate::paths::{local_data_root_ensuring_exists, DEFAULT_ROOT_FOLDER};
 
 #[derive(Debug, Clone, Copy, IntoPrimitive, VariantArray)]
 #[repr(u8)]

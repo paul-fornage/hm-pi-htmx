@@ -1,5 +1,21 @@
-use crate::views::run_cycle::weld_file_ops;
+use crate::file_io::FixedDiskFile;
+use crate::hx_trigger::HxTrigger;
+use crate::miller::miller_register_definitions;
+use crate::plc::plc_register_definitions;
+use crate::views::miller_info::register_details_modal::RegisterModalTemplate;
+use crate::views::miller_info::register_view::AnalogRegisterTemplate;
+use crate::views::motion_profile::motion_profile::MotionProfile;
+use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
 use crate::views::run_cycle::motion_file_ops;
+use crate::views::run_cycle::weld_file_ops;
+use crate::views::run_cycle::{profiles_match, RunCycleFeedbackTemplate};
+use crate::views::schedule_adjustments::allowed_adjustments::AdjustmentRowDisplay;
+use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
+use crate::views::shared::WriteErrorModalTemplate;
+use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
+use crate::views::welder_profile::weld_profile::WeldProfile;
+use crate::views::{motion_profile, welder_profile};
+use crate::{error_targeted, warn_targeted, AppState};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Path, State};
@@ -7,22 +23,6 @@ use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{Html, IntoResponse};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
-use crate::hx_trigger::HxTrigger;
-use crate::views::miller_info::register_details_modal::RegisterModalTemplate;
-use crate::views::miller_info::register_view::AnalogRegisterTemplate;
-use crate::views::motion_profile::motion_profile::MotionProfile;
-use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
-use crate::views::run_cycle::{profiles_match, RunCycleFeedbackTemplate};
-use crate::views::shared::WriteErrorModalTemplate;
-use crate::views::{motion_profile, welder_profile};
-use crate::{error_targeted, warn_targeted, AppState};
-use crate::file_io::FixedDiskFile;
-use crate::miller::miller_register_definitions;
-use crate::plc::plc_register_definitions;
-use crate::views::welder_profile::weld_profile::WeldProfile;
-use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
-use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
-use crate::views::schedule_adjustments::allowed_adjustments::AdjustmentRowDisplay;
 
 pub async fn run_cycle_analog_registers(
     State(state): State<AppState>,

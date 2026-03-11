@@ -1,5 +1,3 @@
-
-
 use serde::{Deserialize, Serialize};
 
 // Read coils (function code 0x01)

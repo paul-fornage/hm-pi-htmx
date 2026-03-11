@@ -1,6 +1,5 @@
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
-use crate::plc::plc_register_definitions::IN_ESTOP;
 
 
 pub struct WatchedRegister {

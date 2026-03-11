@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use crate::error::{HmPiError, Result};
 // Using the same imports as the original file
 use crate::modbus::modbus_transaction_types::*;
 use crate::modbus::{ModbusAddressType, ModbusManager, ModbusState, ModbusValue, RegisterAddress};
-use crate::error::{HmPiError, Result};
-use crate::{debug_targeted, error_targeted, trace_targeted, warn_targeted};
+use crate::{error_targeted, trace_targeted, warn_targeted};
 
 /// Defines a contiguous chunk of Modbus registers to be polled.
 #[derive(Debug)]

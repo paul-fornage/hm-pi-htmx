@@ -1,18 +1,18 @@
-use tokio_modbus::client::tcp;
+use crate::error::{HmPiError, Result};
+use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
+use crate::modbus::modbus_transaction_types::*;
+use crate::paths::subdirs::Subdir;
+use crate::{error_targeted, info_targeted, trace_targeted, warn_targeted};
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Mutex, MutexGuard, RwLock, RwLockWriteGuard};
 use tokio::time::timeout;
+use tokio_modbus::client::tcp;
 use tokio_modbus::client::{Client, Context, Reader, Writer};
-use serde::{Deserialize, Serialize};
 use tokio_modbus::prelude::SlaveContext;
-use crate::error::{HmPiError, Result};
-use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
-use crate::{error_targeted, info_targeted, warn_targeted, trace_targeted, debug_targeted};
-use crate::modbus::modbus_transaction_types::*;
-use crate::paths::subdirs::Subdir;
 
 const LOCK_TIMEOUT: Duration = Duration::from_secs(2);
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(1);

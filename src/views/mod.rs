@@ -13,22 +13,10 @@ mod users;
 mod usb_transfer;
 mod schedule_adjustments;
 
+use crate::auth::AuthLevel;
+use crate::AppState;
 use axum::Router;
 use strum::VariantArray;
-use crate::AppState;
-use crate::auth::AuthLevel;
-
-pub use connections::ConnectionsTemplate;
-pub use miller_info::MillerInfoTemplate;
-pub use machine_config::MachineConfigTemplate;
-pub use welder_profile::WelderProfileTemplate;
-pub use motion_profile::MotionProfileTemplate;
-pub use clearcore_static_config::ClearcoreConfigTemplate;
-pub use clearcore_manual_control::ManualControlTemplate;
-pub use run_cycle::RunCycleTemplate;
-pub use clearcore_logs::ClearcoreLogsTemplate;
-pub use users::UsersTemplate;
-pub use usb_transfer::UsbTransferTemplate;
 
 // Define the available views (tabs) in the application
 #[derive(PartialEq, Eq, Clone, Copy, strum::VariantArray)]
@@ -152,7 +140,6 @@ pub async fn build_header_context(state: &AppState, active_tab: AppView) -> Head
 
 pub trait ViewTemplate{
     fn get_view() -> &'static AppView { &Self::APP_VIEW_VARIANT }
-    fn all_views() -> &'static [AppView] { AppView::all() }
     fn required_auth() -> AuthLevel { Self::APP_VIEW_VARIANT.required_auth() }
     const APP_VIEW_VARIANT: AppView;
     

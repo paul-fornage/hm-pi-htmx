@@ -1,6 +1,6 @@
-use std::fmt::{Display};
 use askama::Template;
 use askama_web::WebTemplate;
+use std::fmt::Display;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/shared/result-feedback.html")]

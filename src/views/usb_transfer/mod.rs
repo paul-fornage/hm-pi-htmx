@@ -3,9 +3,8 @@ mod templates;
 mod transfer;
 mod types;
 
-pub use templates::UsbTransferTemplate;
-use axum::Router;
 use crate::AppState;
+use axum::Router;
 
 pub fn routes() -> Router<AppState> {
     handlers::routes()

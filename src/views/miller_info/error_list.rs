@@ -1,9 +1,7 @@
-
-use askama::Template;
-use askama_web::WebTemplate;
 use crate::miller::miller_error_registers::{ErrorReg1, ErrorReg2, ErrorReg3, MillerErrorRegister};
 use crate::miller::miller_register_types::WelderModel;
-use crate::warn_targeted;
+use askama::Template;
+use askama_web::WebTemplate;
 
 /// Component that displays decoded error lists from the three error registers.
 /// Decoding is based on the configured welder model.

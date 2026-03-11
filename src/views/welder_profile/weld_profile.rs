@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::raw_weld_profile::RawWeldProfile;
+use serde::{Deserialize, Serialize};
 
 /// Complete welding profile including metadata and all register values.
 /// This is the top-level structure that gets serialized to/from disk.

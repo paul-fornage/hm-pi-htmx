@@ -1,15 +1,13 @@
+use crate::{error_targeted, info_targeted, AppState};
+use askama::Template;
 use axum::{
-    extract::{State, Form},
-    response::{Html, IntoResponse},
+    extract::{Form, State},
     http::StatusCode,
+    response::{Html, IntoResponse},
 };
 use serde::Deserialize;
-use std::net::SocketAddr;
-use askama::Template;
-use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState};
 
 use crate::modbus::modbus_transaction_types::*;
-use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
 
 // --- State Management ---
 

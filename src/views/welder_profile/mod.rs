@@ -9,24 +9,24 @@ pub mod file_system_templates;
 pub mod special_case_registers;
 pub mod description_edit_modal;
 
+use crate::miller::miller_register_definitions;
+use crate::modbus::{RegisterMetadata};
+use crate::views::shared::analog_register::AnalogRegisterInfo;
+use crate::views::shared::boolean_register::BooleanRegisterInfo;
+use crate::views::shared::{mb_read_bool_helper, mb_read_word_helper, AnalogEditModalTemplate, BooleanEditModalTemplate, EditableAnalogRegister, EditableBooleanRegister, WriteErrorModalTemplate};
+use crate::views::welder_profile::description_edit_modal::DescriptionEditModalTemplate;
+use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
+use crate::views::{AppView, HeaderContext, ViewTemplate};
+use crate::{debug_targeted, warn_targeted, AppState};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse};
 use axum::routing::{delete, get, post};
 use axum::{Form, Router};
-use serde::Deserialize;
-use crate::views::{AppView, HeaderContext, ViewTemplate};
-use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
-use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress, RegisterMetadata};
-use crate::miller::miller_register_definitions;
-use crate::views::shared::analog_register::AnalogRegisterInfo;
-use crate::{debug_targeted, warn_targeted, AppState};
+use register_edit_modal::{EnumEditModalTemplate, PolarityEditModalTemplate, PostflowEditModalTemplate};
 use register_view::{EditableEnumRegister, EditablePostflowRegister};
-use register_edit_modal::{EnumEditModalTemplate, PostflowEditModalTemplate, PolarityEditModalTemplate};
-use crate::views::shared::boolean_register::BooleanRegisterInfo;
-use crate::views::welder_profile::description_edit_modal::DescriptionEditModalTemplate;
-use crate::views::welder_profile::file_system_handlers::{handle_delete_profile_confirm, handle_get_profile_list, handle_load_apply, handle_load_modal, handle_load_preview, handle_save, handle_save_as_modal, handle_save_as_search, handle_save_as_submit};
+use serde::Deserialize;
 
 const BASE_URL: &str = "/welder-profile";
 

@@ -1,6 +1,6 @@
+use crate::{debug_targeted, trace_targeted};
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::{debug_targeted, trace_targeted};
 
 #[derive(Debug, Clone)]
 pub struct UsbDrive {

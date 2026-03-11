@@ -1,13 +1,13 @@
 use std::path::{Path, PathBuf};
-use std::{io};
+use std::io;
 
-use tokio::fs;
 use strum::VariantArray;
+use tokio::fs;
 
 use crate::file_io::validate_filename;
 use crate::paths::subdirs::Subdir;
 use crate::paths::DEFAULT_ROOT_FOLDER;
-use crate::{debug_targeted, warn_targeted, error_targeted, LOCAL_SUBDIR_PATHS};
+use crate::{debug_targeted, error_targeted, warn_targeted, LOCAL_SUBDIR_PATHS};
 
 use super::types::{ReloadTarget, TransferDirection, UsbTransferForm};
 

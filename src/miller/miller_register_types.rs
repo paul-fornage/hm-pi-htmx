@@ -1,9 +1,6 @@
-
-use std::fmt::{Debug, Display};
-use num_enum::{FromPrimitive, IntoPrimitive};
-use std::marker::PhantomData;
 pub use super::miller_error_registers::*;
-
+use num_enum::{FromPrimitive, IntoPrimitive};
+use std::fmt::{Debug, Display};
 
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

@@ -1,12 +1,12 @@
 mod sub_types;
 
-use num_enum::FromPrimitive;
-use sub_types::*;
 use crate::error::HmPiError;
+use crate::miller::miller_register_definitions::*;
 // use crate::miller::miller_memory::MillerMemory;
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::miller::miller_register_definitions::*;
 use crate::modbus::RegisterAddress;
+use num_enum::FromPrimitive;
+use sub_types::*;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

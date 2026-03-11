@@ -1,8 +1,8 @@
+use crate::modbus::RegisterMetadata;
+pub(crate) use crate::views::shared::analog_register::AnalogRegisterInfo;
 use askama::Template;
 use askama_web::WebTemplate;
-use crate::modbus::RegisterMetadata;
 use std::fmt::Display;
-pub(crate) use crate::views::shared::analog_register::AnalogRegisterInfo;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/welder-info/boolean-read-only-register.html")]

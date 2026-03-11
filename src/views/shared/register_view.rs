@@ -1,9 +1,8 @@
-use askama::Template;
-use askama_web::WebTemplate;
-use crate::modbus::RegisterMetadata;
 use crate::views::shared::analog_dword_register::AnalogDwordRegisterInfo;
 use crate::views::shared::analog_register::AnalogRegisterInfo;
 use crate::views::shared::boolean_register::BooleanRegisterInfo;
+use askama::Template;
+use askama_web::WebTemplate;
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/shared/editable-analog-register.html")]

@@ -93,7 +93,7 @@ pub async fn show_motion_profile(State(state): State<AppState>) -> impl IntoResp
 }
 
 pub async fn show_motion_profile_grid(
-    axum::extract::State(state): axum::extract::State<AppState>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
     let mut boolean_registers = Vec::new();
     for info in MOTION_PROFILE_BOOLEAN_REGISTERS.iter() {

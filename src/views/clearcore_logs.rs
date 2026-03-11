@@ -1,12 +1,12 @@
+use crate::udp_log_listener::{LOG_BUFFER, MAX_LOG_ENTRIES};
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
+use crate::{debug_targeted, AppState};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
-use crate::udp_log_listener::{LOG_BUFFER, MAX_LOG_ENTRIES};
-use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
-use crate::{debug_targeted, AppState};
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/clearcore-logs.html")]

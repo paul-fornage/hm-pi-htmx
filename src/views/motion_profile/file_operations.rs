@@ -1,9 +1,9 @@
-use std::path::{Path, PathBuf};
-use log::{info, warn};
-use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
-use crate::LOCAL_SUBDIR_PATHS;
-use crate::paths::subdirs::Subdir;
 use super::motion_profile::{MotionProfile, ProfileListEntry};
+use crate::file_io::{deserialize_json, serialize_json, FileIoError, NamedDiskFile};
+use crate::paths::subdirs::Subdir;
+use crate::LOCAL_SUBDIR_PATHS;
+use log::{info, warn};
+use std::path::{Path, PathBuf};
 
 pub fn profile_path() -> &'static Path {
     LOCAL_SUBDIR_PATHS.get(Subdir::MotionProfiles)

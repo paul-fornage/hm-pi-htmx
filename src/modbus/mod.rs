@@ -1,12 +1,12 @@
 mod modbus;
 
-use std::fmt::{Debug, Display, Formatter};
-use std::hash::Hash;
-use serde::{Deserialize, Serialize};
-pub use modbus::*;
 use crate::error::HmPiError;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::warn_targeted;
+pub use modbus::*;
+use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display, Formatter};
+use std::hash::Hash;
 
 pub mod modbus_transaction_types;
 pub mod cached_modbus;

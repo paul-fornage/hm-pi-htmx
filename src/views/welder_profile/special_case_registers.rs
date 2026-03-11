@@ -1,5 +1,5 @@
-use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
-use strum::{Display, IntoStaticStr, VariantArray, VariantNames};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+use strum::{Display, IntoStaticStr, VariantArray};
 
 // *Postflow Time, 0(Off) - 50S & Auto(51), Res: 1Sec
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

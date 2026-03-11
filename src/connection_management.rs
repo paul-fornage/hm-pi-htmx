@@ -1,15 +1,15 @@
+use crate::file_io::NamedDiskFile;
+use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
+use crate::{error_targeted, info_targeted, trace_targeted, warn_targeted, AppState};
+use askama::Template;
 use axum::{
-    extract::{State, Form},
-    response::{Html, IntoResponse},
+    extract::{Form, State},
     http::StatusCode,
+    response::{Html, IntoResponse},
 };
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::sync::atomic::Ordering;
-use askama::Template;
-use crate::{debug_targeted, info_targeted, warn_targeted, error_targeted, AppState, trace_targeted};
-use crate::file_io::NamedDiskFile;
-use crate::modbus::{ConnectionConfig, ModbusManager, ModbusState};
 
 #[derive(Template)]
 #[template(path = "components/connection.html")]

@@ -1,12 +1,12 @@
 use axum::extract::State;
+use axum::http::{HeaderMap, HeaderValue};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use axum::http::{HeaderMap, HeaderValue};
 
 use crate::hx_trigger::HxTrigger;
 use crate::paths::usb_drives::usb_mountpoints;
-use crate::views::{AppView, build_header_context};
+use crate::views::{build_header_context, AppView};
 use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 
 use super::templates::{

@@ -1,12 +1,12 @@
-use askama::Template;
-use askama_web::WebTemplate;
-use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
-use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
 use crate::file_io::FixedDiskFile;
-use crate::{AppState, error_targeted, info_targeted, warn_targeted};
 use crate::miller::miller_register_definitions::PS_UI_DISABLE;
 use crate::miller::miller_register_types::WelderModel;
 use crate::modbus::ModbusState;
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
+use crate::{error_targeted, info_targeted, warn_targeted, AppState};
+use askama::Template;
+use askama_web::WebTemplate;
+use axum::{extract::State, response::{IntoResponse, Response}, routing::{get, post}, Form, Router};
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/machine-config.html")]
@@ -15,7 +15,6 @@ pub struct MachineConfigTemplate {
     pub current_model: WelderModel,
     pub udp_logging_port: u16,
     pub ps_ui_disable: bool,
-    pub save_status: Option<Result<(), crate::error::HmPiError>>,
 }
 
 impl ViewTemplate for MachineConfigTemplate {
@@ -53,7 +52,6 @@ pub async fn show_machine_config(State(state): State<AppState>) -> impl IntoResp
         current_model: config.welder_model.clone(),
         udp_logging_port: config.udp_logging_port,
         ps_ui_disable: config.ps_ui_disable,
-        save_status: None,
     }
 }
 

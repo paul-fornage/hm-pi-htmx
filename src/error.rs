@@ -1,5 +1,5 @@
-use crate::modbus::{ModbusAddressType, ModbusValue, RegisterAddress};
 use crate::file_io::FileIoError;
+use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::views::clearcore_static_config::json_serde::CcConfigParseError;
 
 pub type Result<T> = std::result::Result<T, HmPiError>;

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 
 use crate::auth::{self, AuthLevel, UserRecord};
 use crate::file_io::FileIoError;
-use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
 use crate::{debug_targeted, error_targeted, info_targeted, AppState};
 
 #[derive(Template, WebTemplate)]

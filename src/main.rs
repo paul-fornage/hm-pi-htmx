@@ -17,32 +17,30 @@ pub mod hmi_logic;
 mod paths;
 mod file_io;
 
-use std::path::PathBuf;
-use tokio::sync::{broadcast};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::LazyLock;
-use axum::{
-    routing::{get, post},
-    Router,
-};
-use axum::response::{IntoResponse, Redirect};
-use tower_http::services::ServeDir;
 use crate::error::HmPiError;
 use crate::file_io::{FileIoError, FixedDiskFile, NamedDiskFile};
+use crate::hmi_logic::mb_watcher::cc_mb_watcher_task;
+use crate::hmi_logic::watched_registers;
 use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::{MILLER_CHUNKS, PS_UI_DISABLE};
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::modbus::{ModbusState};
-use crate::hmi_logic::mb_watcher::{cc_mb_watcher_task};
-use crate::hmi_logic::watched_registers;
-use crate::paths::local_data_root_ensuring_exists;
+use crate::modbus::ModbusState;
+use crate::paths::subdirs::{Subdir, SubdirPaths};
 use crate::plc::plc_register_definitions::CLEARCORE_CHUNKS;
 use crate::sse::connection_status::ConnectionStatus;
 use crate::sse::error_toast::ErrorToast;
 use crate::sse::SseEvent;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
-use crate::paths::subdirs::{Subdir, SubdirPaths};
 use crate::views::AppView;
+use axum::response::{IntoResponse, Redirect};
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::LazyLock;
+use tokio::sync::broadcast;
+use tower_http::services::ServeDir;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
 pub const CLEARCORE_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(5);

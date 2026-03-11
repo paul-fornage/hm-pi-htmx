@@ -1,9 +1,9 @@
 use crate::error::HmPiError;
 use crate::file_io::FileIoError;
 use crate::modbus::cached_modbus::CachedModbus;
-use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
-use crate::{error_targeted, info_targeted, warn_targeted};
 use crate::plc::plc_register_definitions::CONFIG_READY;
+use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
+use crate::{info_targeted, warn_targeted};
 
 impl ClearcoreConfig {
     pub async fn on_boot(clearcore_registers: &CachedModbus) -> Result<bool, HmPiError> {

@@ -1,7 +1,7 @@
+use super::special_case_registers::{ElectrodePolarity, PostFlowTime, TungstenPreset, WaveShape};
+use crate::modbus::RegisterMetadata;
 use askama::Template;
 use askama_web::WebTemplate;
-use crate::modbus::RegisterMetadata;
-use super::special_case_registers::{TungstenPreset, ElectrodePolarity, WaveShape, PostFlowTime};
 use num_enum::TryFromPrimitive;
 
 #[derive(Template, WebTemplate)]

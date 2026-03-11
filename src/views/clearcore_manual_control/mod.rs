@@ -1,19 +1,19 @@
-use askama::Template;
-use askama_web::WebTemplate;
-use axum::extract::State;
-use axum::response::{Html, IntoResponse};
-use axum::routing::{get, post};
-use axum::Router;
-use crate::AppState;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
-use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
+use crate::views::shared::finger_status::{finger_status_handler, FingerSide};
 use crate::views::shared::result_feedback::FeedbackResult;
 use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
+use crate::AppState;
+use askama::Template;
+use askama_web::WebTemplate;
+use axum::extract::State;
 use axum::extract::{Form, Path};
+use axum::response::{Html, IntoResponse};
+use axum::routing::{get, post};
+use axum::Router;
 use serde::Deserialize;
-use crate::views::shared::finger_status::{finger_status_handler, FingerSide, FingerStatusTemplate};
 
 macro_rules! read_or_bail {
     ($reg:ident) => {{

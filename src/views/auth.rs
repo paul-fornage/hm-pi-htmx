@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::auth::{self};
 use crate::hx_trigger::HxTrigger;
-use crate::views::{AppView, HeaderContext, build_header_context};
+use crate::views::{build_header_context, AppView, HeaderContext};
 use crate::{debug_targeted, AppState};
 
 #[derive(Template, WebTemplate)]
@@ -125,7 +125,7 @@ pub async fn sign_out(
     State(state): State<AppState>,
     Form(form): Form<SignOutForm>,
 ) -> Response {
-    *state.auth_state.write().await = crate::auth::AuthState::Operator;
+    *state.auth_state.write().await = auth::AuthState::Operator;
 
     let mut headers = HeaderMap::new();
     let should_redirect = form

@@ -1,14 +1,13 @@
-use axum::response::Sse;
-use tokio::sync::broadcast;
 use crate::hmi_logic::mb_watcher::WatchedRegister;
 use crate::miller::miller_register_definitions;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::ModbusValue;
 use crate::plc::plc_register_definitions;
-use crate::{error_targeted, info_targeted, trace_targeted, warn_targeted};
 use crate::sse::error_toast::ErrorToast;
-use crate::sse::SseEvent;
 use crate::sse::EstopStateUpdate;
+use crate::sse::SseEvent;
+use crate::{error_targeted, info_targeted, trace_targeted, warn_targeted};
+use tokio::sync::broadcast;
 
 pub fn touch_retract_passthrough(miller_regs: CachedModbus) -> WatchedRegister {
     WatchedRegister {

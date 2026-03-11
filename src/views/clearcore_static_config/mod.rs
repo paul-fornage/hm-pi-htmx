@@ -3,26 +3,25 @@ pub mod file_operations;
 pub mod json_serde;
 mod boot_procedure;
 
+use crate::plc::plc_register_definitions::*;
+use crate::views::shared::analog_dword_register::AnalogDwordRegisterInfo;
+use crate::views::shared::analog_register::AnalogRegisterInfo;
+use crate::views::shared::boolean_register::BooleanRegisterInfo;
+use crate::views::shared::modbus_helpers::mb_read_dword_helper;
+use crate::views::shared::register_edit_modal::AnalogDwordEditModalTemplate;
+use crate::views::shared::register_view::EditableDwordAnalogRegister;
+use crate::views::shared::result_feedback::FeedbackResult;
+use crate::views::shared::{mb_read_bool_helper, mb_read_word_helper, AnalogEditModalTemplate, BooleanEditModalTemplate, EditableAnalogRegister, EditableBooleanRegister, WriteErrorModalTemplate};
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
+use crate::{debug_targeted, error_targeted, warn_targeted, AppState};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Path, State};
 use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use serde::Deserialize;
-use crate::views::{AppView, HeaderContext, ViewTemplate, build_header_context};
-use crate::views::shared::{EditableBooleanRegister, EditableAnalogRegister, BooleanEditModalTemplate, AnalogEditModalTemplate, WriteErrorModalTemplate, mb_read_bool_helper, mb_read_word_helper};
-use crate::modbus::{ModbusValue, RegisterAddress, RegisterMetadata};
-use crate::views::shared::analog_register::AnalogRegisterInfo;
-use crate::{debug_targeted, error_targeted, warn_targeted, AppState};
-use crate::plc::plc_register_definitions::*;
 use config_data::ClearcoreConfig;
-use crate::views::shared::analog_dword_register::AnalogDwordRegisterInfo;
-use crate::views::shared::boolean_register::BooleanRegisterInfo;
-use crate::views::shared::modbus_helpers::mb_read_dword_helper;
-use crate::views::shared::register_edit_modal::AnalogDwordEditModalTemplate;
-use crate::views::shared::register_view::EditableDwordAnalogRegister;
-use crate::views::shared::result_feedback::FeedbackResult;
+use serde::Deserialize;
 
 const BASE_URL: &str = "/clearcore-config";
 

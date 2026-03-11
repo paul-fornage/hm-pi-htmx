@@ -1,14 +1,11 @@
-
+use crate::miller::miller_register_definitions::{get_miller_register_metadata};
+use crate::modbus::RegisterMetadata;
+use crate::{debug_targeted, info_targeted, warn_targeted};
 use askama::Template;
 use axum::{
     extract::Path,
     response::{Html, IntoResponse},
 };
-use std::fmt;
-use crate::{debug_targeted, info_targeted, trace_targeted, warn_targeted};
-use crate::miller::miller_register_definitions::{get_miller_register_metadata, MILLER_REGISTERS};
-use crate::modbus::RegisterMetadata;
-
 
 
 #[derive(Template)]

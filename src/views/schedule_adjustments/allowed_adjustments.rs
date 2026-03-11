@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use std::path::Path;
-use askama::Template;
-use askama_web::WebTemplate;
-use serde::{Deserialize, Serialize};
-use crate::file_io::{deserialize_json, serialize_json, FileIoError, FixedDiskFile, NamedDiskFile};
-use crate::modbus::RegisterMetadata;
+use crate::file_io::{deserialize_json, serialize_json, FileIoError, FixedDiskFile};
 use crate::paths::subdirs::Subdir;
 use crate::views::schedule_adjustments::adjustable_registers::ADJUSTABLE_REGISTERS;
 use crate::warn_targeted;
+use askama::Template;
+use askama_web::WebTemplate;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 // #[template(path = "components/allowed-adjustments/adjustment-row.html")]

@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
+use super::{CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS, CLEARCORE_STATIC_CONFIG_COILS, CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS};
 use crate::error::HmPiError;
-use crate::{error_targeted, warn_targeted};
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterMetadata};
 use crate::plc::plc_register_definitions::get_clearcore_register_metadata;
-use super::{CLEARCORE_STATIC_CONFIG_COILS, CLEARCORE_STATIC_CONFIG_ANALOG_REGISTERS, CLEARCORE_STATIC_CONFIG_DWORD_ANALOG_REGISTERS};
+use crate::{error_targeted, warn_targeted};
+use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ClearcoreConfig {

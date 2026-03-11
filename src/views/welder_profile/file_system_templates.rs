@@ -1,12 +1,11 @@
-use std::fmt::Display;
-use askama::Template;
-use askama_web::WebTemplate;
-use axum::response::IntoResponse;
-use serde_json::json;
 use super::weld_profile::ProfileListEntry;
-use axum::http::{HeaderMap, HeaderValue};
 use crate::error_targeted;
 use crate::hx_trigger::HxTrigger;
+use askama::Template;
+use askama_web::WebTemplate;
+use axum::http::{HeaderMap, HeaderValue};
+use axum::response::IntoResponse;
+use std::fmt::Display;
 
 pub const RELOAD_LIST_EVENT: HxTrigger = HxTrigger {
     event: "reload-profile-list",

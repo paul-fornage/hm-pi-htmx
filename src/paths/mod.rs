@@ -2,9 +2,7 @@ pub mod subdirs;
 pub mod usb_drives;
 
 use std::fs;
-use std::path::{Path, PathBuf};
-use crate::{debug_targeted, trace_targeted};
-use crate::paths::subdirs::Subdir;
+use std::path::{PathBuf};
 
 pub const DEFAULT_ROOT_FOLDER: &str = "hm-pi-data";
 

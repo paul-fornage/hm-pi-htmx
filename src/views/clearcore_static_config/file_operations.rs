@@ -1,9 +1,9 @@
-use std::path::Path;
-use log::info;
-use crate::file_io::{FileIoError, FixedDiskFile, serialize_json};
-use crate::LOCAL_SUBDIR_PATHS;
-use crate::paths::subdirs::Subdir;
 use super::config_data::ClearcoreConfig;
+use crate::file_io::{serialize_json, FileIoError, FixedDiskFile};
+use crate::paths::subdirs::Subdir;
+use crate::LOCAL_SUBDIR_PATHS;
+use log::info;
+use std::path::Path;
 
 impl FixedDiskFile for ClearcoreConfig {
     const SUBDIR: Subdir = Subdir::Config;

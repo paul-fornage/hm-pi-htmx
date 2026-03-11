@@ -1,18 +1,18 @@
 pub(crate) mod allowed_adjustments;
 mod adjustable_registers;
 
+use crate::file_io::{FileIoError, FixedDiskFile};
+use crate::sse::error_toast::ErrorToast;
+use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
+use crate::views::shared::result_feedback::FeedbackResult;
+use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
+use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum::{Json, Router};
 use axum::routing::{get, post};
-use crate::{debug_targeted, error_targeted, info_targeted, warn_targeted, AppState};
-use crate::file_io::{FileIoError, FixedDiskFile};
-use crate::sse::error_toast::ErrorToast;
-use crate::views::{build_header_context, AppView, ConnectionsTemplate, HeaderContext, ViewTemplate};
-use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
-use crate::views::shared::result_feedback::FeedbackResult;
+use axum::{Json, Router};
 
 #[derive(Template, WebTemplate)]
 #[template(path = "views/schedule-adjustments.html")]

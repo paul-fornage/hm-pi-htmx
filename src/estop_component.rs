@@ -1,12 +1,12 @@
+use crate::plc::plc_register_definitions;
+use crate::AppState;
+use crate::{info_targeted, warn_targeted};
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::{Form, State};
 use axum::routing::{get, post};
 use axum::Router;
 use serde::Deserialize;
-use crate::AppState;
-use crate::plc::plc_register_definitions;
-use crate::{info_targeted, warn_targeted};
 
 #[derive(Template, WebTemplate)]
 #[template(path = "components/estop.html")]
