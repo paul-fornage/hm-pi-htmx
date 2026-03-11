@@ -22,6 +22,7 @@
                 <th class="p-2 border-b border-slate-200">Source</th>
                 <th class="p-2 border-b border-slate-200">Register</th>
                 <th class="p-2 border-b border-slate-200">Value</th>
+                <th class="p-2 border-b border-slate-200">Adjustment Range</th>
                 <th class="p-2 border-b border-slate-200">Unit</th>
             </tr>
             </thead>
@@ -32,6 +33,9 @@
                 <td class="p-2 font-medium text-slate-700">{{ row.name() }}</td>
                 <td class="p-2 font-mono {% if row.has_value() %}text-slate-800{% else %}text-slate-400{% endif %}">
                     {{ row.formatted_value() }}
+                </td>
+                <td class="p-2 font-mono text-xs {% if row.is_adjustable() %}text-slate-700{% else %}text-slate-400{% endif %}">
+                    {{ row.range_label() }}
                 </td>
                 <td class="p-2 text-slate-500">{{ row.unit() }}</td>
             </tr>

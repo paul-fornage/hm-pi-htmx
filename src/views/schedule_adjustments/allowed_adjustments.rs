@@ -120,5 +120,8 @@ impl AllowedAdjustments {
         list
     }
 
-}
+    pub fn get(&self, name: &str) -> Option<&AdjustmentRowDisplay> {
+        self.adjustments.get(name)
+    }
 
+}

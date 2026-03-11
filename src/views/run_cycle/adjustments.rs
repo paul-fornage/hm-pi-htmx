@@ -11,9 +11,12 @@ use crate::views::motion_profile::raw_motion_profile::RawMotionProfile;
 use crate::views::run_cycle::{profiles_match, RunCycleFeedbackTemplate};
 use crate::views::{motion_profile, welder_profile};
 use crate::{error_targeted, warn_targeted, AppState};
+use crate::file_io::FixedDiskFile;
 use crate::miller::miller_register_definitions;
 use crate::plc::plc_register_definitions;
 use crate::views::welder_profile::raw_weld_profile::RawWeldProfile;
+use crate::views::schedule_adjustments::allowed_adjustments::AllowedAdjustments;
+use crate::views::schedule_adjustments::allowed_adjustments::AdjustmentRowDisplay;
 
 pub async fn run_cycle_analog_registers(
     State(state): State<AppState>,
@@ -79,6 +82,17 @@ pub async fn run_cycle_analog_registers(
         };
     }
 
+    let allowed_adjustments = match AllowedAdjustments::load().await {
+        Ok(mut form) => {
+            form.conform_to_schema();
+            Some(form)
+        }
+        Err(err) => {
+            warn_targeted!(HTTP, "Failed to load allowed adjustments: {}", err);
+            None
+        }
+    };
+
     let mut rows = Vec::with_capacity(
         motion_profile::MOTION_PROFILE_ANALOG_REGISTERS.len()
             + welder_profile::WELD_PROFILE_ANALOG_REGISTERS.len(),
@@ -90,12 +104,17 @@ pub async fn run_cycle_analog_registers(
         if raw_value.is_none() {
             missing_names.push(info.meta.name);
         }
+        let adjustment = allowed_adjustments
+            .as_ref()
+            .and_then(|form| form.get(info.meta.name))
+            .and_then(|range| compute_adjustment_range(info, raw_value, range));
         rows.push(RunCycleAnalogRegisterRow {
             source: "ClearCore",
             register: AnalogRegisterTemplate {
                 raw_value,
                 register_info: info,
             },
+            adjustment,
         });
     }
 
@@ -104,12 +123,17 @@ pub async fn run_cycle_analog_registers(
         if raw_value.is_none() {
             missing_names.push(info.meta.name);
         }
+        let adjustment = allowed_adjustments
+            .as_ref()
+            .and_then(|form| form.get(info.meta.name))
+            .and_then(|range| compute_adjustment_range(info, raw_value, range));
         rows.push(RunCycleAnalogRegisterRow {
             source: "Welder",
             register: AnalogRegisterTemplate {
                 raw_value,
                 register_info: info,
             },
+            adjustment,
         });
     }
 
@@ -145,6 +169,7 @@ pub async fn run_cycle_analog_registers(
 pub struct RunCycleAnalogRegisterRow {
     pub source: &'static str,
     pub register: AnalogRegisterTemplate,
+    pub adjustment: Option<RunCycleAdjustmentRange>,
 }
 
 impl RunCycleAnalogRegisterRow {
@@ -163,6 +188,28 @@ impl RunCycleAnalogRegisterRow {
     pub fn has_value(&self) -> bool {
         self.register.has_value()
     }
+
+    pub fn range_label(&self) -> String {
+        match &self.adjustment {
+            Some(range) => {
+                let min_label = self.register.register_info.formatted_value(Some(range.min_raw));
+                let max_label = self.register.register_info.formatted_value(Some(range.max_raw));
+                if range.min_raw == range.max_raw {
+                    min_label
+                } else {
+                    format!("{min_label}..{max_label}")
+                }
+            }
+            None => "Not adjustable".to_string(),
+        }
+    }
+
+    pub fn is_adjustable(&self) -> bool {
+        match &self.adjustment {
+            Some(range) => range.is_adjustable(),
+            None => false,
+        }
+    }
 }
 
 #[derive(Template, WebTemplate)]
@@ -171,6 +218,21 @@ pub struct RunCycleAnalogRegistersTemplate {
     pub rows: Vec<RunCycleAnalogRegisterRow>,
     pub missing_preview: Option<String>,
     pub error_message: Option<String>,
+}
+
+#[derive(Clone, Copy)]
+pub struct RunCycleAdjustmentRange {
+    pub min_semantic: f32,
+    pub max_semantic: f32,
+    pub min_raw: u16,
+    pub max_raw: u16,
+    pub clamped_to_bounds: bool,
+}
+
+impl RunCycleAdjustmentRange {
+    pub fn is_adjustable(&self) -> bool {
+        self.min_semantic != self.max_semantic
+    }
 }
 
 
@@ -198,6 +260,64 @@ fn apply_triggers(headers: &mut HeaderMap, triggers: &[HxTrigger]) {
             headers.insert("HX-Trigger", header_value);
         }
     }
+}
+
+fn compute_adjustment_range(
+    info: &'static crate::views::shared::analog_register::AnalogRegisterInfo,
+    raw_value: Option<u16>,
+    range: &AdjustmentRowDisplay,
+) -> Option<RunCycleAdjustmentRange> {
+    let raw_value = raw_value?;
+    let base_semantic = info.convert_from_raw(raw_value);
+    let percent_less = range.percent_less() as f32 / 100.0;
+    let percent_over = range.percent_over() as f32 / 100.0;
+
+    let mut min_semantic = base_semantic * (1.0 - percent_less);
+    let mut max_semantic = base_semantic * (1.0 + percent_over);
+    if min_semantic > max_semantic {
+        std::mem::swap(&mut min_semantic, &mut max_semantic);
+    }
+
+    let raw_min = info.min_value;
+    let raw_max = info.max_value;
+    let semantic_min_bound = info.convert_from_raw(raw_min);
+    let semantic_max_bound = info.convert_from_raw(raw_max);
+
+    let mut clamped = false;
+    if min_semantic < semantic_min_bound {
+        min_semantic = semantic_min_bound;
+        clamped = true;
+    }
+    if max_semantic > semantic_max_bound {
+        max_semantic = semantic_max_bound;
+        clamped = true;
+    }
+
+    let min_raw = info.convert_to_raw(min_semantic);
+    let max_raw = info.convert_to_raw(max_semantic);
+    if min_raw > raw_max || max_raw > raw_max || min_raw < raw_min || max_raw < raw_min {
+        warn_targeted!(
+            HTTP,
+            "Adjustment range exceeded raw bounds for {} (raw={}, min_raw={}, max_raw={}, bounds={}..{})",
+            info.meta.name,
+            raw_value,
+            min_raw,
+            max_raw,
+            raw_min,
+            raw_max
+        );
+        min_semantic = semantic_min_bound;
+        max_semantic = semantic_max_bound;
+        clamped = true;
+    }
+
+    Some(RunCycleAdjustmentRange {
+        min_semantic,
+        max_semantic,
+        min_raw: info.convert_to_raw(min_semantic),
+        max_raw: info.convert_to_raw(max_semantic),
+        clamped_to_bounds: clamped,
+    })
 }
 
 fn motion_profile_analog_value(

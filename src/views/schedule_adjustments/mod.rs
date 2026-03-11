@@ -1,4 +1,4 @@
-mod allowed_adjustments;
+pub(crate) mod allowed_adjustments;
 mod adjustable_registers;
 
 use askama::Template;
