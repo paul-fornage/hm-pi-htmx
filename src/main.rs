@@ -40,6 +40,7 @@ use axum::{
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
 use tokio::sync::broadcast;
+use tokio::time::MissedTickBehavior;
 use tower_http::services::ServeDir;
 
 pub const MILLER_REG_READ_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
@@ -168,6 +169,7 @@ async fn main() {
     let thread_copy_clearcore_sse = sse_tx.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(CLEARCORE_READ_INTERVAL);
+        interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         let mut last_state = ModbusState::Disconnected;
 
 
@@ -304,6 +306,7 @@ async fn main() {
     let thread_copy_machine_config = machine_config.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(MILLER_REG_READ_INTERVAL);
+        interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         let mut last_state = ModbusState::Disconnected;
         
         loop {

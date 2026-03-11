@@ -3,8 +3,8 @@ use crate::modbus::cached_modbus::ModbusChunk;
 
 pub const CLEARCORE_CHUNKS: &'static[ModbusChunk] = &[
     ModbusChunk::Coils{address: 0, count: 128},
-    ModbusChunk::DiscreteInputs{address: 0, count: 8},
-    ModbusChunk::InputRegisters{address: 0, count: 8},
+    ModbusChunk::DiscreteInputs{address: 0, count: 128},
+    ModbusChunk::InputRegisters{address: 0, count: 64},
     ModbusChunk::HoldingRegisters{address: 0, count: 64},
     ModbusChunk::HoldingRegisters{address: 64, count: 64},
 ];

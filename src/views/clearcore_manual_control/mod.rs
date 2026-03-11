@@ -328,7 +328,7 @@ impl JogDirection {
     }
 }
 
-enum AxisPosition {
+pub enum AxisPosition {
     X,
     Y,
     Z,

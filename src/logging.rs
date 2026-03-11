@@ -65,30 +65,22 @@ pub fn init_logger(log_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
         )))
         .build(base_log_path, Box::new(policy))?;
 
-    let root_level = if cfg!(debug_assertions) {
-        LevelFilter::Debug
-    } else {
-        LevelFilter::Info
-    };
 
-    let mut config_builder = Config::builder()
+    let config_builder = Config::builder()
         .appender(Appender::builder().build("stderr", Box::new(stderr)))
-        .appender(Appender::builder().build("file", Box::new(rolling_file)));
+        .appender(Appender::builder().build("file", Box::new(rolling_file)))
+        .logger(Logger::builder().build(LogTarget::FS.to_str(), LevelFilter::Debug))
+        .logger(Logger::builder().build(LogTarget::Clearcore.to_str(), LevelFilter::Debug))
+        .logger(Logger::builder().build(LogTarget::MODBUS.to_str(), LevelFilter::Debug))
+        .logger(Logger::builder().build(LogTarget::HTTP.to_str(), LevelFilter::Debug))
+        .logger(Logger::builder().build("tokio_modbus::service::tcp", LevelFilter::Info));
 
-    if cfg!(debug_assertions) {
-        config_builder = config_builder
-            .logger(Logger::builder().build(LogTarget::FS.to_str(), LevelFilter::Debug))
-            .logger(Logger::builder().build(LogTarget::Clearcore.to_str(), LevelFilter::Debug))
-            .logger(Logger::builder().build(LogTarget::MODBUS.to_str(), LevelFilter::Debug))
-            .logger(Logger::builder().build(LogTarget::HTTP.to_str(), LevelFilter::Debug))
-            .logger(Logger::builder().build("tokio_modbus::service::tcp", LevelFilter::Info));
-    }
 
     let config = config_builder.build(
         Root::builder()
             .appender("stderr")
             .appender("file")
-            .build(root_level),
+            .build(LevelFilter::Debug),
     )?;
 
     log4rs::init_config(config)?;
