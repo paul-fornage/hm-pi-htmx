@@ -69,6 +69,8 @@ pub fn routes() -> Router<AppState> {
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog-speed/{axis}"), post(jog_speed_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog-speed-display/{axis}"), get(jog_speed_display_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog/{axis}/{direction}"), post(jog_command_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/relative-move/{axis}"), get(relative_move_modal_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/relative-move/{axis}"), post(relative_move_submit_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/gas-purge"), get(gas_purge_modal_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/gas-purge"), post(gas_purge_submit_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/go-to-position/{axis}"), get(go_to_position_modal_handler))
@@ -656,7 +658,31 @@ pub struct GoToPositionFeedbackTemplate {
     result: Result<String, String>,
 }
 
+#[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-manual-control/relative-move-modal.html")]
+pub struct RelativeMoveModalTemplate {
+    axis_label: String,
+    post_url: String,
+    feedback_target: String,
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-manual-control/go-to-position-feedback.html")]
+pub struct RelativeMoveFeedbackTemplate {
+    result: Result<String, String>,
+}
+
 impl GoToPositionFeedbackTemplate {
+    fn ok(message: String) -> Self {
+        Self { result: Ok(message) }
+    }
+
+    fn err(message: String) -> Self {
+        Self { result: Err(message) }
+    }
+}
+
+impl RelativeMoveFeedbackTemplate {
     fn ok(message: String) -> Self {
         Self { result: Ok(message) }
     }
@@ -668,6 +694,11 @@ impl GoToPositionFeedbackTemplate {
 
 #[derive(Deserialize)]
 pub struct GoToPositionForm {
+    value: String,
+}
+
+#[derive(Deserialize)]
+pub struct RelativeMoveForm {
     value: String,
 }
 
@@ -721,12 +752,54 @@ impl GoToAxis {
     }
 }
 
+#[derive(Clone, Copy)]
+enum RelativeMoveAxis {
+    W,
+}
+
+impl RelativeMoveAxis {
+    fn from_str(value: &str) -> Option<Self> {
+        match value.to_ascii_lowercase().as_str() {
+            "w" => Some(Self::W),
+            _ => None,
+        }
+    }
+
+    fn label(&self) -> &'static str {
+        match self {
+            Self::W => "W Axis",
+        }
+    }
+
+    fn slug(&self) -> &'static str {
+        match self {
+            Self::W => "w",
+        }
+    }
+}
+
 pub async fn go_to_position_modal_handler(Path(axis): Path<String>) -> Html<String> {
     let html = match GoToAxis::from_str(&axis) {
         Some(axis) => GoToPositionModalTemplate {
             axis_label: axis.label().to_string(),
             post_url: format!("/clearcore-manual-control/go-to-position/{}", axis.slug()),
             feedback_target: format!("#go-to-position-feedback-{}", axis.slug()),
+        }
+        .render()
+        .unwrap(),
+        None => FeedbackResult::<String, String>::new_err(format!("Unknown axis: {}", axis))
+            .render()
+            .unwrap(),
+    };
+    Html(html)
+}
+
+pub async fn relative_move_modal_handler(Path(axis): Path<String>) -> Html<String> {
+    let html = match RelativeMoveAxis::from_str(&axis) {
+        Some(axis) => RelativeMoveModalTemplate {
+            axis_label: axis.label().to_string(),
+            post_url: format!("/clearcore-manual-control/relative-move/{}", axis.slug()),
+            feedback_target: format!("#relative-move-feedback-{}", axis.slug()),
         }
         .render()
         .unwrap(),
@@ -825,9 +898,37 @@ pub async fn go_to_position_submit_handler(
     ))
 }
 
+pub async fn relative_move_submit_handler(
+    State(state): State<AppState>,
+    Path(axis): Path<String>,
+    Form(form): Form<RelativeMoveForm>,
+) -> RelativeMoveFeedbackTemplate {
+    let axis = match RelativeMoveAxis::from_str(&axis) {
+        Some(axis) => axis,
+        None => return RelativeMoveFeedbackTemplate::err(format!("Unknown axis: {}", axis)),
+    };
+
+    let delta_inches = match form.value.trim().parse::<f64>() {
+        Ok(value) => value,
+        Err(_) => return RelativeMoveFeedbackTemplate::err("Invalid number format.".to_string()),
+    };
+
+    match relative_move_w_axis(&state.clearcore_registers, delta_inches).await {
+        Ok(message) => RelativeMoveFeedbackTemplate::ok(message),
+        Err(err) => RelativeMoveFeedbackTemplate::err(err),
+    }
+}
+
 pub async fn gas_purge(
     _clearcore_registers: &CachedModbus,
     _duration_seconds: f64,
+) -> Result<String, String> {
+    todo!()
+}
+
+pub async fn relative_move_w_axis(
+    _clearcore_registers: &CachedModbus,
+    _delta_inches: f64,
 ) -> Result<String, String> {
     todo!()
 }
