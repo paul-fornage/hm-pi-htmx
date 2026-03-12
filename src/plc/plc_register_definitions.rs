@@ -90,7 +90,11 @@ pub const WELD_SIGNAL: RegisterMetadata = RegisterMetadata {
     name: "WELD SIGNAL",
     description: "Weld signal",
 };
-
+pub const ENABLE_GAS_OUTPUT: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 21 },
+    name: "ENABLE GAS OUTPUT",
+    description: "When true, gas will be forced on. For purge or pre-flow",
+};
 pub const ERROR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 22 },
     name: "ERROR",
@@ -254,6 +258,18 @@ pub const WELDER_SIMULATE_MODE: RegisterMetadata = RegisterMetadata {
     name: "WELDER SIMULATE MODE",
     description: "True means welder runs in simulate mode",
 };
+pub const TOUCH_RETRACT_ENABLED: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 75 },
+    name: "TOUCH RETRACT ENABLED",
+    description: "UNUSED True means the touch retract coil on the welder is currently enabled. This is the REQUEST. Not sense feedback.",
+};
+pub const W_AXIS_GO_TO_RELATIVE_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 76 },
+    name: "W AXIS GO TO RELATIVE POSITION LATCH",
+    description: "Like the {}_AXIS_GO_TO_POSITION_LATCH's but instead of an absolute position, it jogs that far from current",
+};
+
+
 
 // ============================================================================
 // DISCRETE INPUTS
@@ -672,7 +688,11 @@ pub const AXIS_W_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     name: "AXIS W DEFAULT JOG SPEED",
     description: "Default jog speed for W axis (hundredths of an inch per minute)",
 };
-
+pub const W_AXIS_RELATIVE_GO_TO_POTION: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 103 },
+    name: "W AXIS RELATIVE GO TO POSITION",
+    description: "hundredths of an inch - 32,768| relative go to position for w axis",
+};
 
 pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     CONFIG_READY,
@@ -687,6 +707,7 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     FORCE_ESTOP,
     WELD_ENABLE,
     WELD_SIGNAL,
+    ENABLE_GAS_OUTPUT,
     IN_ESTOP,
     ERROR,
     COMMAND_LF_UP_LATCH,
@@ -716,6 +737,8 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     Y_AXIS_IS_HOMED,
     Z_AXIS_IS_HOMED,
     WELDER_SIMULATE_MODE,
+    TOUCH_RETRACT_ENABLED,
+    W_AXIS_GO_TO_RELATIVE_POSITION_LATCH,
 
     FORGOR,
     WELDER_ARC_COMMANDED,
@@ -787,6 +810,7 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     AXIS_Y_DEFAULT_JOG_SPEED,
     AXIS_Z_DEFAULT_JOG_SPEED,
     AXIS_W_DEFAULT_JOG_SPEED,
+    W_AXIS_RELATIVE_GO_TO_POTION,
 ];
 
 
