@@ -52,11 +52,11 @@ pub fn routes() -> Router<AppState> {
 }
 
 const WELD_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 8] = [
-    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_DC_OUTPUT),
-    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_EP_POLARITY),
+    BooleanRegisterInfo::new_custom(&miller_register_definitions::USE_DC_OUTPUT, "DC", "AC"),
+    BooleanRegisterInfo::new_custom(&miller_register_definitions::USE_EP_POLARITY, "Elec. Pos.", "Elec. Neg."),
     BooleanRegisterInfo::new_default(&miller_register_definitions::BOOST_EN),
     BooleanRegisterInfo::new_default(&miller_register_definitions::DROOP_EN),
-    BooleanRegisterInfo::new_default(&miller_register_definitions::USE_LOW_OCV),
+    BooleanRegisterInfo::new_custom(&miller_register_definitions::USE_LOW_OCV, "Low OCV", "High OCV"),
     BooleanRegisterInfo::new_default(&miller_register_definitions::PULSER_EN),
     BooleanRegisterInfo::new_default(&miller_register_definitions::USE_LOW_AC_COMMUTATION_AMP),
     BooleanRegisterInfo::new_default(&miller_register_definitions::AC_INDEPENDANT_EN),
