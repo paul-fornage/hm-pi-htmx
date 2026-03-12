@@ -1,3 +1,4 @@
+use std::fmt::format;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
@@ -671,6 +672,9 @@ pub struct RelativeMoveModalTemplate {
 pub struct RelativeMoveFeedbackTemplate {
     result: Result<String, String>,
 }
+impl From<Result<String, String>> for RelativeMoveFeedbackTemplate {
+    fn from(value: Result<String, String>) -> Self { Self{result: value} }
+}
 
 impl GoToPositionFeedbackTemplate {
     fn ok(message: String) -> Self {
@@ -752,7 +756,7 @@ impl GoToAxis {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum RelativeMoveAxis {
     W,
 }
@@ -912,25 +916,43 @@ pub async fn relative_move_submit_handler(
         Ok(value) => value,
         Err(_) => return RelativeMoveFeedbackTemplate::err("Invalid number format.".to_string()),
     };
-
-    match relative_move_w_axis(&state.clearcore_registers, delta_inches).await {
-        Ok(message) => RelativeMoveFeedbackTemplate::ok(message),
-        Err(err) => RelativeMoveFeedbackTemplate::err(err),
+    if axis == RelativeMoveAxis::W{
+        RelativeMoveFeedbackTemplate::from(
+            relative_move_w_axis(&state.clearcore_registers, delta_inches).await
+        )
+    } else {
+        RelativeMoveFeedbackTemplate::err("Only W axis is supported.".to_string())
     }
+
 }
 
 pub async fn gas_purge(
-    _clearcore_registers: &CachedModbus,
-    _duration_seconds: f64,
+    clearcore_registers: &CachedModbus,
+    duration_seconds: f64,
 ) -> Result<String, String> {
     todo!()
 }
 
 pub async fn relative_move_w_axis(
-    _clearcore_registers: &CachedModbus,
-    _delta_inches: f64,
+    clearcore_registers: &CachedModbus,
+    delta_inches: f64,
 ) -> Result<String, String> {
-    todo!()
+    const MAX_RELATIVE_MOVE_W_INCHES: f64 = 12.0;
+    if delta_inches < -MAX_RELATIVE_MOVE_W_INCHES || delta_inches > MAX_RELATIVE_MOVE_W_INCHES {
+        return Err(format!(
+            "Delta must be between -{} and {} inches.",
+            MAX_RELATIVE_MOVE_W_INCHES, MAX_RELATIVE_MOVE_W_INCHES
+        ));
+    }
+
+    let move_hundredths: i16 = (delta_inches * 100.0).round() as i16;
+    let move_shifted: u16 = (move_hundredths - i16::MIN) as u16;
+
+    clearcore_registers.write_hreg(cc_regs::W_AXIS_RELATIVE_GO_TO_POTION.address.address, move_shifted)
+        .await.map_err(|err| format!("Could not write W jog distance to modbus: {err}"))?;
+    clearcore_registers.write_coil(cc_regs::W_AXIS_GO_TO_RELATIVE_POSITION_LATCH.address.address, true)
+        .await.map_err(|err| format!("Could not write W jog enable to modbus: {err}"))?;
+    Ok(format!("Relative move of {} inches requested", delta_inches))
 }
 
 

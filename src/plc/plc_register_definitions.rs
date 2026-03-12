@@ -691,7 +691,7 @@ pub const AXIS_W_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
 pub const W_AXIS_RELATIVE_GO_TO_POTION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 103 },
     name: "W AXIS RELATIVE GO TO POSITION",
-    description: "hundredths of an inch - 32,768| relative go to position for w axis",
+    description: "hundredths of an inch + 32,768| relative go to position for w axis",
 };
 
 pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
