@@ -1,11 +1,13 @@
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
+use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 use crate::views::shared::finger_status::{finger_status_handler, FingerSide};
 use crate::views::shared::result_feedback::FeedbackResult;
 use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
 use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
-use crate::AppState;
+use crate::{warn_targeted, AppState};
+use crate::file_io::FileIoError;
 use askama::Template;
 use askama_web::WebTemplate;
 use axum::extract::State;
@@ -14,6 +16,11 @@ use axum::response::{Html, IntoResponse};
 use axum::routing::{get, post};
 use axum::Router;
 use serde::Deserialize;
+
+const GAS_PURGE_MIN_SECONDS: f64 = 0.0;
+const GAS_PURGE_MAX_SECONDS: f64 = 30.0;
+const GAS_PURGE_DEFAULT_SECONDS: f64 = 5.0;
+const GAS_PURGE_STEP_SECONDS: f64 = 0.1;
 
 macro_rules! read_or_bail {
     ($reg:ident) => {{
@@ -39,6 +46,9 @@ macro_rules! read_or_bail {
 #[template(path = "views/manual-control.html")]
 pub struct ManualControlTemplate {
     pub header: HeaderContext,
+    pub show_y_axis: bool,
+    pub show_z_axis: bool,
+    pub show_w_axis: bool,
 }
 impl ViewTemplate for ManualControlTemplate {
     const APP_VIEW_VARIANT: AppView = AppView::ClearcoreManualControl;
@@ -59,6 +69,8 @@ pub fn routes() -> Router<AppState> {
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog-speed/{axis}"), post(jog_speed_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog-speed-display/{axis}"), get(jog_speed_display_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/jog/{axis}/{direction}"), post(jog_command_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/gas-purge"), get(gas_purge_modal_handler))
+        .route(&AppView::ClearcoreManualControl.url_with_path("/gas-purge"), post(gas_purge_submit_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/go-to-position/{axis}"), get(go_to_position_modal_handler))
         .route(&AppView::ClearcoreManualControl.url_with_path("/go-to-position/{axis}"), post(go_to_position_submit_handler))
 }
@@ -75,7 +87,29 @@ pub struct HomingStatusTemplate {
 
 pub async fn show_manual_control(State(state): State<AppState>) -> impl IntoResponse {
     let header = build_header_context(&state, AppView::ClearcoreManualControl).await;
-    ManualControlTemplate { header }
+    let (show_y_axis, show_z_axis, show_w_axis) = match ClearcoreConfig::load_config().await {
+        Ok(config) => {
+            let show_y = config.coils.get(cc_regs::USES_Y_AXIS.name).copied().unwrap_or(true);
+            let show_z = config.coils.get(cc_regs::USES_Z_AXIS.name).copied().unwrap_or(true);
+            let show_w = config.coils.get(cc_regs::USES_W_AXIS.name).copied().unwrap_or(true);
+            (show_y, show_z, show_w)
+        }
+        Err(FileIoError::NotFound { .. }) => {
+            warn_targeted!(FS, "Clearcore static config not found; showing all axes in manual control");
+            (true, true, true)
+        }
+        Err(err) => {
+            warn_targeted!(FS, "Failed to load clearcore static config for manual control: {}", err);
+            (true, true, true)
+        }
+    };
+
+    ManualControlTemplate {
+        header,
+        show_y_axis,
+        show_z_axis,
+        show_w_axis,
+    }
 }
 
 pub async fn homing_status_handler(State(state): State<AppState>) -> impl IntoResponse {
@@ -577,6 +611,38 @@ async fn get_homing_status(registers: &CachedModbus) -> Result<(bool, bool), Str
 }
 
 #[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-manual-control/gas-purge-modal.html")]
+pub struct GasPurgeModalTemplate {
+    post_url: String,
+    feedback_target: String,
+    min_seconds: String,
+    max_seconds: String,
+    step_seconds: String,
+    prefill_seconds: String,
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "components/clearcore-manual-control/gas-purge-feedback.html")]
+pub struct GasPurgeFeedbackTemplate {
+    result: Result<String, String>,
+}
+
+impl GasPurgeFeedbackTemplate {
+    fn ok(message: String) -> Self {
+        Self { result: Ok(message) }
+    }
+
+    fn err(message: String) -> Self {
+        Self { result: Err(message) }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct GasPurgeForm {
+    duration_seconds: String,
+}
+
+#[derive(Template, WebTemplate)]
 #[template(path = "components/clearcore-manual-control/go-to-position-modal.html")]
 pub struct GoToPositionModalTemplate {
     axis_label: String,
@@ -671,6 +737,39 @@ pub async fn go_to_position_modal_handler(Path(axis): Path<String>) -> Html<Stri
     Html(html)
 }
 
+pub async fn gas_purge_modal_handler() -> Html<String> {
+    let html = GasPurgeModalTemplate {
+        post_url: "/clearcore-manual-control/gas-purge".to_string(),
+        feedback_target: "#gas-purge-feedback".to_string(),
+        min_seconds: format!("{:.1}", GAS_PURGE_MIN_SECONDS),
+        max_seconds: format!("{:.1}", GAS_PURGE_MAX_SECONDS),
+        step_seconds: format!("{:.1}", GAS_PURGE_STEP_SECONDS),
+        prefill_seconds: format!("{:.1}", GAS_PURGE_DEFAULT_SECONDS),
+    }
+    .render()
+    .unwrap();
+    Html(html)
+}
+
+pub async fn gas_purge_submit_handler(
+    State(state): State<AppState>,
+    Form(form): Form<GasPurgeForm>,
+) -> GasPurgeFeedbackTemplate {
+    let duration_seconds = match form.duration_seconds.trim().parse::<f64>() {
+        Ok(value) => value,
+        Err(_) => return GasPurgeFeedbackTemplate::err("Invalid number format.".to_string()),
+    };
+
+    if !(GAS_PURGE_MIN_SECONDS..=GAS_PURGE_MAX_SECONDS).contains(&duration_seconds) {
+        return GasPurgeFeedbackTemplate::err("Purge time must be between 0 and 30 seconds.".to_string());
+    }
+
+    match gas_purge(&state.clearcore_registers, duration_seconds).await {
+        Ok(message) => GasPurgeFeedbackTemplate::ok(message),
+        Err(err) => GasPurgeFeedbackTemplate::err(err),
+    }
+}
+
 pub async fn go_to_position_submit_handler(
     State(state): State<AppState>,
     Path(axis): Path<String>,
@@ -724,6 +823,13 @@ pub async fn go_to_position_submit_handler(
         position_hundredths / 100.0,
         axis.label()
     ))
+}
+
+pub async fn gas_purge(
+    _clearcore_registers: &CachedModbus,
+    _duration_seconds: f64,
+) -> Result<String, String> {
+    todo!()
 }
 
 
