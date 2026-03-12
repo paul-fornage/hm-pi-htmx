@@ -1,2 +1,22 @@
 <div id="global-modal-layer" hx-swap-oob="innerHTML"></div>
-{% include "components/shared/result-feedback.html" %}
+{% match result %}
+{% when Err(error) %}
+<span class="text-red-600">{{ error }}</span>
+{% when Ok(duration) %}
+<style>
+  @keyframes gas-purge-progress {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0%); }
+  }
+</style>
+<div class="rounded border border-slate-200 bg-white px-3 py-2">
+  <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+    <span>Gas purge running</span>
+    <span>{{ duration }}s</span>
+  </div>
+  <div class="mt-2 h-2 w-full overflow-hidden rounded bg-slate-200">
+    <div class="gas-purge-progress h-2 rounded bg-blue-600"
+         style="animation: gas-purge-progress {{ duration }}s linear forwards;"></div>
+  </div>
+</div>
+{% endmatch %}

@@ -1,13 +1,16 @@
-use std::fmt::format;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+use crate::miller::miller_register_definitions as miller_regs;
 use crate::modbus::cached_modbus::CachedModbus;
 use crate::modbus::{ModbusValue, RegisterAddress};
 use crate::plc::plc_register_definitions as cc_regs;
+use crate::sse::error_toast::ErrorToast;
 use crate::views::clearcore_static_config::config_data::ClearcoreConfig;
 use crate::views::shared::finger_status::{finger_status_handler, FingerSide};
 use crate::views::shared::result_feedback::FeedbackResult;
 use crate::views::shared::{mb_read_bool_helper, StatusFeedbackTemplate};
 use crate::views::{build_header_context, AppView, HeaderContext, ViewTemplate};
-use crate::{warn_targeted, AppState};
+use crate::{error_targeted, warn_targeted, AppState};
 use crate::file_io::FileIoError;
 use askama::Template;
 use askama_web::WebTemplate;
@@ -22,6 +25,11 @@ const GAS_PURGE_MIN_SECONDS: f64 = 0.0;
 const GAS_PURGE_MAX_SECONDS: f64 = 30.0;
 const GAS_PURGE_DEFAULT_SECONDS: f64 = 5.0;
 const GAS_PURGE_STEP_SECONDS: f64 = 0.1;
+const GAS_PURGE_WRITE_INTERVAL: Duration = Duration::from_millis(500);
+const GAS_PURGE_READBACK_TIMEOUT: Duration = Duration::from_millis(500);
+const GAS_PURGE_READBACK_POLL: Duration = Duration::from_millis(50);
+
+static GAS_PURGE_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 macro_rules! read_or_bail {
     ($reg:ident) => {{
@@ -631,8 +639,10 @@ pub struct GasPurgeFeedbackTemplate {
 }
 
 impl GasPurgeFeedbackTemplate {
-    fn ok(message: String) -> Self {
-        Self { result: Ok(message) }
+    fn running(duration_seconds: f64) -> Self {
+        Self {
+            result: Ok(format!("{duration_seconds:.1}")),
+        }
     }
 
     fn err(message: String) -> Self {
@@ -841,10 +851,35 @@ pub async fn gas_purge_submit_handler(
         return GasPurgeFeedbackTemplate::err("Purge time must be between 0 and 30 seconds.".to_string());
     }
 
-    match gas_purge(&state.clearcore_registers, duration_seconds).await {
-        Ok(message) => GasPurgeFeedbackTemplate::ok(message),
-        Err(err) => GasPurgeFeedbackTemplate::err(err),
+    if GAS_PURGE_ACTIVE.swap(true, Ordering::SeqCst) {
+        return GasPurgeFeedbackTemplate::err("Gas purge already running.".to_string());
     }
+
+    let miller_registers = state.miller_registers.clone();
+    let sse_tx = state.sse_tx.clone();
+    tokio::spawn(async move {
+        struct GasPurgeGuard;
+        impl Drop for GasPurgeGuard {
+            fn drop(&mut self) {
+                GAS_PURGE_ACTIVE.store(false, Ordering::SeqCst);
+            }
+        }
+
+        let _guard = GasPurgeGuard;
+        if let Err(err) = gas_purge(&miller_registers, duration_seconds).await {
+            if sse_tx
+                .send(ErrorToast {
+                    msg: format!("Gas purge failed: {err}"),
+                }
+                .into())
+                .is_err()
+            {
+                error_targeted!(HTTP, "Failed to send gas purge error toast");
+            }
+        }
+    });
+
+    GasPurgeFeedbackTemplate::running(duration_seconds)
 }
 
 pub async fn go_to_position_submit_handler(
@@ -927,10 +962,88 @@ pub async fn relative_move_submit_handler(
 }
 
 pub async fn gas_purge(
-    clearcore_registers: &CachedModbus,
+    miller_registers: &CachedModbus,
     duration_seconds: f64,
-) -> Result<String, String> {
-    todo!()
+) -> Result<(), String> {
+    let duration = Duration::from_secs_f64(duration_seconds);
+    let mut wrote_true = false;
+
+    let result = 'purge: loop {
+        match miller_registers
+            .write_coil(miller_regs::GAS_REQUEST.address.address, true)
+            .await
+        {
+            Ok(()) => wrote_true = true,
+            Err(err) => {
+                break Err(format!("Failed to write GAS_REQUEST true: {err}"));
+            }
+        }
+
+        let start = Instant::now();
+
+        if duration < Duration::from_secs(1) {
+            tokio::time::sleep(duration).await;
+            break Ok(());
+        }
+
+        let readback_deadline = start + GAS_PURGE_READBACK_TIMEOUT;
+        loop {
+            match read_bool(miller_registers, &miller_regs::GAS_OUTPUT_ENABLED.address).await {
+                Ok(true) => break,
+                Ok(false) => {}
+                Err(err) => break 'purge Err(err),
+            }
+
+            if Instant::now() >= readback_deadline {
+                break 'purge Err("Timed out waiting for GAS_OUTPUT_ENABLED".to_string());
+            }
+
+            tokio::time::sleep(GAS_PURGE_READBACK_POLL).await;
+        }
+
+        let mut next_write = start + GAS_PURGE_WRITE_INTERVAL;
+
+        loop {
+            if start.elapsed() >= duration {
+                break 'purge Ok(());
+            }
+
+            match read_bool(miller_registers, &miller_regs::GAS_OUTPUT_ENABLED.address).await {
+                Ok(true) => {}
+                Ok(false) => {
+                    break 'purge Err("GAS_OUTPUT_ENABLED went false during purge".to_string());
+                }
+                Err(err) => break 'purge Err(err),
+            }
+
+            let now = Instant::now();
+            if now >= next_write {
+                if let Err(err) = miller_registers
+                    .write_coil(miller_regs::GAS_REQUEST.address.address, true)
+                    .await
+                {
+                    break 'purge Err(format!("Failed to refresh GAS_REQUEST: {err}"));
+                }
+                next_write += GAS_PURGE_WRITE_INTERVAL;
+            }
+
+            tokio::time::sleep(GAS_PURGE_READBACK_POLL).await;
+        }
+    };
+
+    if wrote_true {
+        if let Err(err) = miller_registers
+            .write_coil(miller_regs::GAS_REQUEST.address.address, false)
+            .await
+        {
+            return Err(match result {
+                Ok(()) => format!("Failed to write GAS_REQUEST false: {err}"),
+                Err(existing) => format!("{existing}. Failed to write GAS_REQUEST false: {err}"),
+            });
+        }
+    }
+
+    result
 }
 
 pub async fn relative_move_w_axis(

@@ -14,6 +14,9 @@
     - Target Rust modules under 500 LoC, excluding tests.
     - If a file exceeds roughly 800 LoC, add new functionality in a new module instead of extending
       the existing file unless there is a strong documented reason not to.
+- Avoid duplicating work. Chances are, I've already written something similar elsewhere in the project, and you should use that instead.
+- Do not leave silent errors or default values. You don't have to handle them gracefully, but you need to at least log it.
+- Prioritize readable, explicit code.
 
 ## Project context
 
