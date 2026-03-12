@@ -92,6 +92,21 @@
     }
   }
 
+  function insertTextAtCursor(element, text) {
+    const value = element.value || "";
+    const start = typeof element.selectionStart === "number" ? element.selectionStart : value.length;
+    const end = typeof element.selectionEnd === "number" ? element.selectionEnd : start;
+    const nextValue = value.slice(0, start) + text + value.slice(end);
+    const nextPos = start + text.length;
+
+    element.value = nextValue;
+    if (typeof element.setSelectionRange === "function") {
+      element.setSelectionRange(nextPos, nextPos);
+    }
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    keyboard.setInput(nextValue || "");
+  }
+
   function handleKeyPress(button) {
     if (button === "{close}") {
       if (checkNonNullAndConnected(activeInput)) {
@@ -108,6 +123,10 @@
       console.debug("enter pressed");
       if (checkNonNullAndConnected(activeInput)) {
         console.debug("has active input: ", activeInput);
+        if (activeInput instanceof HTMLTextAreaElement) {
+          insertTextAtCursor(activeInput, "\n");
+          return;
+        }
         if(activeInput.form) {
           const allowSubmit = activeInput.form.dataset.keyboardSubmit !== "false";
           if (allowSubmit) {
