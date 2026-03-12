@@ -504,15 +504,14 @@ pub const CYCLE_TOUCH_RETRACT_FINAL_HEIGHT: RegisterMetadata = RegisterMetadata 
     name: "TOUCH RETRACT FINAL HEIGHT",
     description: "hundredths of an inch| final height when using touch retract measured from the part (only used with touch retract mode)",
 };
-
 pub const ARC_VOLTAGE_CALIBRATION_FACTOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 60 },
-    name: "ARC VOLTAGE CALIBRATION FACTOR",
+    name: "ARC VOLTAGE ADC CORRECTION",
     description: "unitless factor| This number divided by 10000 is multiplied by the raw adc voltage reading to get the actual arc voltage",
 };
 pub const ARC_CURRENT_CALIBRATION_FACTOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 61 },
-    name: "ARC CURRENT CALIBRATION FACTOR",
+    name: "ARC CURRENT ADC CORRECTION",
     description: "unitless factor| This number divided by 10000 is multiplied by the raw adc current reading to get the actual arc current",
 };
 pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
