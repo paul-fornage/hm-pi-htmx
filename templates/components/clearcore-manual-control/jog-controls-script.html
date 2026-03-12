@@ -1,0 +1,229 @@
+<script>
+(function() {
+  if (window.__jogControlsInit) {
+    return;
+  }
+  window.__jogControlsInit = true;
+
+  const activeCanvases = new Set();
+  const initializedAttr = "data-jog-initialized";
+  const wrapperMap = new WeakMap();
+  const resizeObserver = "ResizeObserver" in window
+    ? new ResizeObserver((entries) => {
+        entries.forEach((entry) => {
+          const canvas = wrapperMap.get(entry.target);
+          if (canvas) {
+            syncCanvasSize(canvas);
+          }
+        });
+      })
+    : null;
+
+  function syncCanvasSize(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.round(rect.width * dpr));
+    const height = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+  }
+
+  function sendJog(canvas, active, options) {
+    const url = canvas.dataset.jogUrl;
+    if (!url) {
+      return;
+    }
+    const updateTarget = options && options.updateTarget;
+    const keepalive = options && options.keepalive;
+    const values = new URLSearchParams({ active: active ? "true" : "false" });
+    const fetchOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "HX-Request": "true",
+      },
+      body: values,
+    };
+    if (keepalive) {
+      fetchOptions.keepalive = true;
+    }
+
+    fetch(url, fetchOptions)
+      .then((response) => {
+        if (!updateTarget || !response.ok) {
+          return null;
+        }
+        return response.text();
+      })
+      .then((html) => {
+        if (!updateTarget || html === null) {
+          return;
+        }
+        const target = canvas.dataset.jogTarget;
+        if (!target) {
+          return;
+        }
+        const targetEl = document.querySelector(target);
+        if (targetEl) {
+          targetEl.innerHTML = html;
+        }
+      })
+      .catch(() => {});
+  }
+
+  function setActive(canvas, active) {
+    const isActive = !!canvas.__jogActive;
+    if (active === isActive) {
+      return;
+    }
+    canvas.__jogActive = active;
+    if (active) {
+      activeCanvases.add(canvas);
+    } else {
+      activeCanvases.delete(canvas);
+    }
+    sendJog(canvas, active, { updateTarget: true, keepalive: false });
+  }
+
+  function stopAllActive() {
+    activeCanvases.forEach((canvas) => {
+      canvas.__jogActive = false;
+      sendJog(canvas, false, { updateTarget: false, keepalive: true });
+    });
+    activeCanvases.clear();
+  }
+
+  function handlePointerDown(event) {
+    if (event.button && event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    canvas.setPointerCapture?.(event.pointerId);
+    setActive(canvas, true);
+  }
+
+  function handlePointerUp(event) {
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    canvas.releasePointerCapture?.(event.pointerId);
+    setActive(canvas, false);
+  }
+
+  function handlePointerCancel(event) {
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    setActive(canvas, false);
+  }
+
+  function handleMouseDown(event) {
+    if (event.button && event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    setActive(canvas, true);
+  }
+
+  function handleMouseUp(event) {
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    setActive(canvas, false);
+  }
+
+  function handleTouchStart(event) {
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    setActive(canvas, true);
+  }
+
+  function handleTouchEnd(event) {
+    event.preventDefault();
+    const canvas = event.currentTarget;
+    if (!canvas) {
+      return;
+    }
+    setActive(canvas, false);
+  }
+
+  function bindEvents(canvas) {
+    if ("PointerEvent" in window) {
+      canvas.addEventListener("pointerdown", handlePointerDown, { passive: false });
+      canvas.addEventListener("pointerup", handlePointerUp, { passive: false });
+      canvas.addEventListener("pointerleave", handlePointerCancel, { passive: false });
+      canvas.addEventListener("pointercancel", handlePointerCancel, { passive: false });
+    } else {
+      canvas.addEventListener("mousedown", handleMouseDown, { passive: false });
+      canvas.addEventListener("mouseup", handleMouseUp, { passive: false });
+      canvas.addEventListener("mouseleave", handleMouseUp, { passive: false });
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+      canvas.addEventListener("touchcancel", handleTouchEnd, { passive: false });
+    }
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    canvas.addEventListener("dragstart", (event) => event.preventDefault());
+  }
+
+  function initCanvas(canvas) {
+    if (!canvas || canvas.getAttribute(initializedAttr) === "true") {
+      return;
+    }
+    canvas.setAttribute(initializedAttr, "true");
+    bindEvents(canvas);
+    syncCanvasSize(canvas);
+
+    const wrapper = canvas.parentElement;
+    if (resizeObserver && wrapper) {
+      wrapperMap.set(wrapper, canvas);
+      resizeObserver.observe(wrapper);
+    }
+  }
+
+  function initJogCanvases(root) {
+    const scope = root || document;
+    const canvases = scope.querySelectorAll("canvas.jog-canvas[data-jog-url]");
+    canvases.forEach((canvas) => initCanvas(canvas));
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      stopAllActive();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => initJogCanvases());
+  } else {
+    initJogCanvases();
+  }
+
+  document.addEventListener("htmx:load", (event) => initJogCanvases(event.target));
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("blur", stopAllActive);
+  window.addEventListener("pagehide", stopAllActive);
+  window.addEventListener("beforeunload", stopAllActive);
+})();
+</script>

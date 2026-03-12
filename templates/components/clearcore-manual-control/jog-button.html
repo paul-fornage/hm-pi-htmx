@@ -1,16 +1,21 @@
 {% macro render(axis, direction) %}
-<button
-    type="button"
-    hx-post="/clearcore-manual-control/jog/{{ axis }}/{{ direction }}"
-    hx-trigger="mousedown, touchstart"
-    hx-vals='{"active": true}'
-    hx-target="#jog-feedback-{{ axis }}"
-    hx-swap="innerHTML"
-    hx-on:mouseup="htmx.ajax('POST', '/clearcore-manual-control/jog/{{ axis }}/{{ direction }}', {target: '#jog-feedback-{{ axis }}', values: {active: false}})"
-    hx-on:mouseleave="htmx.ajax('POST', '/clearcore-manual-control/jog/{{ axis }}/{{ direction }}', {target: '#jog-feedback-{{ axis }}', values: {active: false}})"
-    hx-on:touchend="htmx.ajax('POST', '/clearcore-manual-control/jog/{{ axis }}/{{ direction }}', {target: '#jog-feedback-{{ axis }}', values: {active: false}})"
-    hx-on:touchcancel="htmx.ajax('POST', '/clearcore-manual-control/jog/{{ axis }}/{{ direction }}', {target: '#jog-feedback-{{ axis }}', values: {active: false}})"
-    class="h-10 px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300">
-  {{ direction|capitalize }}
-</button>
+<div class="relative">
+  <button
+      type="button"
+      class="h-10 w-full px-3 text-sm font-bold bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors select-none pointer-events-none"
+      aria-hidden="true"
+      tabindex="-1">
+    {{ direction|capitalize }}
+  </button>
+  <canvas
+      class="jog-canvas absolute inset-0 block h-full w-full cursor-pointer"
+      data-jog-axis="{{ axis }}"
+      data-jog-direction="{{ direction }}"
+      data-jog-label="{{ direction|capitalize }}"
+      data-jog-url="/clearcore-manual-control/jog/{{ axis }}/{{ direction }}"
+      data-jog-target="#jog-feedback-{{ axis }}"
+      role="button"
+      aria-label="{{ axis|upper }} {{ direction|capitalize }} jog"
+      style="touch-action: none; -webkit-user-select: none; user-select: none;"></canvas>
+</div>
 {% endmacro %}
