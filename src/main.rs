@@ -20,6 +20,7 @@ mod file_io;
 use crate::error::HmPiError;
 use crate::file_io::{FileIoError, FixedDiskFile, NamedDiskFile};
 use crate::hmi_logic::mb_watcher::cc_mb_watcher_task;
+use crate::hmi_logic::gas_bridge::gas_bridge_task;
 use crate::hmi_logic::watched_registers;
 use crate::logging::LogTarget;
 use crate::miller::miller_register_definitions::{MILLER_CHUNKS, PS_UI_DISABLE};
@@ -463,6 +464,12 @@ async fn main() {
 
     tokio::spawn(async move {
         cc_mb_watcher_task(&watcher_cc_regs, cc_watcher_tasks).await;
+    });
+
+    let gas_bridge_clearcore_regs = clearcore_registers.clone();
+    let gas_bridge_welder_regs = miller_registers.clone();
+    tokio::spawn(async move {
+        gas_bridge_task(gas_bridge_clearcore_regs, gas_bridge_welder_regs).await;
     });
 
     // Initialize state with the managers
