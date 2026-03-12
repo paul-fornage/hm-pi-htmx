@@ -30,6 +30,7 @@
                             inputmode="text"
                             data-keyboard="text"
                             id="profile-name-input"
+                            autocomplete="off"
                             name="name"
                             value="{% if let Some(name) = current_name %}{{ name }}{% endif %}"
                             required

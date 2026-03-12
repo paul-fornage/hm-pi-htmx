@@ -44,6 +44,7 @@
                            id="host"
                            name="host"
                            value="{{ host }}"
+                           autocomplete="off"
                            class="border p-1 rounded disabled:bg-gray-200 disabled:text-gray-500"
                            {% if auto_connect %}disabled{% endif %}
                            required>
@@ -53,6 +54,7 @@
                     <input type="text"
                            inputmode="numeric"
                            data-keyboard="float"
+                           autocomplete="off"
                            id="port"
                            name="port"
                            value="{{ port }}"
@@ -69,6 +71,7 @@
                            data-keyboard="float"
                            id="timeout_ms"
                            name="timeout_ms"
+                           autocomplete="off"
                            min="100"
                            max="9999"
                            value="{{ timeout_ms }}"
@@ -82,6 +85,7 @@
                            data-keyboard="float"
                            id="unit_id"
                            name="unit_id"
+                           autocomplete="off"
                            step="1"
                            min="1"
                            max="255"
@@ -105,7 +109,11 @@
               hx-target="#connection-manager-{{ name }}"
               hx-swap="outerHTML"
               class="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-2">
-            <input type="hidden" name="enabled" value="{% if auto_connect %}false{% else %}true{% endif %}">
+            <input
+                type="hidden"
+                autocomplete="off"
+                name="enabled"
+                value="{% if auto_connect %}false{% else %}true{% endif %}">
             <span class="text-sm font-medium text-gray-700">Auto-connect</span>
             <button type="submit"
                     class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {% if auto_connect %}bg-green-500{% else %}bg-gray-300{% endif %}">

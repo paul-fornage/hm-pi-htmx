@@ -16,6 +16,7 @@
             <input type="number"
                    name="value"
                    value="{{ val }}"
+                   autocomplete="off"
                    form="form-{{ addr }}"
                    class="w-20 border border-gray-300 rounded px-2 py-1">
         </td>
@@ -25,7 +26,11 @@
                   hx-post="/write"
                   hx-target="#status-{{ addr }}"
                   class="m-0">
-                <input type="hidden" name="address" value="{{ addr }}">
+                <input
+                    type="hidden"
+                    name="address"
+                    autocomplete="off"
+                    value="{{ addr }}">
                 <button type="submit" class="px-2.5 py-1 text-sm bg-blue-600 text-white border-none cursor-pointer rounded hover:bg-blue-700">Update</button>
                 <span id="status-{{ addr }}"></span>
             </form>
