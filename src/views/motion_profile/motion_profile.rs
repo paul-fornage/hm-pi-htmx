@@ -21,24 +21,7 @@ impl MotionProfile {
         Self {
             name,
             description,
-            raw_profile: RawMotionProfile {
-                cycle_start_pos: 0,
-                cycle_end_pos: 0,
-                cycle_park_pos: 0,
-                cycle_weld_speed: 0,
-                cycle_reposition_speed_x: 0,
-                cycle_reposition_speed_y: 0,
-                cycle_reposition_speed_z: 0,
-                cycle_wire_feed_speed: 0,
-                cycle_avc_vref: 0,
-                cycle_axis_z_torch_up_offset: 0,
-                cycle_z_static_offset: 0,
-                cycle_touch_retract_reposition_distance: 0,
-                cycle_touch_retract_probe_speed: 0,
-                cycle_touch_retract_final_height: 0,
-                cycle_use_avc: false,
-                cycle_use_touch_retract: false,
-            },
+            raw_profile: RawMotionProfile::default(),
         }
     }
 }

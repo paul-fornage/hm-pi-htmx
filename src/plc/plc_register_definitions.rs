@@ -599,6 +599,20 @@ pub const CYCLE_TOUCH_RETRACT_FINAL_HEIGHT: RegisterMetadata = RegisterMetadata 
     name: "TOUCH RETRACT FINAL HEIGHT",
     description: "Touch retract final height (in)",
 };
+
+/// unitless factor in thousandths| AVC correction strength multiplier. 1000 == 1.0x
+pub const CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 40 },
+    name: "AVC CORRECTION STRENGTH MULTIPLIER",
+    description: "AVC correction strength multiplier (x)",
+};
+
+/// hundredths of an inch per minute| speed limit for z axis while making AVC correction moves
+pub const CYCLE_AVC_TRAVEL_SPEED_Z: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 41 },
+    name: "AVC TRAVEL SPEED Z",
+    description: "AVC correction Z speed limit (in/min)",
+};
 /// unitless factor| This number divided by 10000 is multiplied by the raw adc voltage reading to get the actual arc voltage
 pub const ARC_VOLTAGE_CALIBRATION_FACTOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 60 },
@@ -907,6 +921,8 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
     CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE,
     CYCLE_TOUCH_RETRACT_PROBE_SPEED,
     CYCLE_TOUCH_RETRACT_FINAL_HEIGHT,
+    CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER,
+    CYCLE_AVC_TRAVEL_SPEED_Z,
     ARC_VOLTAGE_CALIBRATION_FACTOR,
     ARC_CURRENT_CALIBRATION_FACTOR,
     INCHES_PER_STEP_X_AXIS_LOWER,

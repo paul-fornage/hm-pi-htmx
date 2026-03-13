@@ -639,6 +639,10 @@ fn motion_profile_analog_value(
         Some(profile.cycle_wire_feed_speed)
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_VREF) {
         Some(profile.cycle_avc_vref)
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER) {
+        Some(profile.cycle_avc_correction_strength_multiplier)
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_TRAVEL_SPEED_Z) {
+        Some(profile.cycle_avc_travel_speed_z)
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_Z_STATIC_OFFSET) {
         Some(profile.cycle_z_static_offset)
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AXIS_Z_TORCH_UP_OFFSET) {
@@ -679,6 +683,10 @@ fn set_motion_profile_analog_value(
         profile.cycle_wire_feed_speed = raw_value;
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_VREF) {
         profile.cycle_avc_vref = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER) {
+        profile.cycle_avc_correction_strength_multiplier = raw_value;
+    } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AVC_TRAVEL_SPEED_Z) {
+        profile.cycle_avc_travel_speed_z = raw_value;
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_Z_STATIC_OFFSET) {
         profile.cycle_z_static_offset = raw_value;
     } else if std::ptr::eq(meta, &plc_register_definitions::CYCLE_AXIS_Z_TORCH_UP_OFFSET) {

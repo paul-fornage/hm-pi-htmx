@@ -69,7 +69,7 @@ const MOTION_PROFILE_BOOLEAN_REGISTERS: [BooleanRegisterInfo; 2] = [
     BooleanRegisterInfo::new_default(&plc_register_definitions::CYCLE_USE_TOUCH_RETRACT),
 ];
 
-pub(crate) const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 14] = [
+pub(crate) const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 16] = [
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_START_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_END_POS, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_PARK_POS, "in", 2, 0),
@@ -79,6 +79,8 @@ pub(crate) const MOTION_PROFILE_ANALOG_REGISTERS: [AnalogRegisterInfo; 14] = [
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_REPOSITION_SPEED_Z, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_WIRE_FEED_SPEED, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_AVC_VREF, "V", 2, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER, "x", 3, 0),
+    AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_AVC_TRAVEL_SPEED_Z, "in/min", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_Z_STATIC_OFFSET, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_AXIS_Z_TORCH_UP_OFFSET, "in", 2, 0),
     AnalogRegisterInfo::new(&plc_register_definitions::CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE, "in", 2, 0),
