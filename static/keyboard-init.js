@@ -92,21 +92,6 @@
     }
   }
 
-  function insertTextAtCursor(element, text) {
-    const value = element.value || "";
-    const start = typeof element.selectionStart === "number" ? element.selectionStart : value.length;
-    const end = typeof element.selectionEnd === "number" ? element.selectionEnd : start;
-    const nextValue = value.slice(0, start) + text + value.slice(end);
-    const nextPos = start + text.length;
-
-    element.value = nextValue;
-    if (typeof element.setSelectionRange === "function") {
-      element.setSelectionRange(nextPos, nextPos);
-    }
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    keyboard.setInput(nextValue || "");
-  }
-
   function handleKeyPress(button) {
     if (button === "{close}") {
       if (checkNonNullAndConnected(activeInput)) {
@@ -124,7 +109,6 @@
       if (checkNonNullAndConnected(activeInput)) {
         console.debug("has active input: ", activeInput);
         if (activeInput instanceof HTMLTextAreaElement) {
-          insertTextAtCursor(activeInput, "\n");
           return;
         }
         if(activeInput.form) {
@@ -200,6 +184,11 @@
       });
     }
 
+    const newLineOnEnter = activeInput instanceof HTMLTextAreaElement;
+    if (keyboard.options.newLineOnEnter !== newLineOnEnter) {
+      keyboard.setOptions({ newLineOnEnter });
+    }
+
     keyboard.setInput(activeInput.value || "");
   }
 
@@ -223,19 +212,6 @@
         return true;
       } else {
         element = null;
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-  
-  function checkNonNullAndConnected(activeInput) {
-    if(activeInput){
-      if(activeInput.isConnected){
-        return true;
-      } else {
-        activeInput = null;
         return false;
       }
     } else {

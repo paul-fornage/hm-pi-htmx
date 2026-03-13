@@ -1489,11 +1489,6 @@
       display: inline;
     }
   }
-  .group-\[\.htmx-request\]\:cursor-wait {
-    &:is(:where(.group):is(.htmx-request) *) {
-      cursor: wait;
-    }
-  }
   .group-\[\.htmx-request\]\:opacity-70 {
     &:is(:where(.group):is(.htmx-request) *) {
       opacity: 70%;

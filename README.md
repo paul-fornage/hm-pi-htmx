@@ -17,17 +17,17 @@ TODO:
 - [x] purge gas
 - [ ] configurable arc start timeout
 - [ ] move rpi to monitor!
-- [ ] 'use ep' should be the electrode polarity enum in weld profiles
+- [x] 'use ep' should be the electrode polarity enum in weld profiles
 - [ ] jog buttons still suck
 - [ ] test wf
 - [ ] address avc
 - [ ] lift arc?
-- [ ] gas purge horribly placed
-- [ ] manual control layout when axes are disabled ( maybe show total wf distance )
+- [x] gas purge horribly placed
+- [x] manual control layout when axes are disabled ( maybe show total wf distance )
 - [ ] do not display position while homing
 - [ ] Distinguish UI register descriptions from the register comments. e.g. don't specify scaling info in the frontend description that already has that applied
 - [ ] Gas purge countdown does not disappear when the purge is complete
-- [ ] keyboard enter in textarea doesn't quite work
+- [x] keyboard enter in textarea doesn't quite work
 - [ ] 
 
 
