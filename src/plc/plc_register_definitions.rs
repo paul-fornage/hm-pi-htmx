@@ -13,260 +13,304 @@ pub const CLEARCORE_CHUNKS: &'static[ModbusChunk] = &[
 // COILS
 // ============================================================================
 
+/// HMI sets to true after uploading all options
 pub const CONFIG_READY: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 1 },
     name: "CONFIG READY",
-    description: "HMI sets to true after uploading all options",
+    description: "Configuration upload complete",
 };
 
+/// Is the current operation cancellable (should display cancel button)
 pub const IS_OP_CANCELLABLE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 9 },
     name: "IS OP CANCELLABLE",
-    description: "Is the current operation cancellable (should display cancel button)",
+    description: "Cancel is available for the current operation",
 };
 
+/// Start cycle latch
 pub const START_CYCLE_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 10 },
     name: "START CYCLE LATCH",
-    description: "Start cycle latch",
+    description: "Start cycle",
 };
 
+/// Home latch
 pub const HOME_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 11 },
     name: "HOME LATCH",
-    description: "Home latch",
+    description: "Home axes",
 };
 
+/// Is currently homing
 pub const IS_HOMING: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 12 },
     name: "IS HOMING",
-    description: "Is currently homing",
+    description: "Homing in progress",
 };
 
+/// Is homed
 pub const IS_HOMED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 13 },
     name: "IS HOMED",
-    description: "Is homed",
+    description: "Machine homed",
 };
 
+/// At start position
 pub const AT_START: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 14 },
     name: "AT START",
-    description: "At start position",
+    description: "At cycle start position",
 };
 
+/// Go to start latch
 pub const GO_TO_START_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 15 },
     name: "GO TO START LATCH",
-    description: "Go to start latch",
+    description: "Move to start position",
 };
 
+/// Job is active
 pub const JOB_ACTIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 16 },
     name: "JOB ACTIVE",
-    description: "Job is active",
+    description: "Cycle running",
 };
 
+/// Cancel operation latch
 pub const CANCEL_OPERATION_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 17 },
     name: "CANCEL OPERATION LATCH",
-    description: "Cancel operation latch",
+    description: "Cancel current operation",
 };
 
+/// HMI commands estop
 pub const FORCE_ESTOP: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 18 },
     name: "FORCE ESTOP",
-    description: "HMI commands estop",
+    description: "Trigger emergency stop",
 };
 
+/// If false, it will be in sim mode
 pub const WELD_ENABLE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 19 },
     name: "WELD ENABLE",
-    description: "If false, it will be in sim mode",
+    description: "Enable welding output",
 };
 
+/// Weld signal
 pub const WELD_SIGNAL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 20 },
     name: "WELD SIGNAL",
-    description: "Weld signal",
+    description: "Weld signal output",
 };
+/// When true, gas will be forced on. For purge or pre-flow
 pub const ENABLE_GAS_OUTPUT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 21 },
     name: "ENABLE GAS OUTPUT",
-    description: "When true, gas will be forced on. For purge or pre-flow",
+    description: "Force gas on for purge or pre-flow",
 };
+/// Error state
 pub const ERROR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 22 },
     name: "ERROR",
-    description: "Error state",
+    description: "Error active",
 };
+/// latch: command left fingers up
 pub const COMMAND_LF_UP_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 33 },
     name: "COMMAND LF UP LATCH",
-    description: "latch: command left fingers up",
+    description: "Raise left fingers",
 };
+/// latch: command left fingers down
 pub const COMMAND_LF_DOWN_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 34 },
     name: "COMMAND LF DOWN LATCH",
-    description: "latch: command left fingers down",
+    description: "Lower left fingers",
 };
+/// latch: command right fingers up
 pub const COMMAND_RF_UP_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 35 },
     name: "COMMAND RF UP LATCH",
-    description: "latch: command right fingers up",
+    description: "Raise right fingers",
 };
+/// latch: command right fingers down
 pub const COMMAND_RF_DOWN_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 36 },
     name: "COMMAND RF DOWN LATCH",
-    description: "latch: command right fingers down",
+    description: "Lower right fingers",
 };
 
+/// When true, cycle will use CYCLE_AVC_VREF to manage Z height, else will use CYCLE_Z_STATIC_OFFSET
 pub const CYCLE_USE_AVC: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 37 },
     name: "CYCLE USE AVC",
-    description: "When true, cycle will use CYCLE_AVC_VREF to manage Z height, else will use CYCLE_Z_STATIC_OFFSET",
+    description: "Use AVC for Z height control",
 };
 
+/// TODO
 pub const CYCLE_USE_TOUCH_RETRACT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 38 },
     name: "CYCLE USE TOUCH RETRACT",
-    description: "TODO",
+    description: "Use touch retract for Z height",
 };
 
+/// Jog X axis in positive direction
 pub const JOG_X_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 40 },
     name: "JOG X AXIS POSITIVE",
-    description: "Jog X axis in positive direction",
+    description: "Jog X in the positive direction",
 };
 
+/// Jog X axis in negative direction
 pub const JOG_X_AXIS_NEGATIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 41 },
     name: "JOG X AXIS NEGATIVE",
-    description: "Jog X axis in negative direction",
+    description: "Jog X in the negative direction",
 };
 
+/// Jog Y axis in positive direction
 pub const JOG_Y_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 42 },
     name: "JOG Y AXIS POSITIVE",
-    description: "Jog Y axis in positive direction",
+    description: "Jog Y in the positive direction",
 };
 
+/// Jog Y axis in negative direction
 pub const JOG_Y_AXIS_NEGATIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 43 },
     name: "JOG Y AXIS NEGATIVE",
-    description: "Jog Y axis in negative direction",
+    description: "Jog Y in the negative direction",
 };
 
+/// Jog Z axis in positive direction
 pub const JOG_Z_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 44 },
     name: "JOG Z AXIS POSITIVE",
-    description: "Jog Z axis in positive direction",
+    description: "Jog Z in the positive direction",
 };
 
+/// Jog Z axis in negative direction
 pub const JOG_Z_AXIS_NEGATIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 45 },
     name: "JOG Z AXIS NEGATIVE",
-    description: "Jog Z axis in negative direction",
+    description: "Jog Z in the negative direction",
 };
 
+/// Jog W axis in positive direction
 pub const JOG_W_AXIS_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 46 },
     name: "JOG W AXIS POSITIVE",
-    description: "Jog W axis in positive direction",
+    description: "Jog W in the positive direction",
 };
 
+/// Jog W axis in negative direction
 pub const JOG_W_AXIS_NEGATIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 47 },
     name: "JOG W AXIS NEGATIVE",
-    description: "Jog W axis in negative direction",
+    description: "Jog W in the negative direction",
 };
 
+/// Direction to home the X axis motor. True is positive
 pub const AXIS_X_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 50 },
     name: "AXIS X HOME DIRECTION",
-    description: "Direction to home the X axis motor. True is positive",
+    description: "X axis homes toward positive",
 };
 
+/// Direction to home the Y axis motor. True is positive
 pub const AXIS_Y_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 51 },
     name: "AXIS Y HOME DIRECTION",
-    description: "Direction to home the Y axis motor. True is positive",
+    description: "Y axis homes toward positive",
 };
 
+/// Direction to home the Z axis motor. True is positive
 pub const AXIS_Z_HOME_DIRECTION_POSITIVE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 52 },
     name: "AXIS Z HOME DIRECTION",
-    description: "Direction to home the Z axis motor. True is positive",
+    description: "Z axis homes toward positive",
 };
 
+/// Machine uses Y axis
 pub const USES_Y_AXIS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 65 },
     name: "USES Y AXIS",
-    description: "Machine uses Y axis",
+    description: "Enable Y axis",
 };
 
+/// Machine uses Z axis
 pub const USES_Z_AXIS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 66 },
     name: "USES Z AXIS",
-    description: "Machine uses Z axis",
+    description: "Enable Z axis",
 };
 
+/// Machine uses W axis
 pub const USES_W_AXIS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 67 },
     name: "USES W AXIS",
-    description: "Machine uses W axis",
+    description: "Enable W axis",
 };
 
+/// Latch to command X axis go to position
 pub const X_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 68 },
     name: "X AXIS GO TO POSITION LATCH",
-    description: "Latch to command X axis go to position",
+    description: "Move X to target position",
 };
 
+/// Latch to command Y axis go to position
 pub const Y_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 69 },
     name: "Y AXIS GO TO POSITION LATCH",
-    description: "Latch to command Y axis go to position",
+    description: "Move Y to target position",
 };
 
+/// Latch to command Z axis go to position
 pub const Z_AXIS_GO_TO_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 70 },
     name: "Z AXIS GO TO POSITION LATCH",
-    description: "Latch to command Z axis go to position",
+    description: "Move Z to target position",
 };
 
+/// True when X axis is homed
 pub const X_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 71 },
     name: "X AXIS IS HOMED",
-    description: "True when X axis is homed",
+    description: "X axis homed",
 };
 
+/// True when Y axis is homed
 pub const Y_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 72 },
     name: "Y AXIS IS HOMED",
-    description: "True when Y axis is homed",
+    description: "Y axis homed",
 };
 
+/// True when Z axis is homed
 pub const Z_AXIS_IS_HOMED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 73 },
     name: "Z AXIS IS HOMED",
-    description: "True when Z axis is homed",
+    description: "Z axis homed",
 };
 
+/// True means welder runs in simulate mode
 pub const WELDER_SIMULATE_MODE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 74 },
     name: "WELDER SIMULATE MODE",
-    description: "True means welder runs in simulate mode",
+    description: "Simulate welder output",
 };
+/// UNUSED True means the touch retract coil on the welder is currently enabled. This is the REQUEST. Not sense feedback.
 pub const TOUCH_RETRACT_ENABLED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 75 },
     name: "TOUCH RETRACT ENABLED",
-    description: "UNUSED True means the touch retract coil on the welder is currently enabled. This is the REQUEST. Not sense feedback.",
+    description: "Touch retract output enabled (unused)",
 };
+/// Like the {}_AXIS_GO_TO_POSITION_LATCH's but instead of an absolute position, it jogs that far from current
 pub const W_AXIS_GO_TO_RELATIVE_POSITION_LATCH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 76 },
     name: "W AXIS GO TO RELATIVE POSITION LATCH",
-    description: "Like the {}_AXIS_GO_TO_POSITION_LATCH's but instead of an absolute position, it jogs that far from current",
+    description: "Move W by a relative distance",
 };
 
 
@@ -275,432 +319,505 @@ pub const W_AXIS_GO_TO_RELATIVE_POSITION_LATCH: RegisterMetadata = RegisterMetad
 // DISCRETE INPUTS
 // ============================================================================
 
+/// Discrete input (TODO: define purpose)
 pub const FORGOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 0 },
     name: "FORGOR",
-    description: "Discrete input (TODO: define purpose)",
+    description: "Unused discrete input",
 };
+/// true when an arc is commanded. This happens even in simulate mode, to show when it WOULD be active
 pub const WELDER_ARC_COMMANDED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2 },
     name: "WELDER ARC COMMANDED",
-    description: "true when an arc is commanded. This happens even in simulate mode, to show when it WOULD be active",
+    description: "Arc command active",
 };
+/// true when an arc is valid. this is from the miller and only happens when there is a REAL ARC
 pub const WELDER_ARC_VALID: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 3 },
     name: "WELDER ARC VALID",
-    description: "true when an arc is valid. this is from the miller and only happens when there is a REAL ARC",
+    description: "Arc detected",
 };
+/// true when estop is engaged
 pub const IN_ESTOP: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 4 },
     name: "IN ESTOP",
-    description: "true when estop is engaged",
+    description: "Emergency stop engaged",
 };
+/// true when the mandrel latch is sensed to be closed
 pub const MANDREL_LATCH_CLOSED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 5 },
     name: "MANDREL LATCH CLOSED",
-    description: "true when the mandrel latch is sensed to be closed",
+    description: "Mandrel latch closed",
 };
+/// Are the left fingers currently commanded down
 pub const LF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 6 },
     name: "LF COMMANDED DOWN",
-    description: "Are the left fingers currently commanded down",
+    description: "Left fingers commanded down",
 };
+/// Are the right fingers currently commanded down
 pub const RF_COMMANDED_DOWN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 7 },
     name: "RF COMMANDED DOWN",
-    description: "Are the right fingers currently commanded down",
+    description: "Right fingers commanded down",
 };
+/// true when clearcore wants to enable touch retract
 pub const TOUCH_RETRACT_REQUESTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 8 },
     name: "TOUCH RETRACT REQUESTED",
-    description: "true when clearcore wants to enable touch retract",
+    description: "Touch retract requested",
 };
 
 // ============================================================================
 // INPUT REGISTERS
 // ============================================================================
 
+/// Serial number low word
 pub const SERIAL_NUMBER_LOW: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 0 },
     name: "SERIAL NUMBER LOW",
-    description: "Serial number low word",
+    description: "Clearcore serial number (low word of 2 part register)",
 };
 
+/// Serial number high word
 pub const SERIAL_NUMBER_HIGH: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 1 },
     name: "SERIAL NUMBER HIGH",
-    description: "Serial number high word",
+    description: "Clearcore serial number (high word of 2 part register)",
 };
+/// hundredths of a volt| this shows the voltage on the arc with avc-l/o gating, a convolution, and correction factor
 pub const MEASURED_AVC_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 10 },
     name: "MEASURED AVC VOLTAGE",
-    description: "hundredths of a volt| this shows the voltage on the arc with avc-l/o gating, a convolution, and correction factor",
+    description: "Measured arc voltage (V)",
 };
+/// hundredths of an amp| this shows the current on the arc with avc-l/o gating, a convolution, and correction factor
 pub const MEASURED_AVC_CURRENT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 11 },
     name: "MEASURED AVC CURRENT",
-    description: "hundredths of an amp| this shows the current on the arc with avc-l/o gating, a convolution, and correction factor",
+    description: "Measured arc current (A)",
 };
 
 // ============================================================================
 // HOLDING REGISTERS
 // ============================================================================
 
+/// port to send UDP logs to. Logs will be sent to whoever connects to modbus on this port. 0 means no logging
 pub const UDP_LOG_PORT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6 },
     name: "UDP LOG PORT",
-    description: "port to send UDP logs to. Logs will be sent to whoever connects to modbus on this port. 0 means no logging",
+    description: "UDP log port",
 };
+/// Current position of carriage (hundredths of an inch)
 pub const X_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 8 },
     name: "X AXIS POSITION",
-    description: "Current position of carriage (hundredths of an inch)",
+    description: "X axis position (in)",
 };
+/// Current position of carriage (hundredths of an inch)
 pub const Y_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 9 },
     name: "Y AXIS POSITION",
-    description: "Current position of carriage (hundredths of an inch)",
+    description: "Y axis position (in)",
 };
+/// Current position of carriage (hundredths of an inch)
 pub const Z_AXIS_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 10 },
     name: "Z AXIS POSITION",
-    description: "Current position of carriage (hundredths of an inch)",
+    description: "Z axis position (in)",
 };
+/// Distance from 0 to start weld (hundredths of an inch)
 pub const CYCLE_START_POS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 13 },
     name: "CYCLE START POS",
-    description: "Distance from 0 to start weld (hundredths of an inch)",
+    description: "Weld start position (in)",
 };
 
+/// Distance from 0 to finish weld (hundredths of an inch)
 pub const CYCLE_END_POS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 14 },
     name: "CYCLE END POS",
-    description: "Distance from 0 to finish weld (hundredths of an inch)",
+    description: "Weld end position (in)",
 };
 
+/// Distance from 0 to park after weld cycle (hundredths of an inch)
 pub const CYCLE_PARK_POS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 15 },
     name: "CYCLE PARK POS",
-    description: "Distance from 0 to park after weld cycle (hundredths of an inch)",
+    description: "Park position after cycle (in)",
 };
 
+/// Speed to weld (hundredths of an inch per minute)
 pub const CYCLE_WELD_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 16 },
     name: "CYCLE WELD SPEED",
-    description: "Speed to weld (hundredths of an inch per minute)",
+    description: "Weld travel speed (in/min)",
 };
 
+/// Speed to extrude wire while welding (hundredths of an inch per minute)
 pub const CYCLE_WIRE_FEED_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 18 },
     name: "CYCLE WIRE FEED SPEED",
-    description: "Speed to extrude wire while welding (hundredths of an inch per minute)",
+    description: "Wire feed speed during weld (in/min)",
 };
 
+/// Currently commanded jogging speed for X axis (hundredths of an inch per minute)
 pub const AXIS_X_COMMANDED_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 20 },
     name: "AXIS X COMMANDED JOG SPEED",
-    description: "Currently commanded jogging speed for X axis (hundredths of an inch per minute)",
+    description: "Current X jog speed (in/min)",
 };
 
+/// Currently commanded jogging speed for Y axis (hundredths of an inch per minute)
 pub const AXIS_Y_COMMANDED_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 21 },
     name: "AXIS Y COMMANDED JOG SPEED",
-    description: "Currently commanded jogging speed for Y axis (hundredths of an inch per minute)",
+    description: "Current Y jog speed (in/min)",
 };
 
+/// Currently commanded jogging speed for Z axis (hundredths of an inch per minute)
 pub const AXIS_Z_COMMANDED_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 22 },
     name: "AXIS Z COMMANDED JOG SPEED",
-    description: "Currently commanded jogging speed for Z axis (hundredths of an inch per minute)",
+    description: "Current Z jog speed (in/min)",
 };
 
+/// Currently commanded jogging speed for W axis (hundredths of an inch per minute)
 pub const AXIS_W_COMMANDED_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 23 },
     name: "AXIS W COMMANDED JOG SPEED",
-    description: "Currently commanded jogging speed for W axis (hundredths of an inch per minute)",
+    description: "Current W jog speed (in/min)",
 };
 
+/// Speed to use when homing X axis (hundredths of an inch per minute)
 pub const AXIS_X_HOMING_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 24 },
     name: "AXIS X HOMING SPEED",
-    description: "Speed to use when homing X axis (hundredths of an inch per minute)",
+    description: "X axis homing speed (in/min)",
 };
 
+/// Speed to use when homing Y axis (hundredths of an inch per minute)
 pub const AXIS_Y_HOMING_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 25 },
     name: "AXIS Y HOMING SPEED",
-    description: "Speed to use when homing Y axis (hundredths of an inch per minute)",
+    description: "Y axis homing speed (in/min)",
 };
 
+/// Speed to use when homing Z axis (hundredths of an inch per minute)
 pub const AXIS_Z_HOMING_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 26 },
     name: "AXIS Z HOMING SPEED",
-    description: "Speed to use when homing Z axis (hundredths of an inch per minute)",
+    description: "Z axis homing speed (in/min)",
 };
 
+/// Distance to move X axis away from hardware limit after homing (hundredths of an inch)
 pub const AXIS_X_HOMING_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 27 },
     name: "AXIS X HOMING OFFSET",
-    description: "Distance to move X axis away from hardware limit after homing (hundredths of an inch)",
+    description: "X axis homing offset (in)",
 };
 
+/// Distance to move Y axis away from hardware limit after homing (hundredths of an inch)
 pub const AXIS_Y_HOMING_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 28 },
     name: "AXIS Y HOMING OFFSET",
-    description: "Distance to move Y axis away from hardware limit after homing (hundredths of an inch)",
+    description: "Y axis homing offset (in)",
 };
 
+/// Distance to move Z axis away from hardware limit after homing (hundredths of an inch)
 pub const AXIS_Z_HOMING_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 29 },
     name: "AXIS Z HOMING OFFSET",
-    description: "Distance to move Z axis away from hardware limit after homing (hundredths of an inch)",
+    description: "Z axis homing offset (in)",
 };
 
+/// Progress on current job (hundredths of percent, 0..10000)
 pub const CYCLE_PROGRESS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 30 },
     name: "CYCLE PROGRESS",
-    description: "Progress on current job (hundredths of percent, 0..10000)",
+    description: "Cycle progress (%)",
 };
 
+/// Target voltage for AVC (hundredth of volt)
 pub const CYCLE_AVC_VREF: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 31 },
     name: "AVC VREF",
-    description: "Target voltage for AVC (hundredth of volt)",
+    description: "Target arc voltage (V)",
 };
 
+/// offset to use for Z axis when CYCLE_USE_AVC is false. measured as distance from top of travel (hundredths of an inch)
 pub const CYCLE_Z_STATIC_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 32 },
     name: "Z STATIC OFFSET",
-    description: "offset to use for Z axis when CYCLE_USE_AVC is false. measured as distance from top of travel (hundredths of an inch)",
+    description: "Fixed Z height when AVC is off (in)",
 };
 
+/// speed to move x axis in cycle when not actively welding (hundredths of an inch per minute)
 pub const CYCLE_REPOSITION_SPEED_X: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 33 },
     name: "REPOSITION SPEED X",
-    description: "speed to move x axis in cycle when not actively welding (hundredths of an inch per minute)",
+    description: "X axis travel speed between welds (in/min)",
 };
 
+/// speed to move y axis in cycle when not actively welding (hundredths of an inch per minute)
 pub const CYCLE_REPOSITION_SPEED_Y: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 34 },
     name: "REPOSITION SPEED Y",
-    description: "speed to move y axis in cycle when not actively welding (hundredths of an inch per minute)",
+    description: "Y axis travel speed between welds (in/min)",
 };
 
+/// speed to move z axis in cycle when not actively welding (hundredths of an inch per minute)
 pub const CYCLE_REPOSITION_SPEED_Z: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 35 },
     name: "REPOSITION SPEED Z",
-    description: "speed to move z axis in cycle when not actively welding (hundredths of an inch per minute)",
+    description: "Z axis travel speed between welds (in/min)",
 };
+/// hundredths of an inch| offset to use for Z axis when torch is up after a cycle. measured as distance from top of travel
 pub const CYCLE_AXIS_Z_TORCH_UP_OFFSET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 36 },
     name: "AXIS Z TORCH UP OFFSET",
-    description: "hundredths of an inch| offset to use for Z axis when torch is up after a cycle. measured as distance from top of travel",
+    description: "Torch up height after cycle (in)",
 };
 
+/// hundredths of an inch| distance to move the Z axis at reposition speed before slowing down during touch retract. measured as distance from top of travel
 pub const CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 37 },
     name: "TOUCH RETRACT REPOSITION DIST",
-    description: "hundredths of an inch| distance to move the Z axis at reposition speed before slowing down during touch retract. measured as distance from top of travel",
+    description: "Touch retract fast travel distance (in)",
 };
 
+/// hundredths of an inch per minute| probing speed after reaching CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE during touch retract
 pub const CYCLE_TOUCH_RETRACT_PROBE_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 38 },
     name: "TOUCH RETRACT PROBE SPEED",
-    description: "hundredths of an inch per minute| probing speed after reaching CYCLE_TOUCH_RETRACT_REPOSITION_DISTANCE during touch retract",
+    description: "Touch retract probe speed (in/min)",
 };
 
+/// hundredths of an inch| final height when using touch retract measured from the part (only used with touch retract mode)
 pub const CYCLE_TOUCH_RETRACT_FINAL_HEIGHT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 39 },
     name: "TOUCH RETRACT FINAL HEIGHT",
-    description: "hundredths of an inch| final height when using touch retract measured from the part (only used with touch retract mode)",
+    description: "Touch retract final height (in)",
 };
+/// unitless factor| This number divided by 10000 is multiplied by the raw adc voltage reading to get the actual arc voltage
 pub const ARC_VOLTAGE_CALIBRATION_FACTOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 60 },
     name: "ARC VOLTAGE ADC CORRECTION",
-    description: "unitless factor| This number divided by 10000 is multiplied by the raw adc voltage reading to get the actual arc voltage",
+    description: "Arc voltage calibration factor (unitless)",
 };
+/// unitless factor| This number divided by 10000 is multiplied by the raw adc current reading to get the actual arc current
 pub const ARC_CURRENT_CALIBRATION_FACTOR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 61 },
     name: "ARC CURRENT ADC CORRECTION",
-    description: "unitless factor| This number divided by 10000 is multiplied by the raw adc current reading to get the actual arc current",
+    description: "Arc current calibration factor (unitless)",
 };
+/// u32 where combined value over 10^9 is inches per step. range: 0..4.294967296
 pub const INCHES_PER_STEP_X_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 64 },
     name: "X AXIS SCALING",
-    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
+    description: "X axis scale (in/step)",
 };
 
+/// See HUNDREDTHS_PER_STEP_X_AXIS_LOWER
 pub const INCHES_PER_STEP_X_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 65 },
     name: "X AXIS SCALING UPPER",
-    description: "See HUNDREDTHS_PER_STEP_X_AXIS_LOWER",
+    description: "X axis scale (upper word)",
 };
 
+/// u32 where combined value over 10^9 is inches per step. range: 0..4.294967296
 pub const INCHES_PER_STEP_Y_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 66 },
     name: "Y AXIS SCALING",
-    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
+    description: "Y axis scale (in/step)",
 };
 
+/// See HUNDREDTHS_PER_STEP_Y_AXIS_LOWER
 pub const INCHES_PER_STEP_Y_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 67 },
     name: "Y AXIS SCALING UPPER",
-    description: "See HUNDREDTHS_PER_STEP_Y_AXIS_LOWER",
+    description: "Y axis scale (upper word)",
 };
 
+/// u32 where combined value over 10^9 is inches per step. range: 0..4.294967296
 pub const INCHES_PER_STEP_Z_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 68 },
     name: "Z AXIS SCALING",
-    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
+    description: "Z axis scale (in/step)",
 };
 
+/// See HUNDREDTHS_PER_STEP_Z_AXIS_LOWER
 pub const INCHES_PER_STEP_Z_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 69 },
     name: "Z AXIS SCALING UPPER",
-    description: "See HUNDREDTHS_PER_STEP_Z_AXIS_LOWER",
+    description: "Z axis scale (upper word)",
 };
 
+/// u32 where combined value over 10^9 is inches per step. range: 0..4.294967296
 pub const INCHES_PER_STEP_W_AXIS_LOWER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 70 },
     name: "W AXIS SCALING",
-    description: "u32 where combined value over 10^9 is inches per step. range: 0..4.294967296",
+    description: "W axis scale (in/step)",
 };
 
+/// See HUNDREDTHS_PER_STEP_W_AXIS_LOWER
 pub const INCHES_PER_STEP_W_AXIS_UPPER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 71 },
     name: "W AXIS SCALING UPPER",
-    description: "See HUNDREDTHS_PER_STEP_W_AXIS_LOWER",
+    description: "W axis scale (upper word)",
 };
 
+/// Minimum position for X axis (hundredths of an inch)
 pub const MIN_POS_X_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 72 },
     name: "MIN POS X AXIS",
-    description: "Minimum position for X axis (hundredths of an inch)",
+    description: "X axis minimum position (in)",
 };
 
+/// Maximum position for X axis (hundredths of an inch)
 pub const MAX_POS_X_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 73 },
     name: "MAX POS X AXIS",
-    description: "Maximum position for X axis (hundredths of an inch)",
+    description: "X axis maximum position (in)",
 };
 
+/// Maximum velocity for X axis (hundredths of an inch per minute)
 pub const MAX_VEL_X_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 74 },
     name: "MAX VEL X AXIS",
-    description: "Maximum velocity for X axis (hundredths of an inch per minute)",
+    description: "X axis maximum speed (in/min)",
 };
 
+/// Maximum acceleration for X axis (hundredths of an inch per minute per second)
 pub const MAX_ACCEL_X_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 75 },
     name: "MAX ACCEL X AXIS",
-    description: "Maximum acceleration for X axis (hundredths of an inch per minute per second)",
+    description: "X axis maximum acceleration (in/min/s)",
 };
 
+/// Minimum position for Y axis (hundredths of an inch)
 pub const MIN_POS_Y_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 76 },
     name: "MIN POS Y AXIS",
-    description: "Minimum position for Y axis (hundredths of an inch)",
+    description: "Y axis minimum position (in)",
 };
 
+/// Maximum position for Y axis (hundredths of an inch)
 pub const MAX_POS_Y_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 77 },
     name: "MAX POS Y AXIS",
-    description: "Maximum position for Y axis (hundredths of an inch)",
+    description: "Y axis maximum position (in)",
 };
 
+/// Maximum velocity for Y axis (hundredths of an inch per minute)
 pub const MAX_VEL_Y_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 78 },
     name: "MAX VEL Y AXIS",
-    description: "Maximum velocity for Y axis (hundredths of an inch per minute)",
+    description: "Y axis maximum speed (in/min)",
 };
 
+/// Maximum acceleration for Y axis (hundredths of an inch per minute per second)
 pub const MAX_ACCEL_Y_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 79 },
     name: "MAX ACCEL Y AXIS",
-    description: "Maximum acceleration for Y axis (hundredths of an inch per minute per second)",
+    description: "Y axis maximum acceleration (in/min/s)",
 };
 
+/// Minimum position for Z axis (hundredths of an inch)
 pub const MIN_POS_Z_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 80 },
     name: "MIN POS Z AXIS",
-    description: "Minimum position for Z axis (hundredths of an inch)",
+    description: "Z axis minimum position (in)",
 };
 
+/// Maximum position for Z axis (hundredths of an inch)
 pub const MAX_POS_Z_AXIS_HUNDREDTHS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 81 },
     name: "MAX POS Z AXIS",
-    description: "Maximum position for Z axis (hundredths of an inch)",
+    description: "Z axis maximum position (in)",
 };
 
+/// Maximum velocity for Z axis (hundredths of an inch per minute)
 pub const MAX_VEL_Z_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 82 },
     name: "MAX VEL Z AXIS",
-    description: "Maximum velocity for Z axis (hundredths of an inch per minute)",
+    description: "Z axis maximum speed (in/min)",
 };
 
+/// Maximum acceleration for Z axis (hundredths of an inch per minute per second)
 pub const MAX_ACCEL_Z_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 83 },
     name: "MAX ACCEL Z AXIS",
-    description: "Maximum acceleration for Z axis (hundredths of an inch per minute per second)",
+    description: "Z axis maximum acceleration (in/min/s)",
 };
 
+/// Maximum velocity for W axis (hundredths of an inch per minute)
 pub const MAX_VEL_W_AXIS_HUNDREDTHS_PER_MINUTE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 84 },
     name: "MAX VEL W AXIS",
-    description: "Maximum velocity for W axis (hundredths of an inch per minute)",
+    description: "W axis maximum speed (in/min)",
 };
 
+/// Maximum acceleration for W axis (hundredths of an inch per minute per second)
 pub const MAX_ACCEL_W_AXIS_HUNDREDTHS_PER_MINUTE_PER_SECOND: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 85 },
     name: "MAX ACCEL W AXIS",
-    description: "Maximum acceleration for W axis (hundredths of an inch per minute per second)",
+    description: "W axis maximum acceleration (in/min/s)",
 };
 
+/// Target position for X axis go-to command (hundredths of an inch)
 pub const X_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 96 },
     name: "X AXIS GO TO POSITION",
-    description: "Target position for X axis go-to command (hundredths of an inch)",
+    description: "X axis target position (in)",
 };
 
+/// Target position for Y axis go-to command (hundredths of an inch)
 pub const Y_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 97 },
     name: "Y AXIS GO TO POSITION",
-    description: "Target position for Y axis go-to command (hundredths of an inch)",
+    description: "Y axis target position (in)",
 };
 
+/// Target position for Z axis go-to command (hundredths of an inch)
 pub const Z_AXIS_GO_TO_POSITION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 98 },
     name: "Z AXIS GO TO POSITION",
-    description: "Target position for Z axis go-to command (hundredths of an inch)",
+    description: "Z axis target position (in)",
 };
 
+/// Default jog speed for X axis (hundredths of an inch per minute)
 pub const AXIS_X_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 99 },
     name: "AXIS X DEFAULT JOG SPEED",
-    description: "Default jog speed for X axis (hundredths of an inch per minute)",
+    description: "Default X jog speed (in/min)",
 };
 
+/// Default jog speed for Y axis (hundredths of an inch per minute)
 pub const AXIS_Y_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 100 },
     name: "AXIS Y DEFAULT JOG SPEED",
-    description: "Default jog speed for Y axis (hundredths of an inch per minute)",
+    description: "Default Y jog speed (in/min)",
 };
 
+/// Default jog speed for Z axis (hundredths of an inch per minute)
 pub const AXIS_Z_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 101 },
     name: "AXIS Z DEFAULT JOG SPEED",
-    description: "Default jog speed for Z axis (hundredths of an inch per minute)",
+    description: "Default Z jog speed (in/min)",
 };
 
+/// Default jog speed for W axis (hundredths of an inch per minute)
 pub const AXIS_W_DEFAULT_JOG_SPEED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 102 },
     name: "AXIS W DEFAULT JOG SPEED",
-    description: "Default jog speed for W axis (hundredths of an inch per minute)",
+    description: "Default W jog speed (in/min)",
 };
+/// hundredths of an inch + 32,768| relative go to position for w axis
 pub const W_AXIS_RELATIVE_GO_TO_POTION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 103 },
     name: "W AXIS RELATIVE GO TO POSITION",
-    description: "hundredths of an inch + 32,768| relative go to position for w axis",
+    description: "W axis relative move distance (in)",
 };
 
 pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
