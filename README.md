@@ -28,7 +28,7 @@ TODO:
 - [ ] Distinguish UI register descriptions from the register comments. e.g. don't specify scaling info in the frontend description that already has that applied
 - [ ] Gas purge countdown does not disappear when the purge is complete
 - [x] keyboard enter in textarea doesn't quite work
-- [ ] 
+- [ ] investigate gas continuing during estop!
 
 
 

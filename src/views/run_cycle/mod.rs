@@ -538,6 +538,17 @@ pub async fn run_cycle_status(
     let progress_label = format!("{}%", progress_percent);
     let progress_width = progress_label.clone();
 
+    let measured_avc_voltage = mb_read_word_helper(
+        &state.clearcore_registers,
+        &plc_register_definitions::MEASURED_AVC_VOLTAGE.address,
+    )
+        .await;
+    let measured_avc_current = mb_read_word_helper(
+        &state.clearcore_registers,
+        &plc_register_definitions::MEASURED_AVC_CURRENT.address,
+    )
+        .await;
+
     RunCycleStatusTemplate {
         job_active,
         is_homed,
@@ -549,6 +560,8 @@ pub async fn run_cycle_status(
         right_fingers_clamped,
         progress_label,
         progress_width,
+        avc_voltage_label: measured_avc_voltage.map(|raw| format!("{:.2}", f32::from(raw) / 100.0)),
+        avc_current_label: measured_avc_current.map(|raw| format!("{:.2}", f32::from(raw) / 100.0)),
     }
 }
 
@@ -581,6 +594,8 @@ pub struct RunCycleStatusTemplate {
     pub right_fingers_clamped: Option<bool>,
     pub progress_label: String,
     pub progress_width: String,
+    pub avc_voltage_label: Option<String>,
+    pub avc_current_label: Option<String>,
 }
 
 #[derive(Template, WebTemplate)]

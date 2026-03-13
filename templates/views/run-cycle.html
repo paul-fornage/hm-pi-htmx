@@ -107,63 +107,64 @@
             Loading...
         </div>
         <div id="run-cycle-controls" class="h-full rounded-lg border border-slate-200 bg-white/70 p-3">
-            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Cycle actions</div>
-            <label class="mt-2 flex items-center gap-2 text-xl text-slate-600">
-                <input id="run-cycle-use-adjustments"
-                       type="checkbox"
-                       name="use_adjusted_presets"
-                       value="true"
-                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                <span>Use adjusted presets</span>
-            </label>
-            <div id="run-cycle-run-actions" class="mt-2 grid gap-6 group">
-                <button id="run-cycle-start-button"
-                        type="button"
-                        hx-post="/run-cycle/start"
-                        hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
-                        hx-target="#run-cycle-feedback"
-                        hx-swap="innerHTML"
-                        hx-disabled-elt=".run-cycle-action"
-                        hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
-                        class="run-cycle-action run-cycle-run-action w-full px-4 py-4 text-2xl bg-blue-600
-                            text-white border-none cursor-pointer rounded font-bold
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            group-[.htmx-request]:opacity-70">
-                    <span class="group-[.htmx-request]:hidden">Run Cycle</span>
-                    <span class="hidden group-[.htmx-request]:inline">Starting...</span>
-                </button>
-                <button id="run-cycle-simulate-button"
-                        type="button"
-                        hx-post="/run-cycle/start-simulate"
-                        hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
-                        hx-target="#run-cycle-feedback"
-                        hx-swap="innerHTML"
-                        hx-disabled-elt=".run-cycle-action"
-                        hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
-                        class="run-cycle-action run-cycle-run-action w-full px-4 py-4 text-2xl bg-slate-600
-                            text-white border-none cursor-pointer rounded font-bold
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            group-[.htmx-request]:opacity-70">
-                    <span class="group-[.htmx-request]:hidden">Simulate Motion</span>
-                    <span class="hidden group-[.htmx-request]:inline">Simulating...</span>
-                </button>
-            </div>
-            <div class="mt-6 grid gap-6">
-                <button id="run-cycle-go-to-start-button"
-                        type="button"
-                        hx-post="/run-cycle/go-to-start"
-                        hx-vals="js:{
-                            use_adjusted_presets: document.querySelector('#run-cycle-use-adjustments')?.checked ? 'true' : 'false',
-                            'adjustments[{{ cycle_start_register_name }}]': (document.querySelector('[data-adjustment-key=&quot;{{ cycle_start_register_name }}&quot;]')?.value ?? 'None')}"
-                        hx-target="#run-cycle-feedback"
-                        hx-swap="innerHTML"
-                        hx-disabled-elt=".run-cycle-action"
-                        hx-indicator="#run-cycle-action-indicator"
-                        class="run-cycle-action w-full px-4 py-4 text-2xl
-                            bg-emerald-600 text-white border-none cursor-pointer
-                            rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed">
-                    Go To Start Position
-                </button>
+                <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Cycle actions</div>
+                <label class="mt-2 flex items-center gap-2 text-xl text-slate-600">
+                    <input id="run-cycle-use-adjustments"
+                           type="checkbox"
+                           name="use_adjusted_presets"
+                           value="true"
+                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                    <span>Use adjusted presets</span>
+                </label>
+                <div id="run-cycle-run-actions" class="mt-2 grid gap-6 group">
+                    <button id="run-cycle-start-button"
+                            type="button"
+                            hx-post="/run-cycle/start"
+                            hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
+                            hx-target="#run-cycle-feedback"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt=".run-cycle-action"
+                            hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
+                            class="run-cycle-action run-cycle-run-action w-full px-4 py-4 text-2xl bg-blue-600
+                                text-white border-none cursor-pointer rounded font-bold
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                                group-[.htmx-request]:opacity-70">
+                        <span class="group-[.htmx-request]:hidden">Run Cycle</span>
+                        <span class="hidden group-[.htmx-request]:inline">Starting...</span>
+                    </button>
+                    <button id="run-cycle-simulate-button"
+                            type="button"
+                            hx-post="/run-cycle/start-simulate"
+                            hx-include="#run-cycle-form, #run-cycle-adjustments-form, #run-cycle-controls"
+                            hx-target="#run-cycle-feedback"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt=".run-cycle-action"
+                            hx-indicator="#run-cycle-action-indicator, #run-cycle-run-actions"
+                            class="run-cycle-action run-cycle-run-action w-full px-4 py-4 text-2xl bg-slate-600
+                                text-white border-none cursor-pointer rounded font-bold
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                                group-[.htmx-request]:opacity-70">
+                        <span class="group-[.htmx-request]:hidden">Simulate Motion</span>
+                        <span class="hidden group-[.htmx-request]:inline">Simulating...</span>
+                    </button>
+                </div>
+                <div class="mt-6 grid gap-6">
+                    <button id="run-cycle-go-to-start-button"
+                            type="button"
+                            hx-post="/run-cycle/go-to-start"
+                            hx-vals="js:{
+                                use_adjusted_presets: document.querySelector('#run-cycle-use-adjustments')?.checked ? 'true' : 'false',
+                                'adjustments[{{ cycle_start_register_name }}]': (document.querySelector('[data-adjustment-key=&quot;{{ cycle_start_register_name }}&quot;]')?.value ?? 'None')}"
+                            hx-target="#run-cycle-feedback"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt=".run-cycle-action"
+                            hx-indicator="#run-cycle-action-indicator"
+                            class="run-cycle-action w-full px-4 py-4 text-2xl
+                                bg-emerald-600 text-white border-none cursor-pointer
+                                rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+                        Go To Start Position
+                    </button>
+                </div>
             </div>
         </div>
     </div>

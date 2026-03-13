@@ -331,6 +331,16 @@ pub const SERIAL_NUMBER_HIGH: RegisterMetadata = RegisterMetadata {
     name: "SERIAL NUMBER HIGH",
     description: "Serial number high word",
 };
+pub const MEASURED_AVC_VOLTAGE: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 10 },
+    name: "MEASURED AVC VOLTAGE",
+    description: "hundredths of a volt| this shows the voltage on the arc with avc-l/o gating, a convolution, and correction factor",
+};
+pub const MEASURED_AVC_CURRENT: RegisterMetadata = RegisterMetadata {
+    address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 11 },
+    name: "MEASURED AVC CURRENT",
+    description: "hundredths of an amp| this shows the current on the arc with avc-l/o gating, a convolution, and correction factor",
+};
 
 // ============================================================================
 // HOLDING REGISTERS
@@ -748,6 +758,8 @@ pub const CLEARCORE_REGISTERS: &'static[RegisterMetadata] = &[
 
     SERIAL_NUMBER_LOW,
     SERIAL_NUMBER_HIGH,
+    MEASURED_AVC_VOLTAGE,
+    MEASURED_AVC_CURRENT,
 
     UDP_LOG_PORT,
     X_AXIS_POSITION,
