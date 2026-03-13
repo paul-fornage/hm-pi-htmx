@@ -17,742 +17,1500 @@ pub const MILLER_CHUNKS: &'static[ModbusChunk] = &[
 ];
 
 
+/**
+ * User Interface Disable: 1 True / 0 False.
+ * With User Interface disabled, all "*" marked Coils and Holding Registers should be set for
+ * desired function.
+ *
+ * Context: Disable the front panel UI so Modbus can control starred settings without the UI
+ * overwriting them.
+ */
 pub const PS_UI_DISABLE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0000 },
     name: "PS UI DISABLE",
-    description: "True disable the UI on the power supply. This is necessary to modify some regs with '*'",
+    description: "Disables the front-panel UI so Modbus can control starred settings without the panel overriding them. Re-enable to return local control.",
 };
 
+/**
+ * Rmt Trigger Disable: 1 True / 0 False.
+ *
+ * Context: Blocks the remote trigger input on the 14-pin connector so external start/stop is
+ * ignored.
+ */
 pub const RMT_TRIGGER_DISABLE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0001 },
     name: "RMT TRIGGER DISABLE",
-    description: "True disables the remote trigger on the 14 pin connector",
+    description: "Disables the remote trigger input on the 14-pin connector.",
 };
 
+/**
+ * Trigger (Contactor) Request: 1 True (1 Second Time Out Return To False) / 0 False.
+ * To continue a weld sequence through Final Slope and or Final Time, Coil must be refreshed with
+ * False throughout these sequences.
+ *
+ * Context: Momentary request to close the contactor (start output). Used to start or continue a
+ * weld sequence.
+ */
 pub const CONTACTOR_TRIGGER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0002 },
     name: "CONTACTOR TRIGGER",
-    description: "Trigger (Contactor) Request: 1 True(1 Second Time Out Return To False) / 0 False. To continue a weld sequence through Final Slope and or Final Time, Coil must be refreshed with False throughout these sequences.",
+    description: "Momentary request to close the contactor (start output).",
 };
 
+/**
+ * Gas Request: 1 True (1 Second Time Out Return To False) / 0 False.
+ *
+ * Context: Momentary request for gas flow independent of weld output.
+ */
 pub const GAS_REQUEST: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0003 },
     name: "GAS REQUEST",
-    description: "Gas Request: 1 TRUE(1 Second Time Out Return To False) / 0 False.",
+    description: "Momentary request for gas flow independent of weld output.",
 };
 
+/**
+ * * AC Power Source's Output DC: 1 True (DC) / 0 False (AC).
+ *
+ * Context: Selects DC output instead of AC on AC-capable machines.
+ */
 pub const USE_DC_OUTPUT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0004 },
     name: "USE DC OUTPUT",
-    description: "*,**AC Power Source’s Output DC: 1 True (DC) / 0 False (AC).",
+    description: "Selects DC output instead of AC (AC-capable models only).",
 };
 
+/**
+ * * AC Power Source's DC Polarity EP: 1 True (EP) / 0 False (EN).
+ *
+ * Context: Selects electrode-positive (EP) polarity for DC output.
+ */
 pub const USE_EP_POLARITY: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0005 },
     name: "USE EP POLARITY",
-    description: "*,**AC Power Source’s DC Polarity EP: 1 True (EP) / 0 False (EN).",
+    description: "Selects electrode-positive (EP) polarity for DC output.",
 };
 
+/**
+ * * Stuck Check Enable: 1 True / 0 False.
+ * When Stick Stuck Check is on and the welding electrode (rod) is stuck, output is turned off.
+ */
 pub const STUCK_CHECK_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0006 },
     name: "STUCK CHECK EN",
-    description: "*Stuck Check Enable: 1 True / 0 False. When Stick Stuck Check is on and the welding electrode (rod) is stuck, output is turned off.",
+    description: "Enables stick-stuck protection that shuts off output if the electrode sticks.",
 };
 
+/**
+ * * Hot Start Enable: 1 True / 0 False.
+ * Note: Hot Start can also be disabled with 0 time set in Holding Register 6215 Hot Start Time.
+ * Stick only.
+ *
+ * Context: Project uses holding register 6214 for hot start time.
+ */
 pub const HOT_START_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0007 },
     name: "HOT START EN",
-    description: "*Hot Start Enable: 1 True / 0 False.Note: Hot Start can also be Disabled with 0 time set in Holding Register 6214 Hot Start Time. Stick only",
+    description: "Enables hot start boost at arc start for stick welding.",
 };
 
+/**
+ * * Boost Enable: 1 True / 0 False.
+ */
 pub const BOOST_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0008 },
     name: "BOOST EN",
-    description: "*Boost Enable: 1 True / 0 False.",
+    description: "Enables boost (arc force) to increase current during short arc conditions.",
 };
 
+/**
+ * * Droop Enable: 1 True / 0 False.
+ */
 pub const DROOP_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0009 },
     name: "DROOP EN",
-    description: "*Droop Enable: 1 True / 0 False.",
+    description: "Enables droop mode to soften the arc by reducing voltage as current rises.",
 };
 
+/**
+ * * Open Circuit Voltage (OCV) Low Enable: 1 True (Low) / 0 False (Normal).
+ * OCV selection applies to both Stick and MIG processes.
+ */
 pub const USE_LOW_OCV: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0010 },
     name: "USE LOW OCV",
-    description: "*Open Circuit Voltage (OCV) Low Enable: 1 True (Low) / 0 False (Normal). OCV selection applies to both Stick and MIG processes.",
+    description: "Uses low open-circuit voltage (applies to stick and MIG).",
 };
 
+/**
+ * * Weld Gas Enable: 1 True / 0 False Enables Gas With Contactor.
+ *
+ * Context: Set true for automatic gas, false if using an external gas solenoid.
+ */
 pub const GAS_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0011 },
     name: "GAS EN",
-    description: "*Weld Gas Enable: 1 True / 0 False Enables Gas With Contactor. Set true for automatic gas, false if using our own gas solenoid",
+    description: "Enables automatic gas valve operation with the contactor.",
 };
 
+/**
+ * Non-CE Models Only Cooler Power Supply (CPS) Enable: 1 True (Parallel With Coil 0013) / 0 False.
+ * Note: Dynasty/Maxstar 210/280 CE Models have no control; read returns False.
+ *
+ * Context: Enables the 120 V cooler power supply output.
+ */
 pub const COOLER_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0012 },
     name: "COOLER EN",
-    description: "Non CE Models Only Cooler Power Supply (CPS) Enable: 1 True (Parallel With Coil 0013) / 0 False. Note: Dynasty/Maxstar 210/280 CE Models Have No Control, Read Returns False. Cooler power supply is switched 120v for the cooler in the back.",
+    description: "Enables the cooler power supply output (non-CE models only).",
 };
 
+/**
+ * * Cooler Power Supply (CPS) TIG Enable: 1 True (Parallel With Coil 0012) / 0 False.
+ * TIG Process Control of Cooler Power Supply.
+ */
 pub const COOLER_TIG_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0013 },
     name: "COOLER TIG EN",
-    description: "*Cooler Power Supply (CPS) TIG Enable: 1 True (Parallel With Coil 0012) / 0 False TIG Process Control Of Cooler Power Supply.",
+    description: "Allows TIG process control of the cooler power supply.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 Models Only * Cooler Error Enable: 1 True / 0 False.
+ * Enables Error "1.3.6 No Cooler Detected With Output Current".
+ * Error is generated when no load detected on cooler power supply output with load detected on the
+ * power source output.
+ */
 pub const COOLER_ERROR_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0014 },
     name: "COOLER ERROR EN",
-    description: "Dynasty/Maxstar 210/280 Models Only *Cooler Error Enable: 1 True / 0 False Enables Error “1.3.6 No Cooler Detected With Output Current”. Error Is Generated When No Load Detected On Cooler Power Supply’s Output With Load Detected On The Power Source’s Output.",
+    description: "Enables the 'no cooler detected with output current' fault.",
 };
 
+/**
+ * Touch Sense Enable: 1 True / 0 False.
+ * Touch Sense Detection found at Modbus Discrete Input 2009 or Remote 14 Receptacle Socket J.
+ *
+ * Context: Touch sense detect status is exposed in this project at discrete input 2008
+ * (TOUCH_SENSE_DETECT).
+ */
 pub const TOUCH_SENSE_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0015 },
     name: "TOUCH SENSE EN",
-    description: "Touch Sense Enable: 1 True / 0 False. Touch Sense Detection found at Modbus Discrete Input 2008 Or Remote 14 Receptacle Socket J.",
+    description: "Enables touch sense, which detects the electrode touching the work before arc start.",
 };
 
+/**
+ * RMS Enable: AC Amperage Preset And Meter And/Or DC Pulse Amperage Meter:
+ * 1 True (RMS) / 0 False (Average).
+ * Note: To enable, must have Discrete Input 2013 RMS Hardware Detect = True.
+ *
+ * Context: RMS hardware detect is exposed here as discrete input 2012 (RMS_HW_PRESENT).
+ */
 pub const RMS_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0016 },
     name: "RMS EN",
-    description: "RMS Enable: AC Amperage Preset And Meter And/Or DC Pulse Amperage Meter:1 True (RMS) / 0 False (Average) Note: To Enable, Must Have Discrete Input 2012 RMS Hardware Detect = True.",
+    description: "Uses RMS measurement mode for AC amperage and DC pulse metering (if hardware present).",
 };
 
+/**
+ * * Pulser Enable: 1 True / 0 False.
+ * Note: Can also be set TRUE / FALSE when writing values to Holding Register 6305 Pulser Pulses
+ * Per Second (PPS). When enabled and Holding Register 6304 PPS is found at "0", PPS will be set to
+ * a default value.
+ *
+ * Context: In this project, PPS is register 6305; 6304 is weld amperage.
+ */
 pub const PULSER_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0017 },
     name: "PULSER EN",
-    description: "*Pulser Enable: 1 True / 0 False. Note: Can also be set TRUE / FALSE when writing values to Holding Register 6305 Pulser Pulses Per Second (PPS). When enabled and Holding Register 6304 PPS is found at “0”, PPS will be set to a default value.",
+    description: "Enables pulsed output.",
 };
 
+/**
+ * Dynasty/Maxstar 400/800 Models Only * AC Commutation Amperage Low Enable:
+ * 1 True (Low) / 0 False (High).
+ * Application: Use high commutation amperage when a more aggressive arc is preferred. Use low
+ * commutation amperage when a less aggressive and quieter arc is preferred.
+ */
 pub const USE_LOW_AC_COMMUTATION_AMP: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0018 },
     name: "USE LOW AC COMMUTATION AMP",
-    description: "Dynasty/Maxstar 400/800 Models Only *AC Commutation Amperage LOW ENABLE: 1 TRUE (LOW) / 0 FALSE (High) Application: Use High commutation amperage when a more aggressive arc is preferred. Use Low commutation amperage when a less aggressive and quieter arc is preferred.",
+    description: "Uses low AC commutation amperage for a softer, quieter arc (400/800 models).",
 };
 
+/**
+ * * AC Independent Enable: 1 True / 0 False.
+ * Enables/Disables both independent amperage and independent AC wave shapes.
+ */
 pub const AC_INDEPENDANT_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0019 },
     name: "AC INDEPENDANT EN",
-    description: "*AC Independent Enable: 1 True / 0 False. Enables/Disables Both Independent Amperage and Independent AC Wave Shapes.",
+    description: "Enables independent EN/EP amperage and wave shape controls for AC.",
 };
 
+/**
+ * * Weld Timers Enable: 1 True / 0 False.
+ * Weld Timers include weld (spot), initial amperage, and final amperage timers.
+ */
 pub const WLED_TIMERS_EN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::Coil, address: 0020 },
     name: "WLED TIMERS EN",
-    description: "*Weld Timers Enable: 1 True / 0 False. Weld Timers Include Weld (Spot), Intial Amperage and Final Amperage Timers.",
+    description: "Enables weld timers (spot weld, initial, and final timers).",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 Models Only. Cooler Power Supply (CPS) Detect: 1 True / 0 False.
+ */
 pub const COOLER_DETECTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2000 },
     name: "COOLER DETECTED",
-    description: "Dynasty/Maxstar 210/280 Models OnlyCooler Power Supply (CPS) Detect: 1 True / 0 False.",
+    description: "Cooler power supply detected (210/280 only).",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 Models Only. Cooler Load Detect: 1 True / 0 False.
+ */
 pub const COOLER_LOAD_DETECTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2001 },
     name: "COOLER LOAD DETECTED",
-    description: "Dynasty/Maxstar 210/280 Models OnlyCooler Load Detect: 1 True / 0 False.",
+    description: "Cooler load detected (210/280 only). Indicates a cooler is connected and drawing load.",
 };
 
+/**
+ * Foot/Finger Tip Control Detect: 1 True / 0 False.
+ * Note: Holding Register 6205 (Remote 14-Skt E) Must Be Configured To 0 (Amperage Control) To
+ * Detect Foot/Finger Tip Control.
+ *
+ * Context: This project uses holding register 6204 (RMT_PIN_E_CONFIG) for the Remote 14-skt E
+ * configuration.
+ */
 pub const FOOT_CONTROL_DETECTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2002 },
     name: "FOOT CONTROL DETECTED",
-    description: "Foot/Finger Tip Control Detect: 1 True / 0 False Note: Holding Register 6204 (Remote 14-Skt E) Must Be Con-figured To 0 (Amperage Control) To Detect Foot/Finger Tip Control.",
+    description: "Foot or finger control detected on the Remote 14 input (requires pin E configured for amperage control).",
 };
 
+/**
+ * Remote Trigger (Contactor 14-Skt A-B) Enable: 1 True / 0 False.
+ */
 pub const RMT_TRIGGER_ENABLED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2003 },
     name: "RMT TRIGGER ENABLED",
-    description: "Remote Trigger (Contactor 14-Skt A-B) Enable: 1 True / 0 False. Not clear if this shows when it is enabled (like coil 1) Or if it shows when the trigger contactor is actually engaged.",
+    description: "Remote trigger circuit enabled (contactor A-B on the Remote 14 connector).",
 };
 
+/**
+ * Contactor Output Enabled: 1 True / 0 False (Contactor Output Or Sense Voltage Pre Contactor
+ * Output).
+ */
 pub const CONTACTOR_OUTPUT_ENABLED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2004 },
     name: "CONTACTOR OUTPUT ENABLED",
-    description: "Contactor Output Enabled: 1 True / 0 False (Contactor Output Or Sense Voltage Pre Contactor Output).",
+    description: "Contactor output active (weld output enabled or sensing voltage pre-contactor).",
 };
 
+/**
+ * Gas Output Enabled: 1 True / 0 False.
+ */
 pub const GAS_OUTPUT_ENABLED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2005 },
     name: "GAS OUTPUT ENABLED",
-    description: "Gas Output Enabled: 1 True / 0 False.",
+    description: "Gas valve output active.",
 };
 
+/**
+ * Valid Arc: 1 True / 0 False.
+ */
 pub const IS_VALID_ARC: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2006 },
     name: "IS VALID ARC",
-    description: "Valid Arc: 1 True / 0 False.",
+    description: "Arc detected as valid.",
 };
 
+/**
+ * Arc Length Control Lock Out: 1 True / 0 False.
+ */
 pub const ARC_LENGTH_CTL_LOCKOUT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2007 },
     name: "ARC LENGTH CTL LOCKOUT",
-    description: "Arc Length Control Lock Out: 1 True / 0 False.",
+    description: "Arc length control lockout active.",
 };
 
+/**
+ * Touch Sense Detect: 1 True / 0 False.
+ * Touch Sense Enable (Coil 16) must be set True with Machine's State (Input Register 4101) in
+ * standby, and weld output shorted for Touch Sense Detect to register as True.
+ *
+ * Context: Touch sense enable is coil 0015. Weld state is input register 4100 in this project.
+ */
 pub const TOUCH_SENSE_DETECT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2008 },
     name: "TOUCH SENSE DETECT",
-    description: "Touch Sense Detect: 1 True / 0 False. Touch Sense Enable (Coil 16) Must Be Set True With Machine’s State(Input Register 4101) In Standby, And Weld Output Shorted For Touch Sense Detect To Register As True.",
+    description: "Touch sense detected (electrode touching the work with output shorted in standby).",
 };
 
+/**
+ * CE Model Detect: 1 True / 0 False.
+ */
 pub const IS_CE_MODEL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2009 },
     name: "IS CE MODEL",
-    description: "CE Model Detect: 1 True / 0 False",
+    description: "CE model detected.",
 };
 
+/**
+ * STR Model Detect: 1 True / 0 False.
+ */
 pub const IS_STR_MODEL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2010 },
     name: "IS STR MODEL",
-    description: "STR Model Detect: 1 True / 0 False",
+    description: "STR model detected.",
 };
 
+/**
+ * DX Model Detect: 1 True / 0 False.
+ */
 pub const IS_DX_MODEL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2011 },
     name: "IS DX MODEL",
-    description: "DX Model Detect: 1 True / 0 False",
+    description: "DX model detected.",
 };
 
+/**
+ * RMS Hardware Detect: 1 True / 0 False.
+ */
 pub const RMS_HW_PRESENT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2012 },
     name: "RMS HW PRESENT",
-    description: "RMS Hardware Detect: 1 True / 0 False",
+    description: "RMS measurement hardware present.",
 };
 
+/**
+ * Low Line Detect: 1 True / 0 False (Dynasty/Maxstar 210 Only).
+ * Note: Set True when powered up on 120 V input.
+ */
 pub const LOW_LIVE_INPUT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2013 },
     name: "LOW LIVE INPUT",
-    description: "Low Line Detect: 1 True / 0 False (Dynasty/Maxstar 210 Only)Note: Set True When Powered Up On 120 V Input.",
+    description: "Low-line (120 V) input detected (210 only).",
 };
 
+/**
+ * Feature Enable for Hot Start Adjust: 1 True / 0 False.
+ */
 pub const HOT_START_SUPPORTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2014 },
     name: "HOT START SUPPORTED",
-    description: "Feature Enable for Hot Start Adjust: 1 True / 0 False.",
+    description: "Hot start adjustment supported by this machine.",
 };
 
+/**
+ * Feature Enable for AC Independent: 1 True / 0 False.
+ */
 pub const AC_INDEPENDANT_SUPPORTED: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2015 },
     name: "AC INDEPENDANT SUPPORTED",
-    description: "Feature Enable for AC Independent: 1 True / 0 False.",
+    description: "AC independent feature supported by this machine.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 Models Only. Volt Sensing (MIG) Model Detect: 1 True / 0 False.
+ */
 pub const IS_MIG_VOLT_SENSE_MODEL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2016 },
     name: "IS MIG VOLT SENSE MODEL",
-    description: "Dynasty/Maxstar 210/280 Models OnlyVolt Sensing (MIG) Model Detect: 1 True / 0 False",
+    description: "MIG volt-sensing model detected (210/280 only).",
 };
 
+/**
+ * Syncrowave Model Detect: 1 True / 0 False.
+ */
 pub const IS_SYNCROWAVE_MODEL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2017 },
     name: "IS SYNCROWAVE MODEL",
-    description: "Syncrowave Model Detect: 1 True / 0 False",
+    description: "Syncrowave model detected.",
 };
 
+/**
+ * Syncrowave 300/400 Models Only. Non Cooler Supply Detect: 1 True / 0 False.
+ */
 pub const NON_COOLER_SUPPLY_DETECT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::DiscreteInput, address: 2018 },
     name: "NON COOLER SUPPLY DETECT",
-    description: "Syncrowave 300/400 Models Only. Non Cooler Supply Detect: 1 True / 0 False",
+    description: "Non-cooler supply detected (Syncrowave 300/400 only).",
 };
 
+/**
+ * 32 bit.
+ * Dynasty/Maxstar 800 Models Only.
+ * Application Software Number and Revision, 4 bytes bit mapped:
+ * NNNN,NNNN NNNN,NNNN NNNN,NNRR RRRE,EEEE
+ * NNNN,NNNN NNNN,NNNN NNNN,NN == Miller Part Number, 22 bits 31-10, bit range 0-4,194,303,
+ * actual 0-999999.
+ * RR RRR == Revision Level, 5 bits 9-5, bit range 0-31, actual 0-26 where: 0 == "@" preproduction
+ * or field test software; 1,2,3... == Revision A,B,C...
+ * EEEE == Evaluation / Test, 5 bits 4-0, bit range 0-31, actual 0-26 where: 0 == "@" released
+ * software; 1,2,3... == Evaluation / Test Revision A,B,C...
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_7: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4016 },
     name: "APP SOFTWARE VERSION PCB 7",
-    description: "32 bit\n\nDynasty/Maxstar 800 Models Only\nApplication Software Number And Revision,4 Bytes Bit Mapped:\nNNNN,NNNN NNNN,NNNN NNNN,NNRR RRRE,EEEE\nNNNN,NNNN NNNN,NNNN NNNN,NN == Miller Part Number,22 Bits 31 - 10, Bit Range 0 - 4,194,303, Actual 0-999999\nRR RRR == Revision Level, 5 Bits 9 - 5, Bit Range 0 - 31,Actual 0 - 26where: 0 == “@” Preproduction Or Field Test Software1,2,3... == Revision A,B,C…E,\nEEEE == Evaluation / Test, 5 Bits 9 - 5, Bit Range 0 - 31,Actual 0 - 26Where: 0 == ”@” Released Software,1,2,3... == Evaluation / Test Revision A,B,C…PCB 7 Primary",
+    description: "Application software version for PCB 7 (output control), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Application Software Number and Revision, PCB 6 Gateway Interface.
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_6: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4018 },
     name: "APP SOFTWARE VERSION PCB 6",
-    description: "32 bit\n\nApplication Software Number And Revision,PCB 6 Gateway Interface\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 6 (gateway interface), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Dynasty/Maxstar 210/280 Models Only. Application Software Number and Revision, PCB 5 Cooler
+ * Power Supply (CPS).
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_5: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4020 },
     name: "APP SOFTWARE VERSION PCB 5",
-    description: "32 bit\n\nDynasty/Maxstar 210/280 Models OnlyApplication Software Number And Revision,PCB 5 Cooler Power Supply (CPS)\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 5 (cooler power supply), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Application Software Number and Revision, PCB 4 Primary.
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_4: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4022 },
     name: "APP SOFTWARE VERSION PCB 4",
-    description: "32 bit\n\nApplication Software Number And Revision,PCB 4 Primary\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 4 (primary), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Application Software Number and Revision, PCB 3 Process.
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_3: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4024 },
     name: "APP SOFTWARE VERSION PCB 3",
-    description: "32 bit\n\nApplication Software Number And Revision,PCB 3 Process\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 3 (process), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Application Software Number and Revision, PCB 2 User Interface.
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_2: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4026 },
     name: "APP SOFTWARE VERSION PCB 2",
-    description: "32 bit\n\nApplication Software Number And Revision,PCB 2 User Interface\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 2 (user interface), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Application Software Number and Revision, PCB 1 SD Card.
+ * See APP_SOFTWARE_VERSION_PCB_7.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letter>, Evaluation Revision: <letter>".
+ */
 pub const APP_SOFTWARE_VERSION_PCB_1: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4028 },
     name: "APP SOFTWARE VERSION PCB 1",
-    description: "32 bit\n\nApplication Software Number And Revision,PCB 1 SD Card\n\nSee APP_SOFTWARE_VERSION_PCB_7",
+    description: "Application software version for PCB 1 (SD card), shown as part number and revision letters.",
 };
 
+/**
+ * 32 bit.
+ * Serial Number: 4 bytes bit mapped:
+ * DDDY,YYYW WWWW,WSSS,SSSS,SSSS,SSSB,BBBB
+ * DDD = Decade Code, 3 bits 31-29, bit range 0-7, actual "M" - "U" (for decades 201*-208*),
+ * skip "O".
+ * Y,YYY = Year Code, 4 bits 28-25, bit range 0-15, actual 0-9 "A" - "K", skip "I".
+ * W WWWW,W = Week Number, 6 bits 24-19, bit range 0-63, actual 01-52.
+ * SSS,SSSS,SSSS SSS = Serialized Number, 14 bits 18-5, bit range 0-16383, actual 0001-9999.
+ * B,BBBB = Business Unit Code, 5 bits 4-0, bit range 0-31, actual 0-25 "A"-"Z".
+ * Note: Letters "I" and "O" are skipped in decade and year. Not used in business unit code.
+ *
+ * Context: Displayed as a decoded serial like "MY051234B" (decade, year, week, serial, business unit).
+ */
 pub const SERIAL_NUMBER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4030 },
     name: "SERIAL NUMBER",
-    description: "32 bit\n\nSerial Number: 4 Bytes Bit Mapped: \nDDDY,YYYW WWWW,WSSS,SSSS,SSSS,SSSB,BBBB\n\nDDD = Decade Code, 3 Bits 31 - 29, Bit Range 0 - 7, actual “M” - “U” (For Decades 201*-208*), Skip “O”, See Note \nY,YYY = Year Code, 4 Bits 28 - 25, Bit Range 0 - 15, Actual 0 - 9 “A” - “K”, Skip “I”, See Note\nW WWWW,W = Week Number, 6 Bits 24-19, Bit Range 0 - 63, Actual 01 - 52 \nSSS,SSSS,SSSS SSS = Serialized Number, 14 Bits 18 - 5, Bit Range 0 - 16383, Actual 0001-9999 \nB,BBBB = Business Unit Code, 5 Bits 4 - 0, Bit Range 0 - 31, Actual 0 - 25 “A”-”Z”, “I” And “O”, Not Used See Note Note: Letters “I” And “O”, Similar To Numbers “1” And “0” Skipped In Decade And Year. Not used In Business Unit Code.",
+    description: "Machine serial number as decoded text (decade, year, week, serial, business unit).",
 };
 
+/**
+ * Power Source Configuration, Amperage Maximum: 0-1023, Res: 1A.
+ */
 pub const MAX_AMPS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4032 },
     name: "MAX AMPS",
-    description: "Power Source Configuration, Amperage Maximum: 0-1023, Res: 1A. Unclear if this is for the machine or for the current configuration.",
+    description: "Maximum output amperage configured for this power source.",
 };
 
+/**
+ * Power Source Configuration, Amperage DC Minimum: 0-31, Res: 1A, 0 = DC Not Available.
+ */
 pub const MIN_DC_AMPS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4033 },
     name: "MIN DC AMPS",
-    description: "Power Source Configuration, Amperage DC Minimum: 0-31, Res: 1A, 0 = DC Not Available. Unclear if this is for the machine or for the current configuration.",
+    description: "Minimum DC amperage configured for this power source.",
 };
 
+/**
+ * Power Source Configuration, Amperage AC Minimum: 0-31, Res: 1A, 0 = AC Not Available.
+ */
 pub const MIN_AC_AMPS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4034 },
     name: "MIN AC AMPS",
-    description: "Power Source Configuration, Amperage AC Minimum: 0-31, Res: 1A, 0 = AC Not Available. Unclear if this is for the machine or for the current configuration.",
+    description: "Minimum AC amperage configured for this power source.",
 };
 
+/**
+ * 32 bit.
+ * Machine's Software Update Number, Revision. 4 bytes bit mapped:
+ * NNNN,NNNN,NNNN,NNNN,NNNN,NNMM,MMML,LLLL
+ * NNNN,NNNN,NNNN,NNNN,NNNN,NN == Miller Part Number, 22 bits 31-10, bit range 0-4,194,303,
+ * actual 0-999999.
+ * MM MMM = Revision Level's Most Significant Designator, 5 bits 9-5, bit range 0-31,
+ * actual 0,1-26 (ASCII "@,A-Z"), 9 "I" and 15 "O" similar to "1" and "0" not used.
+ * Typically starts at 0 ("@", omitted when displayed), increases by one with each wrap "Z" to "A"
+ * of the least significant designator.
+ * L, LLLL = Revision Level's Least Significant Designator, 5 bits 4-0, bit range 0-31,
+ * actual 0,1-26 (ASCII "@,A-Z"), 9 "I" and 15 "O" similar to "1" and "0" not used.
+ * 0 "@" used for preproduction only.
+ *
+ * Context: Displayed as "Part Number: <n>, Release Revision: <letters>".
+ */
 pub const SOFTWARE_VERSION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4036 },
     name: "SOFTWARE VERSION",
-    description: "32 bit\n\nMachine’s Software Update Number, Revision. 4 Bytes Bit Mapped: \nNNNN,NNNN,NNNN,NNNN,NNNN,NNMM,MMML,LLLL\nNNNN,NNNN,NNNN,NNNN,NNNN,NN = Miller Part Number, 22 Bits 31−10, Bit Range 0−4,194,303, Actual 0−999999 \nMM MMM = Revision Level’s Most Significant Designator, 5 Bits 9−5, Bit Range 0−31, Actual 0,1−26 (ASCII “@,A−Z”), 9 “I” & 15 “O” Similar To “1” & “0” Not Used. Typically Starts At 0 (“@”, Omitted When Displayed), Increases By One With Each Wrap “Z” To “A” Of The Least Significant Designator \nL, LLLL = Revision Level’s Least Significant Designator, 5 Bits 4−0, Bit Range 0−31, Actual 0,1−26 (ASCII “@,A−Z”), 9 “I” & 15 “O” Similar To “1” & “0” Not Used. 0 “@” \n\nUsed For Preproduction Only.",
+    description: "Machine software update version, shown as part number and revision letters.",
 };
 
+/**
+ * Sequence Timer: Remaining / Elapsed Time of States:
+ * Initial Amperage, Initial Slope Time, Main Amperage, Final Slope Time, Final Amperage, Preflow,
+ * Postflow (typically timed while in Standby State).
+ * Resolution: 0.1 second.
+ */
 pub const SEQUENCE_TIMER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4099 },
     name: "SEQUENCE TIMER",
-    description: "Sequence Timer: Remaining / Elapsed Time of States: Initial Amperage Initial Slope Time Main Amperage Final Slope Time Final Amperage Preflow Postflow (typically timed while in Standby State) Resolution: 0.1 Second",
+    description: "Remaining or elapsed time for the current weld sequence phase.",
 };
 
+/**
+ * State:
+ * 0 Initial Amperage
+ * 1 Initial Slope Time
+ * 2 Main Amperage
+ * 3 Final Slope Time
+ * 4 Final Amperage
+ * 5 Preflow
+ * 6 Standby
+ * 7 Output Shorted
+ * 8 Release Trigger
+ * 9 Output Disabled
+ * 13 Error
+ * 14 Power Down
+ * 15 Power Up
+ */
 pub const WELD_STATE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4100 },
     name: "WELD STATE",
-    description: "State: \n0 Initial Amperage\n1 Initial Slope Time\n2 Main Amperage\n3 Final Slope Time\n4 Final Amperage\n5 Preflow\n6 Standby\n7 Output Shorted\n8 Release Trigger\n9 Output Disabled\n13 Error\n14 Power Down\n15 Power Up",
+    description: "Current weld sequence state (preflow, initial, main, final, standby, etc.).",
 };
 
+/**
+ * Errors 1, 16 bits. Possible errors, 1 True / 0 False (power source dependent).
+ * Dynasty/Maxstar 210/280, Syncrowave 300 Process and User Interface:
+ * - Bit 0: 0.3.1 Secondary Over Temp
+ * - Bit 1: 0.3.2 Ambient Over Temp
+ * - Bit 2: 7.3.6 Process Serial Communication With Gateway
+ * - Bit 3: 3.3.1 Secondary Thermistor Failure
+ * - Bit 4: 3.3.2 Ambient Thermistor Failure
+ * - Bit 5: 1.3.1 Fan Failure
+ * - Bit 6: 1.3.2 Clamp/Output Over Voltage
+ * - Bit 7: 1.3.3 AC Commutation Time Out
+ * - Bit 8: 1.3.4 Output Over Voltage
+ * - Bit 9: 1.3.5 Output Current Or Voltage Feedback With Output Off
+ * - Bit 10: 1.3.6 No Cooler Detected With Output Current
+ * - Bit 11: 7.3.4 Process Serial Communication With Primary
+ * - Bit 12: 7.3.2 Process Serial Communication With User Interface
+ * - Bit 13: 7.3.1 Process Serial Communication With Memory Card
+ * - Bit 14: 7.3.5 Process Serial Communication With CPS
+ * - Bit 15: 7.2.3 User Interface Serial Communication With Process
+ * Dynasty/Maxstar 400/800:
+ * - Bit 0: 0.3.2 Ambient Over Temp
+ * - Bit 1: 0.3.1 Secondary Over Temp RC20
+ * - Bit 2: 0.3.1 Secondary Over Temp RC30
+ * - Bit 3: 0.4.1 Primary Power Over Temp 400/800 Top
+ * - Bit 4: 0.4.2 or 0.7.1 Primary Power Over Temp 800 Bottom
+ * - Bit 5: (unused)
+ * - Bit 6: (unused)
+ * - Bit 7: (unused)
+ * - Bit 8: (unused)
+ * - Bit 9: (unused)
+ * - Bit 10: (unused)
+ * - Bit 11: 7.3.7 Process serial communication with Primary 800 Bottom
+ * - Bit 12: 7.3.4 Process serial communication with Primary 400/800 Top
+ * - Bit 13: 3.3.2 Ambient thermistor failure
+ * - Bit 14: 3.3.1 Secondary thermistor failure RC20
+ * - Bit 15: 3.3.1 Secondary thermistor failure RC30
+ */
 pub const ERROR_REG_1: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4101 },
     name: "ERROR REG 1",
-    description: "Errors1, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)\nDynasty/Maxstar 210/280, Syncrowave 300 Process And User Interface:\nBit / Error# / Description\n0 / 0.3.1 / Secondary Over Temp\n1 / 0.3.2 / Ambient Over Temp\n2 / 7.3.6 / Process Serial Communication With Gateway\n3 / 3.3.1 / Secondary Thermistor Failure\n4 / 3.3.2 / Ambient Thermistor Failure\n5 / 1.3.1 / Fan Failure\n6 / 1.3.2 / Clamp/Output Over Voltage\n7 / 1.3.3 / AC Commutation Time Out\n8 / 1.3.4 / Output Over Voltage\n9 / 1.3.5 / Output Current Or Voltage Feedback With Output Off\n10 / 1.3.6 / No Cooler Detected With Output Current\n11 / 7.3.4 / Process Serial Communication With Primary\n12 / 7.3.2 / Process Serial Communication With User Interface\n13 / 7.3.1 / Process Serial Communication With Memory Card\n14 / 7.3.5 / Process Serial Communication With CPS\n15 / 7.2.3 / User Interface Serial Communication With Process\nDynasty/Maxstar 400/800:\nBit / Error# / Description\n0 / 0.3.2 / Ambient Over Temp\n1 / 0.3.1 / Secondary Over Temp RC20\n2 / 0.3.1 / Secondary Over Temp RC30\n3 / 0.4.1 / Primary Power Over Temp 400/800 Top\n4 / 0.4.2 or 0.7.1 / Primary Power Over Temp 800 Bottom\n5\n6\n7\n8\n9\n10\n11 / 7.3.7 / Process serial communication with Primary 800 Bottom.\n12 / 7.3.4 / Process serial communication with Primary 400/800 Top.\n13 / 3.3.2 / Ambient thermistor failure\n14 / 3.3.1 / Secondary thermistor failure RC20\n15 / 3.3.1 / Secondary thermistor failure RC30",
+    description: "Active fault flags for system errors (decoded in the error list).",
 };
 
+/**
+ * Errors 2, 16 bits. Possible errors, 1 True / 0 False (power source dependent).
+ * Dynasty/Maxstar 210/280, Syncrowave 300 Primary:
+ * - Bit 0: 0.4.1 Primary Power 1 Over Temp
+ * - Bit 1: 0.4.2 Primary Power 2 Over Temp
+ * - Bit 2: 1.4.8 Ground Current
+ * - Bit 3: 1.4.0 Primary Not Ready
+ * - Bit 4: 1.4.1 Primary Capacitor Imbalance
+ * - Bit 5: 1.4.2 Input Over Voltage
+ * - Bit 6: 1.4.3 Input Over Current
+ * - Bit 7: 1.4.4 Primary Bus Under Voltage
+ * - Bit 8: 1.4.5 Input Under Voltage
+ * - Bit 9: 3.4.1 Primary Power 1 Thermistor Failure
+ * - Bit 10: 3.4.2 Primary Power 2 Thermistor Failure
+ * - Bit 11: 7.4.3 Primary Serial Communication With Process
+ * - Bit 12: 1.4.6 Primary Capacitor Failure
+ * - Bit 13: 1.4.7 Primary Control Power
+ * - Bit 14: 0.4.1L Primary Power 1 Latched Over Temp
+ * - Bit 15: 0.4.2L Primary Power 2 Latched Over Temp
+ * Dynasty/Maxstar 400/800, Syncrowave 400:
+ * - Bit 0: 3.4.1 Primary Power Thermistor Failure 400/800 Top
+ * - Bit 1: 3.4.2 or 3.7.1 Primary Power Thermistor Failure 800 Bottom
+ * - Bit 2: 1.3.2 Clamp/Output over voltage
+ * - Bit 3: 1.3.3 AC Communication time out
+ * - Bit 4: 1.3.4 Output over voltage
+ * - Bit 5: 1.3.5 Output current or voltage feedback with output off
+ * - Bit 6: 1.4.8 Ground current
+ * - Bit 7: 1.4.3 Input over current 400/800 Top
+ * - Bit 8: 1.4.3 or 1.7.3 Input over current 800 Bottom
+ * - Bit 9: 1.4.7 Primary control power
+ * - Bit 10: 1.4.5 Input under voltage
+ * - Bit 11: 1.4.4 Primary bus under voltage
+ * - Bit 12: 7.3.6 Process serial communication with Gateway
+ * - Bit 13: 7.3.2 Process serial communication with User Interface
+ * - Bit 14: 7.3.1 Process serial communication with Memory Card
+ * - Bit 15: 7.2.3 User interface serial communication with Process
+ */
 pub const ERROR_REG_2: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4102 },
     name: "ERROR REG 2",
-    description: "Errors2, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)\nDynasty/Maxstar 210/280, Syncrowave 300 Primary\nBit / Error# / Description\n0 / 0.4.1 / Primary Power 1 Over Temp\n1 / 0.4.2 / Primary Power 2 Over Temp\n2 / 1.4.8 / Ground Current\n3 / 1.4.0 / Primary Not Ready\n4 / 1.4.1 / Primary Capacitor Imbalance\n5 / 1.4.2 / Input Over Voltage\n6 / 1.4.3 / Input Over Current\n7 / 1.4.4 / Primary Bus Under Voltage\n8 / 1.4.5 / Input Under Voltage\n9 / 3.4.1 / Primary Power 1 Thermistor Failure\n10 / 3.4.2 / Primary Power 2 Thermistor Failure\n11 / 7.4.3 / Primary Serial Communication With Process\n12 / 1.4.6 / Primary Capacitor Failure\n13 / 1.4.7 / Primary Control Power\n14 / 0.4.1L / Primary Power 1 Latched Over Temp\n15 / 0.4.2L / Primary Power 2 Latched Over Temp\nDynasty/Maxstar 400/800, Syncrowave 400:\nBit / Error# / Description\n0 / 3.4.1 / Primary Power Thermistor Failure 400/800 Top\n1 / 3.4.2 or 3.7.1 / Primary Power Thermistor Failure 800 Bottom\n2 / 1.3.2 / Clamp/Output over voltage\n3 / 1.3.3 / AC Communication time out\n4 / 1.3.4 / Output over voltage\n5 / 1.3.5 / Output current or voltage feedback with output off\n6 / 1.4.8 / Ground current\n7 / 1.4.3 / Input over current 400/800 Top\n8 / 1.4.3 or 1.7.3 / Input over current 800 Bottom\n9 / 1.4.7 / Primary control power\n10 / 1.4.5 / Input under voltage\n11 / 1.4.4 / Primary bus under voltage\n12 / 7.3.6 / Process serial communication with Gateway\n13 / 7.3.2 / Process serial communication with User Interface\n14 / 7.3.1 / Process serial communication with Memory Card\n15 / 7.2.3 / User interface serial communication with Process",
+    description: "Active fault flags for primary power and communications errors (decoded in the error list).",
 };
 
+/**
+ * Errors 3, 16 bits. Possible errors, 1 True / 0 False (power source dependent).
+ * Dynasty Maxstar 210 and 280 CPS:
+ * - Bit 0: 0.5.1 CPS Power Module 1 Over Temp
+ * - Bit 1: 0.5.2 CPS Power Module 2 Over Temp
+ * - Bit 2: 0.5.3 CPS Power Module 3 Over Temp
+ * - Bit 3: 1.5.9 CPS Primary Bus Under Voltage
+ * - Bit 4: 7.5.3 CPS Serial Communication With Process
+ * - Bit 5: 3.5.1 CPS Power Module 1 Thermistor Failure
+ * - Bit 6: 3.5.2 CPS Power Module 2 Thermistor Failure
+ * - Bit 7: 3.5.3 CPS Power Module 3 Thermistor Failure
+ * - Bit 8: 1.5.1 CPS Secondary Bus Under Voltage
+ * - Bit 9: 1.5.2 CPS Output Over Current
+ * - Bit 10: 1.5.3 CPS Secondary Bus Over Voltage
+ * - Bit 11: 1.5.4 CPS Current Or Voltage feedback With CPS off
+ * - Bit 12: 1.5.5 CPS Secondary Control Power
+ * - Bit 13: 1.5.6 CPS Capacitor Imbalance
+ * - Bit 14: 1.5.7 CPS Primary Control Power
+ * - Bit 15: 1.5.8 CPS Secondary Communication With CPS Primary
+ * Syncrowave 300:
+ * - Bit 3: 1.5.9 CPS Primary Bus Under Voltage
+ * Dynasty/Maxstar 400/800, Syncrowave 400:
+ * - Bit 0: 1.5.9 CPS Primary Bus Under Voltage
+ * - Bit 1: 1.4.4 Primary Bus Under Voltage 400/800 Top
+ * - Bit 2: 1.4.5 Input Under Voltage 400/800 Top
+ * - Bit 3: 1.4.2 Input Over Voltage 400/800 Top
+ * - Bit 4: 1.4.7 Primary Control Power 400/800 Top
+ * - Bit 5: 7.4.3 Primary Serial Communication With Process 400/800 Top
+ * - Bit 6: 1.4.0 Primary Not Ready 400/800 Top
+ * - Bit 7: (unused)
+ * - Bit 8: (unused)
+ * - Bit 9: 1.7.4 Primary Bus Under Voltage 800 Bottom
+ * - Bit 10: 1.7.5 Input Under Voltage 800 Bottom
+ * - Bit 11: 1.7.2 Input Over Voltage 800 Bottom
+ * - Bit 12: 1.7.7 Primary Control Power 800 Bottom
+ * - Bit 13: 7.7.3 Primary Serial Communication With Process 800 Bottom
+ * - Bit 14: 1.7.0 Primary Not Ready 800 Bottom
+ * - Bit 15: (unused)
+ */
 pub const ERROR_REG_3: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4103 },
     name: "ERROR REG 3",
-    description: "Errors3, 16(Bits) Possible Errors, 1 True / 0 False (Power Source Dependent)\nDynasty Maxstar 210 And 280 CPS\nBit / Error# / Description\n0 / 0.5.1 / CPS Power Module 1 Over Temp\n1 / 0.5.2 / CPS Power Module 2 Over Temp\n2 / 0.5.3 / CPS Power Module 3 Over Temp\n3 / 1.5.9 / CPS Primary Bus Under Voltage\n4 / 7.5.3 / CPS Serial Communication With Process\n5 / 3.5.1 / CPS Power Module 1 Thermistor Failure\n6 / 3.5.2 / CPS Power Module 2 Thermistor Failure\n7 / 3.5.3 / CPS Power Module 3 Thermistor Failure\n8 / 1.5.1 / CPS Secondary Bus Under Voltage\n9 / 1.5.2 / CPS Output Over Current\n10 / 1.5.3 / CPS Secondary Bus Over Voltage\n11 / 1.5.4 / CPS Current Or Voltage feedback With CPS off\n12 / 1.5.5 / CPS Secondary Control Power\n13 / 1.5.6 / CPS Capacitor Imbalance\n14 / 1.5.7 / CPS Primary Control Power\n15 / 1.5.8 / CPS Secondary Communication With CPS Primary\nSyncrowave 300:\nBit/Error#/Description\n3/1.5.9/CPS Primary Bus Under Voltage\nDynasty/Maxstar 400/800, Syncrowave 400:\nBit/Error#/Description\n0 / 1.5.9 / CPS Primary Bus Under Voltage\n1 / 1.4.4 / Primary Bus Under Voltage 400/800 Top\n2 / 1.4.5 / Input Under Voltage 400/800 Top\n3 / 1.4.2 / Input Over Voltage 400/800 Top\n4 / 1.4.7 / Primary Control Power 400/800 Top\n5 / 7.4.3 / Primary Serial Communication With Process 400/800 Top\n6 / 1.4.0 / Primary Not Ready 400/800 Top\n7 /\n8 /\n9 / 1.7.4 / Primary Bus Under Voltage 800 Bottom\n10 / 1.7.5 / Input Under Voltage 800 Bottom\n11 / 1.7.2 / Input Over Voltage 800 Bottom\n12 / 1.7.7 / Primary Control Power 800 Bottom\n13 / 7.7.3 / Primary Serial Communication With Process 800 Bottom\n14 / 1.7.0 / Primary Not Ready 800 Bottom\n15 /",
+    description: "Active fault flags for cooler power supply and primary errors (decoded in the error list).",
 };
 
+/**
+ * Power Source Command Out Amperage, Res: 1A.
+ */
 pub const COMMANDED_OUTPUT_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4200 },
     name: "COMMANDED OUTPUT AMPERAGE",
-    description: "Power Source Command Out Amperage, Res: 1A",
+    description: "Commanded output current setpoint.",
 };
 
+/**
+ * Power Source Output Current, Res: 1A.
+ */
 pub const OUTPUT_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4201 },
     name: "OUTPUT AMPERAGE",
-    description: "Power Source Output Current, Res: 1A",
+    description: "Measured output current at the weld terminals.",
 };
 
+/**
+ * Power Source Output Voltage, Res: 0.1V.
+ */
 pub const OUTPUT_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4202 },
     name: "OUTPUT VOLTAGE",
-    description: "Power Source Output Voltage, Res: 0.1V",
+    description: "Measured output voltage at the weld terminals.",
 };
 
+/**
+ * Power Source Output Current DC Pulse Peak, Res: 1A.
+ */
 pub const OUTPUT_CURRENT_DC_PULSE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4203 },
     name: "OUTPUT CURRENT DC PULSE PEAK",
-    description: "Power Source Output Current DC Pulse Peak, Res: 1A",
+    description: "Measured output current during the DC pulse peak portion.",
 };
 
+/**
+ * Power Source Output Voltage DC Pulse Peak, Res: 0.1V.
+ */
 pub const OUTPUT_VOLTAGE_DC_PULSE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4204 },
     name: "OUTPUT VOLTAGE DC PULSE PEAK",
-    description: "Power Source Output Voltage DC Pulse Peak, Res 0.1V",
+    description: "Measured output voltage during the DC pulse peak portion.",
 };
 
+/**
+ * Power Source Output Current DC Pulse Back, Res: 1A.
+ */
 pub const OUTPUT_CURRENT_DC_PULSE_BACK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4205 },
     name: "OUTPUT CURRENT DC PULSE BACK",
-    description: "Power Source Output Current DC Pulse Back, Res: 1A",
+    description: "Measured output current during the DC pulse background portion.",
 };
 
+/**
+ * Power Source Output Voltage DC Pulse Back, Res: 0.1V.
+ */
 pub const OUTPUT_VOLTAGE_DC_PULSE_BACK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4206 },
     name: "OUTPUT VOLTAGE DC PULSE BACK",
-    description: "Power Source Output Voltage DC Pulse Back, Res 0.1V",
+    description: "Measured output voltage during the DC pulse background portion.",
 };
 
+/**
+ * Fan Out, 0 (Off) - 100%.
+ */
 pub const FAN_OUTPUT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4300 },
     name: "FAN OUTPUT",
-    description: "Fan Out, 0(Off) - 100%",
+    description: "Current fan output level.",
 };
 
+
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 1:
+ * - Dynasty/Maxstar 210/280, Syncrowave 300: Primary Power 1
+ * - Dynasty/Maxstar 400/800, Syncrowave 400: Ambient
+ */
 pub const TEMPERATURE_1: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4301 },
     name: "TEMPERATURE 1",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 1 (Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Power 1)\n(Dynasty/Maxstar 400/800, Syncrowave 400 - Ambient)",
+    description: "Temperature reading in C. On 210/280 and Syncrowave 300 this is Primary Power 1; on 400/800 and Syncrowave 400 it is Ambient.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 2:
+ * - Dynasty/Maxstar 210/280, Syncrowave 300: Primary Power 2
+ * - Dynasty/Maxstar 400/800 Top, Syncrowave 400: Primary Power
+ */
 pub const TEMPERATURE_2: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4302 },
     name: "TEMPERATURE 2",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 2 (Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Power 2) (Dynasty/Maxstar 400/800 Top, Syncrowave 400 - Primary Power)",
+    description: "Temperature reading in C. On 210/280 and Syncrowave 300 this is Primary Power 2; on 400/800 top and Syncrowave 400 it is Primary Power.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 3:
+ * - Dynasty/Maxstar 210/280, Syncrowave 300: Secondary
+ * - Dynasty/Maxstar 800 Bottom: Primary Power
+ */
 pub const TEMPERATURE_3: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4303 },
     name: "TEMPERATURE 3",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 3 (Dynasty/Maxstar 210/280, Syncrowave 300 - Secondary) (Dynasty/Maxstar 800 Bottom - Primary Power)",
+    description: "Temperature reading in C. On 210/280 and Syncrowave 300 this is Secondary; on Dynasty 800 bottom it is Primary Power.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 4:
+ * - Dynasty/Maxstar 210/280, Syncrowave 300: Ambient
+ * - Dynasty/Maxstar 400/800, Syncrowave 400: Secondary RC20
+ */
 pub const TEMPERATURE_4: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4304 },
     name: "TEMPERATURE 4",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 4 (Dynasty/Maxstar 210/280, Syncrowave 300 - Ambient) (Dynasty/Maxstar 400/800, Syncrowave 400 - Secondary RC20)",
+    description: "Temperature reading in C. On 210/280 and Syncrowave 300 this is Ambient; on 400/800 and Syncrowave 400 it is Secondary RC20.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 5:
+ * - Dynasty/Maxstar 210/280: CPS Module 1
+ * - Dynasty/Maxstar 400/800, Syncrowave 400: Secondary RC30
+ */
 pub const TEMPERATURE_5: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4305 },
     name: "TEMPERATURE 5",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 5 (Dynasty/Maxstar 210/280 - CPS Module 1) (Dynasty/Maxstar 400/800, Syncrowave 400 - Secondary RC30)",
+    description: "Temperature reading in C. On 210/280 this is CPS Module 1; on 400/800 and Syncrowave 400 it is Secondary RC30.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 6:
+ * - Dynasty/Maxstar 210/280: CPS Module 2
+ */
 pub const TEMPERATURE_6: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4306 },
     name: "TEMPERATURE 6",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 6 (Dynasty/Maxstar 210/280 - CPS Module 2)",
+    description: "Temperature reading in C. On 210/280 this is CPS Module 2.",
 };
 
+/**
+ * Temperature registers (power source dependent):
+ * Range: 0 - 254
+ * Resolution: 1 C
+ * Offset: -50 (i.e. 50 == 0 C)
+ * Possible range: -50 - +204 C
+ * Actual range: limited by thermistor's hardware and software
+ *
+ * Temperature 7:
+ * - Dynasty/Maxstar 210/280: CPS Module 3
+ */
 pub const TEMPERATURE_7: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4307 },
     name: "TEMPERATURE 7",
-    description: "Temperature registers (Power Source Dependent):\nRange: 0 - 254,\nResolution: 1 Celsius\nOffset: -50 (i.e. 50 == 0 Deg. Celsius)\nPossible Range: -50 - +204 C\nActual Range: Limited By Thermistor’s Hardware And Software\n\nTemperature 7 (Dynasty/Maxstar 210/280 - CPS Module 3)",
+    description: "Temperature reading in C. On 210/280 this is CPS Module 3.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Current, Res: 1A.
+ */
 pub const PRIMARY_LINE_CURRENT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4400 },
     name: "PRIMARY LINE CURRENT",
-    description: "Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Current, Res: 1A",
+    description: "Primary input line current (mains).",
 };
 
+/**
+ * Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Voltage, Res: 1V.
+ */
 pub const PRIMARY_LINE_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4401 },
     name: "PRIMARY LINE VOLTAGE",
-    description: "Dynasty/Maxstar 210/280, Syncrowave 300 - Primary Line Voltage, Res: 1V",
+    description: "Primary input line voltage (mains).",
 };
 
+/**
+ * Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Line Voltage Peak, Res: 1V.
+ */
 pub const PRIMARY_LINE_VOLTAGE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4402 },
     name: "PRIMARY LINE VOLTAGE PEAK",
-    description: "Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Line Voltage Peak, Res: 1V",
+    description: "Primary line voltage peak (mains).",
 };
 
+/**
+ * Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Bus Voltage, Res: 1V.
+ */
 pub const PRIMARY_BUS_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4403 },
     name: "PRIMARY BUS VOLTAGE",
-    description: "Dynasty/Maxstar 210/280/400/800, Syncrowave 300/400 - Primary Bus Voltage, Res: 1V",
+    description: "Primary DC bus voltage.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 - Cooler Power Output Voltage, Res: 1V.
+ */
 pub const COOLER_OUTPUT_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4404 },
     name: "COOLER OUTPUT VOLTAGE",
-    description: "Dynasty/Maxstar 210/280 - Cooler Power Output Voltage, Res: 1V",
+    description: "Cooler power supply output voltage.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 - Cooler Power Output Current, Res: 0.1A.
+ */
 pub const COOLER_OUTPUT_CURRENT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4405 },
     name: "COOLER OUTPUT CURRENT",
-    description: "Dynasty/Maxstar 210/280 - Cooler Power Output Current, Res: 0.1A",
+    description: "Cooler power supply output current.",
 };
 
+/**
+ * Dynasty/Maxstar 210/280 - Cooler Power Bus Voltage, Res: 1V.
+ */
 pub const COOLER_BUS_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4406 },
     name: "COOLER BUS VOLTAGE",
-    description: "Dynasty/Maxstar 210/280 - Cooler Power Bus Voltage, Res: 1V",
+    description: "Cooler power supply bus voltage.",
 };
 
+/**
+ * Dynasty/Maxstar 800 - Primary 2 (bottom) Line Voltage Peak, Res: 1V.
+ */
 pub const PRIMARY_2_LINE_VOLTAGE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4407 },
     name: "PRIMARY 2 LINE VOLTAGE PEAK",
-    description: "Dynasty/Maxstar 800 - Primary 2(bottom) Line Voltage Peak, Res: 1V",
+    description: "Second primary line voltage peak (800 bottom section).",
 };
 
+/**
+ * Dynasty/Maxstar 800 - Primary 2 (bottom) Bus Voltage Peak, Res: 1V.
+ */
 pub const PRIMARY_2_BUS_VOLTAGE_PEAK: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::InputRegister, address: 4408 },
     name: "PRIMARY 2 BUS VOLTAGE PEAK",
-    description: "Dynasty/Maxstar 800 - Primary 2(bottom) Bus Voltage Peak, Res: 1V",
+    description: "Second primary bus voltage peak (800 bottom section).",
 };
 
+/**
+ * Power Source's Modbus Slave Address: 1 - 247.
+ */
 pub const MB_SLAVE_ADDR: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6000 },
     name: "MB SLAVE ADDR",
-    description: "Power Source’s Modbus Slave Address: 1 - 247.",
+    description: "Modbus slave address for the power source on the RS-485 link.",
 };
 
+/**
+ * Fan Request:
+ * Dynasty/Maxstar 210/280: 0 (Off), 1 (Min 27%) - 30 (Max 100%).
+ * Requires request of 3 minimum to start fan.
+ * Dynasty/Maxstar 400/800: 0 (Off), 1 - 30 (Max 100%).
+ * Notes: 1 second time out return to 0 (Off).
+ * Parallel request with all machine thermistors; highest fan request is used.
+ * 0 (Off) in this register will not turn fan off with a fan request other than Off from any
+ * machine thermistors.
+ */
 pub const FAN_REQUEST: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6001 },
     name: "FAN REQUEST",
-    description: "Fan Request:\nDynasty/Maxstar 210/280 0(Off), 1(Min 27%) - 30(Max 100%)\nRequires Request Of 3 Minimum To Start Fan\nDynasty/Maxstar 400/800 0(Off), 1 - 30(Max 100%)\nNotes: 1 second time out return to 0(Off).\nParallel Request With All Machine Thermistors, Where Highest Fan Request Is Used.\n0(Off) In This Register Will Not Turn Fan Off With A Fan Request Other Than Off.\nFrom Any Machine’s Thermistors.",
+    description: "Requested fan speed or cooling demand; highest active request wins.",
 };
 
+/**
+ * Meter Calibration, Amperage: +-50, Res: 0.1% (+-50 == +-5.0%).
+ * Note: With Discrete Input 2012 RMS Hardware Detect = True, Coil 16 RMS Enable selects RMS (True)
+ * or Average (False) amperage calibration.
+ *
+ * Context: RMS hardware detect is exposed here as discrete input 2012.
+ */
 pub const CURRENT_METER_CALIBRATION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6002 },
     name: "CURRENT METER CALIBRATION",
-    description: "Meter Calibration, Amperage: +-50, Res: 0.1%, (+-50 == +-5.0%)Note: With Discrete Input 2011 RMS Hardware Detect = True, Coil 16 RMS Enable Selects RMS (True)Or Average (False) Amperage Calibration.",
+    description: "Calibration trim for the current meter (service setting).",
 };
 
+/**
+ * Meter Calibration, Voltage Average: +-50, Res: 0.1% (+-50 == +-5.0%).
+ */
 pub const VOLTAGE_METER_CALIBRATION: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6003 },
     name: "VOLTAGE METER CALIBRATION",
-    description: "Meter Calibration, Voltage Average: +-50, Res: 0.1%, (+-50 == +-5.0%)",
+    description: "Calibration trim for the voltage meter (service setting).",
 };
 
+/**
+ * 32 bit.
+ * Arc Time, Res: 0.01 minute, Maximum: 59999999 == 9999 hours and 59.99 minutes.
+ *
+ * Context: Displayed as hours, minutes, seconds.
+ */
 pub const ARC_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6100 },
     name: "ARC TIME",
-    description: "32 bit \n\nArc Time, Res: 0.01 Minute, Maximum: 59999999 == 9999 Hours And 59.99 Minutes.",
+    description: "Total arc-on time (lifetime), displayed as hours, minutes, and seconds.",
 };
 
+/**
+ * 32 bit.
+ * Arc Cycles, Res: 1 cycle, Maximum: 999999 cycles.
+ */
 pub const ARC_CYCLES: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6102 },
     name: "ARC CYCLES",
-    description: "32 bit\n\nL Arc Cycles, Res: 1 Cycle, Maximum: 999999 Cycles.",
+    description: "Total arc starts/cycles (lifetime).",
 };
 
+/**
+ * Dynasty/Maxstar 400/800 Models Only.
+ * Memory: 0 Memory control off typically defaults to memory 1 with no memory number displayed.
+ * 1 - Power Source's memory maximum.
+ */
 pub const MEMORY_CONTROL: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6200 },
     name: "MEMORY CONTROL",
-    description: "Dynasty/Maxstar 400/800 Models Only\nMemory: 0 Memory control off typically defaults to memory 1 with no memory number displayed.\n1 - Power Sources memory maximum",
+    description: "Selects the active memory program (400/800 models only).",
 };
 
+/**
+ * * Process:
+ * 0 Stick
+ * 1 TIG
+ * 2 MIG (selectable only with Dynasty/Maxstar 210/280 models and Dynasty's polarity DC)
+ * 3 Test
+ * 4 Hot Wire
+ */
 pub const WELD_PROCESS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6201 },
     name: "WELD PROCESS",
-    description: "*Process: 0 Stick1 TIG2 MIG (Selectable only with Dynasty/Maxstar 210/280 Models and Dynasty’s Polarity DC)3 Test4 Hot Wire",
+    description: "Selects the weld process (Stick, TIG, MIG, Test, Hot Wire).",
 };
 
+/**
+ * * Process Start: 0 Scratch, 1 Lift, 2 HF.
+ */
 pub const WELD_START_PROCESS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6202 },
     name: "WELD START PROCESS",
-    description: "*Process Start: 0 Scratch, 1 Lift, 2 HF.",
+    description: "Selects the TIG start method (scratch, lift, or HF).",
 };
 
+/**
+ * * Trigger:
+ * 0 None - Output Off
+ * 1 Panel - Output On
+ * 2 Standard
+ * 3 2T Hold
+ * 4 3T Hold
+ * 5 4T Hold
+ * 6 4TL Mini Logic Hold
+ * 7 4TE Momentary Hold
+ * 8 4Tm Modified Hold
+ */
 pub const TRIGGER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6203 },
     name: "TRIGGER",
-    description: "*Trigger: \n0 None-Output Off,\n1 Panel-Output ON\n2 Standard\n3 2T Hold\n4 3T Hold\n5 4T Hold\n6 4TL Mini Logic Hold\n7 4TE Momentary Hold\n8 4Tm Modified Hold",
+    description: "Selects the trigger mode for torch switch behavior (2T/3T/4T variants).",
 };
 
+/**
+ * * Remote 14-skt E Configuration:
+ * 0 Amperage Control (slow response, finger tip/foot controls)
+ * 1 External Pulse Control (amperage, fast response)
+ * 2 Output Enable (14-Skt E-D shorted enables power source output)
+ * 3 Disable (14-Skt E has no function)
+ */
 pub const RMT_PIN_E_CONFIG: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6204 },
     name: "RMT PIN E CONFIG",
-    description: "*Remote 14-skt E Configuration:\n0 Amperage Control ( Slow Response, Finger Tip/Foot controls)\n1 External Pulse Control ( Amperage, Fast Response)\n2 Output Enable ( 14-Skt E-D Shorted Enables Power Source Output)\n3 Disable ( 14-Skt E Has No Function)",
+    description: "Configures Remote 14 pin E (amperage control, external pulse, output enable, or disabled).",
 };
 
+/**
+ * * Tungsten (Canned Arc Start Parameters):
+ * 0 0.020 in. (0.5 mm)
+ * 1 0.040 in. (1.0 mm)
+ * 2 1/16 in. (1.6 mm)
+ * 3 3/32 in. (2.4 mm)
+ * 4 1/8 in. (3.2 mm)
+ * 5 5/32 in. (4.0 mm)
+ * 6 3/16 in. (4.8 mm)
+ * 7 1/4 in. (6.4 mm)
+ * 8 General (user defined with holding registers 6207 through 6212)
+ * <9 Power source dependent, typically used with process TIG
+ * 9 Disabled (typically used with non-TIG processes)
+ */
 pub const TUNGSTEN_PRESET: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6205 },
     name: "TUNGSTEN PRESET",
-    description: "*Tungsten (Canned Arc Start Parameters):\n0 0.020 in. (0.5mm)\n1 0.040 in. (1.0mm)\n2 1/16 in. (1.6mm)\n3 3/32 in. (2.4mm)\n4 1/8 in. (3.2mm)\n5 5/32 in. (4.0mm)\n6 3/16 in. (4.8mm)\n7 1/4 in. (6.4mm)\n8 General (User Defined With Holding Registers 6207 Through 6212)\n<9 Power Source Dependent, Typically Used With Process TIG\n9 Disabled (Typically Used With Non TIG Processes)",
+    description: "Selects the tungsten preset (diameter-based or General/Disabled).",
 };
 
+/**
+ * Preset Amperage Minimum: Power Source AC / DC Amperage Minimum - 25 A (Tungsten General) or
+ * 63 A (Tungsten Disabled), Res: 1A.
+ * Write only with Tungsten General or Disabled.
+ */
 pub const PRESET_MIN_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6206 },
     name: "PRESET MIN AMPERAGE",
-    description: "Preset Amperage Minimum: Power Source AC / DC Amperage Minimum -25A(Tungsten General) Or 63A(Tungsten Disabled), Res 1A\nWrite Only With Tungsten General Or Disabled",
+    description: "Minimum preset amperage used with the selected tungsten preset mode.",
 };
 
+/**
+ * Arc Start Amperage: 5 A - 200 A, Res: 1A.
+ * Write only with Tungsten General or Disabled.
+ */
 pub const ARC_START_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6207 },
     name: "ARC START AMPERAGE",
-    description: "Arc Start Amperage: 5A - 200A, Res: 1AWrite Only With Tungsten General Or Disabled",
+    description: "Arc start amperage for TIG.",
 };
 
+/**
+ * Arc Start Time: 0 (Off) - 25 (x10 ms), Res: 1 (x10 ms).
+ * Write only with Tungsten General.
+ */
 pub const ARC_START_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6208 },
     name: "ARC START TIME",
-    description: "Arc Start Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With Tungsten General",
+    description: "Time at arc start amperage before ramping.",
 };
 
+/**
+ * Arc Start Slope Time: 0 (Off) - 25 (x10 ms), Res: 1 (x10 ms).
+ * Write only with Tungsten General.
+ */
 pub const ARC_START_SLOPE_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6209 },
     name: "ARC START SLOPE TIME",
-    description: "Arc Start Slope Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With Tungsten General",
+    description: "Ramp time from arc start amperage to the next phase.",
 };
 
+/**
+ * ** Arc Start AC Time: 0 (Off) - 25 (x10 ms), Res: 1 (x10 ms).
+ * Write only with AC power source's AC output and Tungsten General.
+ */
 pub const ARC_START_AC_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6210 },
     name: "ARC START AC TIME",
-    description: "**Arc Start AC Time: 0(Off) - 25(x10ms), Res: 1(x10ms)Write Only With AC Power Source’s AC Output And Tungsten General",
+    description: "AC-specific arc start time for TIG.",
 };
 
+/**
+ * ** Arc Start Polarity Phase: 1 EP, 0 EN.
+ * Write only with AC power source and Tungsten General or Disabled.
+ */
 pub const ARC_START_POLARITY_PHASE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6211 },
     name: "ARC START POLARITY PHASE",
-    description: "**Arc Start Polarity Phase: 1 EP, 0 ENWrite Only With AC Power Source And Tungsten General or Disabled",
+    description: "Polarity used at arc start for AC TIG (EP or EN).",
 };
 
+/**
+ * * AC EN Wave Shape: 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle.
+ */
 pub const AC_EN_WAVE_SHAPE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6212 },
     name: "AC EN WAVE SHAPE",
-    description: "*,**AC EN Wave Shape, 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle",
+    description: "Wave shape for the EN (electrode negative) portion of AC.",
 };
 
+/**
+ * * AC EP Wave Shape: 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle.
+ */
 pub const AC_EP_WAVE_SHAPE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6213 },
     name: "AC EP WAVE SHAPE",
-    description: "*,**AC EP Wave Shape, 0 Advance Square, 1 Soft Square, 2 Sine, 3 Triangle",
+    description: "Wave shape for the EP (electrode positive) portion of AC.",
 };
 
+/**
+ * Hot Start Time:
+ * Range: 0 (Off) - 20
+ * Resolution: 0.1 second
+ * Hot Start Enable / Disabled with Coil 8 Hot Start Enable.
+ * Stick only.
+ */
 pub const HOT_START_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6214 },
     name: "HOT START TIME",
-    description: "Hot Start Time:\nRange: 0(Off) -20\nResolution: 0.1 Second\nHot Start Enable / Disabled with Coil 8 Hot Start Enable.\nStick only",
+    description: "Duration of hot start boost for stick welding.",
 };
 
+/**
+ * Remote Hold:
+ * 0 / 2T
+ * 1 / 3T
+ * 2 / 4T
+ * 3 / 4TL Mini Logic
+ * 4 / 4TE Momentary
+ * 5 / 4Tm Modified
+ * Resolution: 0.1 second.
+ * Remote Hold can also be changed with Holding Register 6204 Trigger.
+ *
+ * Context: Trigger mode is holding register 6203 in this project.
+ */
 pub const REMOTE_HOLD: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6215 },
     name: "REMOTE HOLD",
-    description: "Remote Hold:\n0 / 2T\n1 / 3T\n2 / 4T\n3 / 4TL Mini Logic\n4 / 4TE Momentary\n5 / 4Tm Modified\nResolution: 0.1 Second\nRemote Hold can also be changed with Holding Register 6204 Trigger.",
+    description: "Remote hold mode for trigger behavior (2T/3T/4T variants).",
 };
 
+/**
+ * * Dig, 0 (Off) - 100%, Res: 1%.
+ * 101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling Boost
+ * (Coil 0009).
+ * With Process (Holding Register 6201) MIG selection:
+ * * Inductance 0 - 99% Res: 1%
+ * 100% will set Inductance and optimize Digital Voltage Control for Flux Core Wire.
+ */
 pub const DIG_PERCENT: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6217 },
     name: "DIG PERCENT",
-    description: "*Dig, 0(Off) - 100%, Res: 1%\n101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling\nBoost (Coil 0009).\nWith Processes (Holding Register 6201) MIG selection:\n*Inductance 0 - 99% Res: 1%\n100% will set Inductance and optimize Digital Voltage Control for Flux Core Wire.",
+    description: "Stick arc force (dig) or MIG inductance, depending on process.",
 };
 
+/**
+ * * AC EN Amperage, Preset Amps Min - PS Amps Max, Res: 1A.
+ */
 pub const AC_EN_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6300 },
     name: "AC EN AMPERAGE",
-    description: "*,**,***AC EN Amperage, Preset Amps Min - PS Amps Max, Res: 1A",
+    description: "Amperage for the EN portion of AC (independent AC settings).",
 };
 
+/**
+ * * AC EP Amperage, Preset Amps Min - PS Amps Max, Res: 1A.
+ */
 pub const AC_EP_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6301 },
     name: "AC EP AMPERAGE",
-    description: "*,**,***AC EP Amperage, Preset Amps Min - PS Amps Max, Res: 1A",
+    description: "Amperage for the EP portion of AC (independent AC settings).",
 };
 
+/**
+ * * AC Balance, 30-99%, Res: 1%.
+ */
 pub const AC_BALANCE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6302 },
     name: "AC BALANCE",
-    description: "*,**,***AC Balance, 30-99%, Res: 1%",
+    description: "AC balance (EN/EP ratio).",
 };
 
+/**
+ * * AC Frequency, 20-400 Hz, Res: 1 Hz.
+ */
 pub const AC_FREQUENCY: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6303 },
     name: "AC FREQUENCY",
-    description: "*,**AC Frequency, 20-400Hz, Res: 1Hz",
+    description: "AC frequency setting.",
 };
 
+/**
+ * * Weld Amperage (DC or AC), Preset Amps Min - PS Amps Max, Res: 1A.
+ */
 pub const WELD_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6304 },
     name: "WELD AMPERAGE",
-    description: "*,***Weld Amperage(DC or AC), Preset Amps Min - PS Amps Max, Res: 1A",
+    description: "Main weld amperage setpoint.",
 };
 
+/**
+ * * Pulser - Pulses Per Second (PPS):
+ * Range: 0 (Off) - 50000 / 5000 (power source dependent)
+ * Resolution: 0.1 Hz
+ * Can be set to a default value when writing a True to coil 18 Pulser Enable and PPS is found at
+ * 0 (Off).
+ * Writing a non "0" value will set coil 18 Pulser Enable to True.
+ * Writing a "0" value will set coil 18 Pulser Enable to False.
+ * Dependent on configuration of the slave, the slave may or may not retain the PPS non "0" value.
+ */
 pub const PULSER_PPS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6305 },
     name: "PULSER PPS",
-    description: "*Pulser - Pulses Per Second (PPS)\nRange: 0(Off) – 50000 / 5000 Power Source Dependent,\nResolution: 0.1 Hertz\nCan be set to a default value when writing a TRUE to coil 18 Pulser Enable and PPS is found at 0(Off).\nWriting a non “0” value will set coil 18 Pulser Enable to TRUE.\nWriting a “0” value will set coil 18 Pulser Enable to FALSE.\nDependent on configuration of the slave, the slave may or may not retain the PPS non “0” value.",
+    description: "Pulse frequency in pulses per second.",
 };
 
+/**
+ * * Pulser - Peak Time, 5-95%, Res: 1%.
+ */
 pub const PULSER_PEAK_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6306 },
     name: "PULSER PEAK TIME",
-    description: "*Pulser - Peak Time, 5-95%, Res: 1%",
+    description: "Percent of the pulse spent at peak current.",
 };
 
+/**
+ * * Pulser - Background Amperage, 5-95%, Res: 1%.
+ */
 pub const PULSER_BACKGROUND_AMPS: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6307 },
     name: "PULSER BACKGROUND AMPS",
-    description: "*Pulser - Background Amperage, 5-95%, Res: 1%",
+    description: "Background current level during pulsed welding.",
 };
 
+/**
+ * * Prelow Time, 0 (Off) - 250, Res: 1 (x0.1 sec).
+ * (Miller says prelow, assuming preflow.)
+ */
 pub const PREFLOW_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6308 },
     name: "PRE-FLOW TIME",
-    description: "*Prelow Time, 0(Off) - 250, Res: 1(x0.1Sec) (miller says prelow, assuming preflow)",
+    description: "Gas preflow time before arc start.",
 };
 
+/**
+ * * Initial Amperage, Preset Amps Min - PS Amps Max, Res: 1A.
+ */
 pub const INITIAL_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6309 },
     name: "INITIAL AMPERAGE",
-    description: "*Initial Amperage, Preset Amps Min - PS Amps Max, Res: 1A",
+    description: "Initial amperage for the weld sequence.",
 };
 
+/**
+ * * Initial Time, 0 (Off) - 250, Res: 1 (x0.1 sec).
+ */
 pub const INITIAL_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6310 },
     name: "INITIAL TIME",
-    description: "*Initial Time, 0(Off) - 250, Res: 1(x0.1Sec)",
+    description: "Time at initial amperage before ramping.",
 };
 
+/**
+ * * Initial Slope Time, 0 (Off) - 500, Res: 1 (x0.1 sec).
+ */
 pub const INITIAL_SLOPE_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6311 },
     name: "INITIAL SLOPE TIME",
-    description: "*Initial Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)",
+    description: "Ramp time from initial to main amperage.",
 };
 
+/**
+ * * Main Time, 0 (Off) - 9990, Res: 1 (x0.1 sec).
+ */
 pub const MAIN_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6312 },
     name: "MAIN TIME",
-    description: "*Main Time, 0(Off) - 9990, Res: 1(x0.1Sec)",
+    description: "Time at main amperage (spot/weld timer).",
 };
 
+/**
+ * * Final Slope Time, 0 (Off) - 500, Res: 1 (x0.1 sec).
+ */
 pub const FINAL_SLOPE_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6313 },
     name: "FINAL SLOPE TIME",
-    description: "*Final Slope Time, 0(Off) - 500, Res: 1(x0.1Sec)",
+    description: "Ramp time from main to final amperage.",
 };
 
+/**
+ * * Final Amperage, Preset Amps Min - PS Amps Max, Res: 1A.
+ */
 pub const FINAL_AMPERAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6314 },
     name: "FINAL AMPERAGE",
-    description: "*Final Amperage, Preset Amps Min - PS Amps Max, Res: 1A",
+    description: "Final amperage for crater fill or end of weld.",
 };
 
+/**
+ * * Final Time, 0 (Off) - 250, Res: 1 (x0.1 sec).
+ */
 pub const FINAL_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6315 },
     name: "FINAL TIME",
-    description: "*Final Time, 0(Off) - 250, Res: 1(x0.1Sec)",
+    description: "Time at final amperage before stopping output.",
 };
 
+/**
+ * * Postflow Time, 0 (Off) - 50 s & Auto (51), Res: 1 sec.
+ */
 pub const POSTFLOW_TIME: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6316 },
     name: "POSTFLOW TIME",
-    description: "*Postflow Time, 0(Off) - 50S & Auto(51), Res: 1Sec",
+    description: "Gas postflow time after arc end (Auto lets the machine decide).",
 };
 
+/**
+ * * Dig, 0 (Off) - 100%, Res: 1%.
+ * 101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling Boost
+ * (Coil 0009).
+ *
+ * Same as 6217??
+ */
 pub const DIG_PERCENT_AGAIN: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6317 },
     name: "DIG PERCENT AGAIN",
-    description: "*Dig, 0(Off) - 100%, Res: 1%101% will set Process Stick for Carbon Arc Gouging, turning Dig off and disabling Boost (Coil 0009).\n\nSame as 6217??",
+    description: "Duplicate of dig/inductance setting (same meaning as DIG PERCENT).",
 };
 
+/**
+ * * Hot Wire Voltage, 5-20, Res: 1V.
+ */
 pub const HOT_WIRE_VOLTAGE: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 6318 },
     name: "HOT WIRE VOLTAGE",
-    description: "*Hot Wire Voltage, 5-20, Res: 1V",
+    description: "Hot wire voltage setpoint (Hot Wire process).",
 };
 
 pub const MILLER_REGISTERS: &'static[RegisterMetadata] = &[
