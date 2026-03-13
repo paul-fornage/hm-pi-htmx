@@ -268,6 +268,10 @@ async fn relative_move_w_axis(
         ));
     }
 
+    if !delta_inches.is_finite() {
+        return Err(format!("Delta must be finite. Delta received: {delta_inches:?}"));
+    }
+
     let move_hundredths: i32 = (delta_inches * 100.0).round() as i32;
     let move_shifted: u16 = (move_hundredths - i16::MIN as i32) as u16;
 
