@@ -603,7 +603,7 @@ pub const CYCLE_TOUCH_RETRACT_FINAL_HEIGHT: RegisterMetadata = RegisterMetadata 
 /// unitless factor in thousandths| AVC correction strength multiplier. 1000 == 1.0x
 pub const CYCLE_AVC_CORRECTION_STRENGTH_MULTIPLIER: RegisterMetadata = RegisterMetadata {
     address: RegisterAddress { register_type: ModbusAddressType::HoldingRegister, address: 40 },
-    name: "AVC CORRECTION STRENGTH MULTIPLIER",
+    name: "AVC CORRECTION STRENGTH FACTOR",
     description: "AVC correction strength multiplier (x)",
 };
 
