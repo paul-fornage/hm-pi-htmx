@@ -268,8 +268,8 @@ async fn relative_move_w_axis(
         ));
     }
 
-    let move_hundredths: i16 = (delta_inches * 100.0).round() as i16;
-    let move_shifted: u16 = (move_hundredths - i16::MIN) as u16;
+    let move_hundredths: i32 = (delta_inches * 100.0).round() as i32;
+    let move_shifted: u16 = (move_hundredths - i16::MIN as i32) as u16;
 
     clearcore_registers
         .write_hreg(
