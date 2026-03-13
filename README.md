@@ -29,6 +29,9 @@ TODO:
 - [ ] Gas purge countdown does not disappear when the purge is complete
 - [x] keyboard enter in textarea doesn't quite work
 - [ ] investigate gas continuing during estop!
-
+- [ ] Axis controls in run cycle
+- [ ] AVC tune + motor speed
+- [ ] AVC voltage/current when not in use
+- [ ] keyboard still wonky when tapping new line. text works but visual cursor does not move
 
 
