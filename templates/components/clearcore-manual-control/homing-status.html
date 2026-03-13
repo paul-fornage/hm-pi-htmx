@@ -23,7 +23,7 @@
     hx-target="#homing-control"
     hx-indicator="this"
     hx-disabled-elt="this"
-    class="group h-10 w-full px-3 text-sm bg-blue-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold hover:bg-blue-700"
+    class="group h-14 w-full px-3 text-base bg-blue-600 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold hover:bg-blue-700"
     {% if is_homing || error.is_some() %}disabled{% endif %}>
     <span class="{% if is_homing %}hidden{% else %}inline{% endif %} group-[.htmx-request]:hidden">
       {% if is_homed %}Re-home axes{% else %}Home all axes{% endif %}

@@ -1,9 +1,8 @@
 {% macro render(side) %}
-<div class="m-1 rounded-lg shadow-lg p-2 flex-1">
-    <div class="flex align-middle mb-2 justify-between">
-        <span class="my-auto text-xs font-semibold text-slate-600">{{ side|capitalize }}</span>
+<div class="rounded-lg border border-slate-200 bg-slate-50 p-2 flex-1">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-slate-600">{{ side|capitalize }}</span>
         <div
-                class="my-auto"
                 hx-get="/clearcore-manual-control/finger-status/{{ side }}"
                 hx-trigger="load, every 100ms"
                 hx-target="this"
@@ -11,13 +10,13 @@
             <span class="text-gray-400 text-xs">Loading...</span>
         </div>
     </div>
-    <div class="flex content-stretch gap-2 h-12">
+    <div class="flex content-stretch gap-2 h-16">
         <button
                 type="button"
                 hx-post="/clearcore-manual-control/finger/{{ side }}/up"
                 hx-target="#finger-command-feedback"
                 hx-swap="innerHTML"
-                class="grow px-2 text-lg font-semibold bg-slate-200 text-slate-700 rounded">
+                class="grow h-full px-2 text-base font-semibold bg-slate-200 text-slate-700 rounded">
             Unclamp
         </button>
         <button
@@ -25,7 +24,7 @@
                 hx-post="/clearcore-manual-control/finger/{{ side }}/down"
                 hx-target="#finger-command-feedback"
                 hx-swap="innerHTML"
-                class="grow px-2 text-lg font-semibold bg-slate-200 text-slate-700 rounded">
+                class="grow h-full px-2 text-base font-semibold bg-slate-200 text-slate-700 rounded">
             Clamp
         </button>
     </div>

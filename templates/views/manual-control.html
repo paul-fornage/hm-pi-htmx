@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% import "components/clearcore-manual-control/jog-button.html" as jog_button %}
 {% import "components/clearcore-manual-control/finger-control-cluster.html" as cluster %}
+{% import "components/clearcore-manual-control/axis-card.html" as axis_card %}
 
 {% block header %}
 <div id="app-header"
@@ -19,9 +19,9 @@
   <div class="flex justify-between mb-6 gap-2">
     <h2 class="flex-1 text-2xl font-bold text-slate-700 align-middle my-auto">ClearCore Manual Control</h2>
   </div>
-  <div class="flex gap-3 content-stretch">
+  <div class="flex flex-col lg:flex-row gap-4 mt-4 items-stretch">
     <div
-        class="bg-white rounded-lg shadow p-3 flex-1"
+        class="bg-white rounded-lg shadow p-3 flex flex-col flex-1"
         id="clearcore-manual-control-status-bar"
         hx-get="/clearcore-manual-control/status-feedback"
         hx-trigger="load, every 1s"
@@ -29,10 +29,9 @@
       <span class="text-gray-400 text-sm">Loading...</span>
     </div>
 
-    <!-- Home axes Button -->
     <div
         id="homing-control"
-        class="bg-white rounded-lg shadow p-3 flex-1"
+        class="bg-white rounded-lg shadow p-3 flex flex-col flex-1"
         hx-get="/clearcore-manual-control/homing-status"
         hx-trigger="load, every 1s"
         hx-target="this"
@@ -40,8 +39,8 @@
       <span class="text-gray-400">Loading...</span>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-3 flex-2">
-      <div class="flex justify-between min-h-4 align-middle">
+    <div class="bg-white rounded-lg shadow p-3 flex flex-col gap-2 flex-2">
+      <div class="flex items-center justify-between">
         <h3 class="text-sm font-semibold text-slate-700">Finger Control</h3>
         <div id="finger-command-feedback" class="text-xs font-semibold"></div>
       </div>
@@ -50,199 +49,34 @@
         {{ cluster::render("right") }}
       </div>
     </div>
-  </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-    <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-3 text-slate-700">Gas Purge</h3>
+    <div class="bg-white p-3 rounded-lg shadow flex flex-col gap-2 flex-1">
+      <h3 class="text-sm font-semibold text-slate-700">Gas Purge</h3>
       <button
         hx-get="/clearcore-manual-control/gas-purge"
         hx-target="#global-modal-layer"
         hx-swap="innerHTML"
-        class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
+        class="w-full h-14 px-4 text-base bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
         gas purge
       </button>
-      <div id="gas-purge-feedback" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
+      <div id="gas-purge-feedback" class="text-sm font-semibold min-h-[1.25rem]"></div>
     </div>
   </div>
 
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-
-    <!-- X Position Display -->
-    <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Position</h3>
-      <div
-        hx-get="/clearcore-manual-control/x-position"
-        hx-trigger="load, every 100ms"
-        hx-target="this"
-        hx-swap="innerHTML"
-        class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
-        <span class="text-gray-400">Loading...</span>
-      </div>
-    </div>
-
-    <!-- Y Position Display -->
-    {% if show_y_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Position</h3>
-        <div
-          hx-get="/clearcore-manual-control/y-position"
-          hx-trigger="load, every 100ms"
-          hx-target="this"
-          hx-swap="innerHTML"
-          class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
-          <span class="text-gray-400">Loading...</span>
-        </div>
-      </div>
-    {% endif %}
-
-    <!-- Z Position Display -->
-    {% if show_z_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Position</h3>
-        <div
-          hx-get="/clearcore-manual-control/z-position"
-          hx-trigger="load, every 100ms"
-          hx-target="this"
-          hx-swap="innerHTML"
-          class="h-16 flex items-center justify-center font-bold text-2xl bg-slate-100 text-slate-800 rounded">
-          <span class="text-gray-400">Loading...</span>
-        </div>
-      </div>
-    {% endif %}
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-    <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Axis Jog</h3>
-      <div
-        hx-get="/clearcore-manual-control/jog-speed-display/x"
-        hx-trigger="load, every 1s"
-        hx-target="this"
-        hx-swap="morph:innerHTML"
-        class="mb-3">
-        <span class="text-gray-400 text-sm">Loading...</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        {{ jog_button::render("x", "negative") }}
-        {{ jog_button::render("x", "positive") }}
-      </div>
-      <div id="jog-feedback-x" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
-    </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 items-stretch">
+    {{ axis_card::render("X", "x", true, "go-to-position", "Jog to exact position", "") }}
 
     {% if show_y_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Axis Jog</h3>
-        <div
-          hx-get="/clearcore-manual-control/jog-speed-display/y"
-          hx-trigger="load, every 1s"
-          hx-target="this"
-          hx-swap="morph:innerHTML"
-          class="mb-3">
-          <span class="text-gray-400 text-sm">Loading...</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          {{ jog_button::render("y", "negative") }}
-          {{ jog_button::render("y", "positive") }}
-        </div>
-        <div id="jog-feedback-y" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
-      </div>
+      {{ axis_card::render("Y", "y", true, "go-to-position", "Jog to exact position", "") }}
     {% endif %}
 
     {% if show_z_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Axis Jog</h3>
-        <div
-          hx-get="/clearcore-manual-control/jog-speed-display/z"
-          hx-trigger="load, every 1s"
-          hx-target="this"
-          hx-swap="morph:innerHTML"
-          class="mb-3">
-          <span class="text-gray-400 text-sm">Loading...</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          {{ jog_button::render("z", "negative") }}
-          {{ jog_button::render("z", "positive") }}
-        </div>
-        <div id="jog-feedback-z" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
-      </div>
+      {{ axis_card::render("Z", "z", true, "go-to-position", "Jog to exact position", "") }}
     {% endif %}
 
     {% if show_w_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">W Axis Jog</h3>
-        <div
-          hx-get="/clearcore-manual-control/jog-speed-display/w"
-          hx-trigger="load, every 1s"
-          hx-target="this"
-          hx-swap="morph:innerHTML"
-          class="mb-3">
-          <span class="text-gray-400 text-sm">Loading...</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          {{ jog_button::render("w", "negative") }}
-          {{ jog_button::render("w", "positive") }}
-        </div>
-        <div id="jog-feedback-w" class="mt-2 text-sm font-semibold min-h-[1.25rem]"></div>
-      </div>
-    {% endif %}
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-    <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-3 text-slate-700">X Axis</h3>
-      <button
-        hx-get="/clearcore-manual-control/go-to-position/x"
-        hx-target="#global-modal-layer"
-        hx-swap="innerHTML"
-        class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
-        Jog to exact position
-      </button>
-      <div id="go-to-position-feedback-x" class="mt-2 text-sm font-semibold"></div>
-    </div>
-
-    {% if show_y_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Y Axis</h3>
-        <button
-          hx-get="/clearcore-manual-control/go-to-position/y"
-          hx-target="#global-modal-layer"
-          hx-swap="innerHTML"
-          class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
-          Jog to exact position
-        </button>
-        <div id="go-to-position-feedback-y" class="mt-2 text-sm font-semibold"></div>
-      </div>
-    {% endif %}
-
-    {% if show_z_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">Z Axis</h3>
-        <button
-          hx-get="/clearcore-manual-control/go-to-position/z"
-          hx-target="#global-modal-layer"
-          hx-swap="innerHTML"
-          class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
-          Jog to exact position
-        </button>
-        <div id="go-to-position-feedback-z" class="mt-2 text-sm font-semibold"></div>
-      </div>
-    {% endif %}
-
-    {% if show_w_axis %}
-      <div class="bg-white p-4 rounded-lg shadow">
-        <h3 class="text-lg font-semibold mb-3 text-slate-700">W Axis</h3>
-        <button
-          hx-get="/clearcore-manual-control/relative-move/w"
-          hx-target="#global-modal-layer"
-          hx-swap="innerHTML"
-          class="w-full h-11 px-4 text-sm bg-slate-800 text-white rounded transition-colors font-bold hover:bg-slate-900">
-          Jog by relative amount
-        </button>
-        <div class="mt-2 text-xs font-semibold text-slate-500">Relative move (e.g., +/-5.00 in)</div>
-        <div id="relative-move-feedback-w" class="mt-1 text-sm font-semibold"></div>
-      </div>
+      {{ axis_card::render("W", "w", false, "relative-move", "Jog by relative amount", "Relative move (e.g., +/-5.00 in)") }}
     {% endif %}
   </div>
 </div>
