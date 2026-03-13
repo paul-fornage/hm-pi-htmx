@@ -1,7 +1,7 @@
 {% import "components/clearcore-manual-control/jog-button.html" as jog_button %}
 
 {% macro render(axis_label, axis_slug, show_position, cta_route, cta_label, cta_helper) %}
-<div id="axis-card-{{ axis_slug }}" class="bg-white p-4 rounded-lg shadow flex flex-col gap-3 h-full">
+<div id="axis-card-{{ axis_slug }}" class="bg-white flex-1 p-4 rounded-lg shadow flex flex-col gap-3">
   <div class="flex items-center justify-between">
     <h3 class="text-lg font-semibold text-slate-700">{{ axis_label }} Axis</h3>
   </div>
